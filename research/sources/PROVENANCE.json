@@ -1,0 +1,64 @@
+{
+  "preserved": [
+    {
+      "file": "cwc_kerala_daily_discharge_2001_2025.csv",
+      "bytes": 39425558,
+      "sha256_prefix": "5ccf023844e1"
+    },
+    {
+      "file": "cwc_kerala_daily_discharge_1950_2000.csv",
+      "bytes": 23703774,
+      "sha256_prefix": "17c74c2194ac"
+    },
+    {
+      "file": "kerala_manual_daily_rainfall_1991_2020.csv",
+      "bytes": 24200224,
+      "sha256_prefix": "06b78e5fe2b6"
+    },
+    {
+      "file": "CWC_Kerala_Floods_August_2018_study.pdf",
+      "bytes": 6003314,
+      "sha256_prefix": "ee766f8f31d2"
+    },
+    {
+      "file": "CWC_Kerala_December_2018_report.pdf",
+      "bytes": 9744067,
+      "sha256_prefix": "9886e2a5f75e"
+    },
+    {
+      "file": "Sudheer_2019_Role_of_dams_2018_Periyar_floods_CurrSci.pdf",
+      "bytes": 4413605,
+      "sha256_prefix": "8ad1fc11d238"
+    },
+    {
+      "file": "CAG_Kerala_flood_audit.pdf",
+      "bytes": 6675838,
+      "sha256_prefix": "dff751cf211c"
+    },
+    {
+      "file": "FIRO_Lake_Mendocino_final_viability_assessment.pdf",
+      "bytes": 11297686,
+      "sha256_prefix": "e18a31935dcf"
+    },
+    {
+      "file": "FIRO_Prado_Dam_final_viability_assessment.pdf",
+      "bytes": 9969733,
+      "sha256_prefix": "a7ec64a59a48"
+    },
+    {
+      "file": "FIRO_Lake_Mendocino_environmental_assessment.pdf",
+      "bytes": 17157233,
+      "sha256_prefix": "cde7cd90eef6"
+    },
+    {
+      "file": "CWC_FIRO_related_report.pdf",
+      "bytes": 4732739,
+      "sha256_prefix": "113e736f979e"
+    },
+    {
+      "file": "CWC_weekly_reservoir_bulletin_sample.pdf",
+      "bytes": 4755843,
+      "sha256_prefix": "b6699a74535f"
+    }
+  ]
+}

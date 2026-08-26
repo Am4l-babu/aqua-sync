@@ -1,0 +1,488 @@
+{
+  "dimension": "Integrating with existing dam, SCADA and government water systems (KSEB / KSDMA / CWC / NDSA), industrial protocols, open water-data standards, Dam Safety Act 2021 compliance, and cybersecurity constraints",
+  "key_findings": [
+    "COMPLIANCE HOOK IS REAL AND DATED. The Dam Safety Act 2021 (Act 41 of 2021, in force 30 Dec 2021) has 20 regulations notified in the Official Gazette. I pulled the full list from NDSA's own public JSON API (POST https://ndsa.gov.in/ndsa-backend/web/regulation?lang=en, body {\"page\":0,\"sort\":\"\",\"search\":\"\"} -> 200, total_count=20). Four bind AquaSync's telemetry layer directly: Reg 8 (24/04/2024) minimum instrumentation sets under s.32(1); Reg 16 (20/05/2024) data requirements of hydro-meteorological stations under s.33(1); Reg 9 (24/04/2025) THE FORM, MANNER AND TIME INTERVAL FOR FORWARDING THE ANALYSIS OF READINGS TO THE STATE DAM SAFETY ORGANISATION under s.32(2); Reg 1 (13/03/2024) details and form of log books/database under s.18. Reg 9 is the money one: it makes periodic instrument-reading reporting to the SDSO a statutory duty, so an AquaSync export that emits that report is a compliance deliverable, not an optional extra. All four PDFs verified 200 over https (the API returns http:// links which fail with curl exit 0/000 - rewrite to https). Caveat: all four are SCANNED gazette images, zero extractable text (pypdf yields 0-9 chars over 1-10 pages), so the exact reporting cadence must be read by eye or OCR'd.",
+    "KSEB PUBLISHES A 91-FILE DAILY-LEVEL ARCHIVE GOING BACK TO JUNE 2019 - 14 MONTHS BEFORE THE amith-vp DATASET STARTS. https://dams.kseb.in/?p=329 (KSEB Ltd Dam Safety Organisation, WP Download Manager) lists 91 monthly Excel workbooks titled 'Water level of main reservoirs of KSEB Limited'. Direct download pattern: https://dams.kseb.in/?wpdmdl=<ID>. IDs 310-314 (Jan-May 2019) 302-redirect to kseboa.in which does not resolve (curl 000) = DEAD. ID 315 (June 2019.xlsx, 1,511,065 bytes) onward through ID 6380 (July 2026) serve directly with 200 and Content-disposition filenames. This is an authoritative independent copy covering the entire 2020-09-25 to 2021-04-30 window that is corrupt in the GitHub dataset, plus 14 months the GitHub dataset never had.",
+    "GENUINE 2018 IDUKKI/IDAMALAYAR DATA EXISTS INSIDE THE 2019 KSEB WORKBOOKS. Every daily sheet in the Jun/Jul/Aug/Sep/Oct 2019 workbooks carries a 'Previous Year Water Level' column (column G in the Jun-2019 schema). Verified counts of sheets yielding a 2018 Idukki value: Jun-2019 wb 31, Jul-2019 wb 32, Aug-2019 wb 10, Sep-2019 wb 9, Oct-2019 wb 22 = 104 rows (~100 unique dates after de-duping repeated 'Sheet1 (2)' and '20.08.19 7AM' sheets). Concrete samples: 01.06.2018 Idukki 2323.24 ft / Idamalayar 129.58 m; 30.06.2018 Idukki 2350.40 ft; 31.07.2018 Idukki 2394.28 ft; 20.08.2018 Idukki 2401.86 ft (post-flood, 1.14 ft below FRL 2403 ft); 31.08.2018 Idukki 2396.00 ft; 29-30.09.2018 Idukki 2387.14/2387.44 ft. Nov/Dec 2019 workbooks dropped the column. Bonus: the Aug-2019 workbook's leftover 'Sheet1 (2)' is a full 25.09.2018 KSEB status sheet (Idukki 2386.98 ft, Idamalayar 160.84 m, remarks 'all shutters closed @ 1.02pm on 07.09.2018'). This closes GAP 1 partially and honestly: ~100 days of 2018, NOT the 9-17 Aug 2018 peak days.",
+    "THE 2018 FLOOD PEAK ITSELF IS IN A CWC REPORT HOSTED ON KSDMA'S OWN SERVER. https://sdma.kerala.gov.in/wp-content/uploads/2020/08/CWC-Report-on-Kerala-Floods.pdf (200, 6.0 MB, 48 pp, 'Study Report Kerala Floods of August 2018', CWC Hydrological Studies Organisation, Sept 2018). It gives Idukki hourly inflow/outflow/level narrative for 09-08-2018 12:00 to 18-08-2018 06:00 (Fig.4 x-axis is hourly): level 731.82 m at 00:00 on 10 Aug (0.61 m below FRL, only ~40 MCM cushion); inflow ~649 cumec, spill 50 cumec + 115 cumec powerhouse; spill raised to 750 cumec by 17:00 on 10 Aug; level drawn to 730.80 m by 18:00 on 13 Aug (~90 MCM cushion); outflow 1615 cumec (1500 spill + 115 PH) from 18:00 15 Aug; PEAK INFLOW 2532 cumec at 22:00 on 15 Aug 2018 with 1614 cumec outflow = 41% attenuation; FRL 732.43 m touched 01:00 on 17 Aug. Idamalayar: 168.06 m on 8 Aug (97% live storage full), peak inflow 1164 cumec on 16 Aug, average spill 1271 cumec, NO attenuation. Also confirms Idukki gross 1997 MCM at FRL, 537 MCM at MDDL 694.94 m, live 1460 MCM - matching AquaSync's 1459 Mm3.",
+    "GAP 2 (MUSKINGUM NEVER GAUGE-CALIBRATED) HAS AN OFFICIAL ANCHOR NUMBER. The CWC 'Report on Kerala Flood & Solutions', Dec 2018 (https://sdma.kerala.gov.in/wp-content/uploads/2020/10/Kerala_28122018_CWC_December-2018.pdf, 200, 9.7 MB, 60 pp) sec 8.3.2.2 states CWC proposes level forecasting at Neeleswaram from combined Idukki + Idamalayar dam discharges using 'a travel time of 8 hours', with a stage-discharge curve and cross-section at Neeleswaram fixing Warning Level 9 m and Danger Level 10 m, plus a unit hydrograph for the intervening catchment built from ~12 IMD daily rain gauges against daily Neeleswaram discharge. That 8 h is a government-published lag for exactly AquaSync's reach. The Sept 2018 report adds the geometry: Periyar drainage area 4,033 km2 to Neeleswaram, free catchment Mullaperiyar->Idukki ~605 km2, Idamalayar catchment ~472 km2, Neeleswaram peak 8,800 cumec at 14:00-15:00 on 16 Aug 2018 at EL 12.4 m (so ~7,300 cumec of the peak was ungauged free-catchment runoff, not dam release). The Dec-2018 report also warns Idukki has spilled on only THREE occasions ever - 1988, 1992 and 2018 - so spill-reach calibration data is intrinsically scarce.",
+    "GAP 3 (PERFECT FORESIGHT) HAS A FREE DAILY OBSERVED-INFLOW FEED. Kerala SLDC publishes a daily reservoir table at https://sldckerala.com/index.php?id=7 (200). Parsed 16-column row for 25.08.2026: IDUKKI | MDDL 694.944 m | FRL 732.43 m | Effective Storage at FRL 1460 mcm | Gen. Capability at FRL 2190 MU | Level 720.968 m | Storage 869.358 mcm | 60% | Gross gen cap 1304.037 MU | Station 1277.956 MU | RF 26.8 mm | Spill blank | INFLOW 29.734 mcm/day | Cum. IF for month 679.395 MU | prev-day storage 58% | remarks 2365.38 (ft). IDAMALAYAR: MDDL 115 m, FRL 169 m, 1017.8 mcm at FRL, level 156.72 m, 673.28 mcm, 66%, RF 21.4 mm, INFLOW 2.61 mcm/day. Observed daily inflow for exactly AquaSync's two reservoirs, free, no key. Caveat: I could NOT get the historical date form to work - POSTing txtDate=<unix> or date1=<date>&sbtstore=SHOW to index.php?id=7 always returned the current day's header ('STORAGE AS ON 25.08.2026'). Treat it as a forward-scraping daily snapshot, not an archive.",
+    "KSEB'S OWN LIVE DASHBOARD PUBLISHES THE TIME-VARYING BLUE/ORANGE/RED ALERT LEVELS AQUASYNC'S POLICY SEARCH MUST RESPECT. https://kseb.in/dashboard/view/waterlevel (200) serves a 17-column table: Name | District | Today's Water level (m) | Today's Live Storage (MCM) | %Storage wrt Live Storage at FRL | Same day previous year Water level (m) | Same day previous year Live Storage (MCM) | Inflow MU | Rainfall (mm) | Blue level | Orange level | Red Level | MWL | FRL | Spillway Crest Level | Live Storage at FRL (MCM) | Remarks. As-on 26-08-2026 IDUKKI: 720.968 m, 869.358 MCM, 59.5451%, prev-yr 725.65 m / 1089.23 MCM, inflow 29.7342 MU, rain 26.8 mm, Blue 2389.78 ft, Orange 2395.78 ft, Red 2396.78 ft, MWL 2408.5 ft, FRL 2403 ft, Crest 2373 ft, Live Storage at FRL 1459.49 MCM (exactly AquaSync's number). CRITICAL NUANCE: the same fields in the KSEB July-2026 workbook read Rule level 2375.33, Blue 2367.33, Orange 2373.33, Red 2374.33 - the alert bands MOVE with the rule curve through the monsoon. AquaSync's exhaustive policy search is currently searching against a static target level; the real constraint is a published, seasonally varying blue/orange/red band. Query trick: ?date=YYYY-MM-DD (ISO) works; DD-MM-YYYY silently returns nothing. Archive is short - verified rows for 2026-08-01 and 2026-08-20/26, nothing for 2026-07-01 or earlier.",
+    "KERALA'S GOVERNANCE TRIGGER IS THE ORANGE ALERT, AND IT IS A COMMITTEE, NOT AN ALGORITHM. G.O.(Rt) No. 453/2021/DMD dated 03-06-2021 constitutes a multi-agency committee to monitor operation of major Kerala dams against approved rule curves; it convenes when a dam reaches its ORANGE alert level or when extreme rainfall is forecast in the catchment. That is the precise decision point AquaSync should target: it should not try to actuate gates, it should arrive as a pre-computed options brief at the moment that committee is convened. KSDMA publishes the daily consolidated KSEB + Irrigation reservoir tables at https://sdma.kerala.gov.in/dam-water-level/ (200) as PDFs updated daily at 11:00 - PDF only, no CSV/API.",
+    "IDUKKI ALREADY HAS A REAL-TIME SHM/EWS STACK - AND IT IS A CLOSED VENDOR SYSTEM. Verified via https://www.encardio.com/blog/idukki-dam-monitoring (200): contract 'Real-Time Early Warning Structure Health Monitoring and Data Interpretation (RESHMI)' under World Bank DRIP. Instruments: geotechnical + geodetic (prism targets on the downstream intrados read by TWO robotic total stations) + a full weather station (air temp, wind speed/direction, RH, solar radiation, barometric pressure, rain gauge) + seismic. Data path: compact data loggers + DAS with interface unit and BusMux -> GSM/GPRS modem -> central server, presented in Encardio Rite's proprietary 'Drishti' DBMS. Servers sit at the KSEB monitoring station at Pallam (Kottayam) and the dam monitoring & research station at Vazhathoppe (Idukki). Practical consequence: there is NO Modbus/DNP3/IEC-104 socket for AquaSync to open. The integration is a Drishti export or a database view, negotiated - not a protocol client.",
+    "THE PROTOCOL BOUNDARY AT KSEB IS ICCP AT THE CONTROL CENTRE, NOT A FIELD BUS. Kerala SLDC's System Operation wing is headquartered at Kalamassery (main control centre) with a backup control centre; real-time data from generating stations and substations arrives via RTUs from 73 telemetered stations, and 50 SCADA-enabled substations are integrated to SLDC Kalamassery over ICCP (IEC 60870-6 TASE.2). KSEB's distribution SCADA/DMS covers Thiruvananthapuram, Ernakulam and Kozhikode with RTUs in 50 substations and LDMS at substations, integrated to SLDC. A SCADA/EMS upgrade for the main and backup control centres has administrative sanction. So the realistic AquaSync ingress is (a) a read-only ICCP/TASE.2 client or an OPC-UA gateway on a DMZ historian at Kalamassery, or (b) the published daily bulletins - NOT pymodbus into a governor.",
+    "CERT-In AND CEA MAKE A READ-ONLY, ONE-WAY DEPLOYMENT THE ONLY VIABLE ARCHITECTURE. CERT-In Directions of 28.04.2022 under s.70B(6) IT Act 2000 (https://www.cert-in.org.in/PDF/CERT-In_Directions_70B_28.04.2022.pdf, 200) require cyber-incident reporting within SIX HOURS and retention of ICT system logs for 180 DAYS stored IN INDIA. CEA (Cyber Security in Power Sector) Guidelines 2021 apply to all responsible entities incl. generation utilities and load dispatch centres: IT systems audited at least every 6 months, OT systems at least annually, mandatory identification/classification of OT assets (SCADA, PLC, RTU), and mandatory cyber-security training for all IT/OT O&M personnel within 90 days of notification; IEC 62443 is the OT baseline a CII audit references. NCIIPC (under NTRO) is the CII regulator; a hydro dam feeding the grid is squarely CII. Design implication: AquaSync must be a data DIODE consumer (read-only, air-gapped or unidirectional-gateway fed), must keep 180 days of logs on Indian infrastructure, and must never expose a write path to any SCADA point. Note nciipc.gov.in did not resolve from my network (curl 000) - I could not verify NCIIPC guideline documents first-hand.",
+    "'OGC HydroDART' DOES NOT EXIST - AND THE REAL STANDARDS STACK IS SENSORTHINGS + EDR, NOT WaterML XML. Explicit search for HydroDART returns nothing at OGC; the planning material's name is fabricated. What is real and verified 200: OGC SensorThings API Part 1: Sensing v1.1 (https://docs.ogc.org/is/18-088/18-088.html), OGC API - Environmental Data Retrieval (https://docs.ogc.org/is/19-086r6/19-086r6.html), WaterML 2 Part 3 HY_Features (https://docs.ogc.org/is/14-111r6/14-111r6.html). For AquaSync the pragmatic choice is pygeoapi (623 stars, pushed 2026-08-18, MIT, PyPI 0.24.0 released 2026-07-28, requires Python >=3.12) exposing OGC API - EDR over the existing model outputs - it is pure Python, drops into an existing Python codebase, and gives a standards-compliant read API in roughly a day. FROST-Server (227 stars, pushed 2026-08-24, LGPL-3.0) is the reference SensorThings server but is JAVA + PostgreSQL/PostGIS + Docker - a separate ops burden; use it only if a partner agency demands SensorThings conformance. India has NOT adopted either standard: India-WRIS/NHP standardised on RTDAS telemetry hardware and an ArcGIS-server stack (arc.indiawris.gov.in/server/rest/services/...), not on OGC SensorThings or WaterML."
+  ],
+  "technologies": [
+    {
+      "name": "pymodbus",
+      "maturity": "production",
+      "limitations": "Modbus TCP has no native timestamp, no quality flag, no unsolicited reporting and no authentication - it is a register-poll protocol. Wrong tool for a regulated dam link and wrong tool for anything AquaSync needs; useful only if a specific gauge/logger at Idukki exposes a Modbus slave.",
+      "fit_for_aquasync": "Low. Keep as a fallback for one-off sensor bench tests. Not the KSEB integration path.",
+      "recent_updates": "PyPI 3.15.0 released 2026-08-13; GitHub 2,762 stars, pushed 2026-08-25, BSD-3-Clause, 0 open issues, requires Python >=3.10. Extremely healthy."
+    },
+    {
+      "name": "opcua-asyncio (asyncua)",
+      "maturity": "production",
+      "limitations": "LGPL-3.0 - fine for a service, needs care if AquaSync is ever shipped as a linked binary. Pure-Python stack is slower than C for very high tag counts. Security profiles (Basic256Sha256, certificates) are implemented but configuring them against a vendor server is where the days go.",
+      "fit_for_aquasync": "HIGHEST of the industrial protocols. OPC-UA is the realistic read-only DMZ boundary a utility will actually agree to expose: it carries timestamp + quality + browsable address space, and it is what a modern SCADA/EMS upgrade (like Kerala SLDC's sanctioned replacement) will offer northbound. Budget ~2 days to a subscribing client against a demo server, plus weeks of paperwork for the real certificate exchange.",
+      "recent_updates": "PyPI asyncua 2.0.1 released 2026-06-29 (major version bump); GitHub 1,468 stars, pushed 2026-08-24, LGPL-3.0, 244 open issues, Python >=3.10."
+    },
+    {
+      "name": "c104 / iec104-python (Fraunhofer FIT)",
+      "maturity": "production",
+      "limitations": "GPL-3.0 - this is viral and a real problem if AquaSync is ever distributed as a product; the underlying lib60870 is also GPL-3.0 (MZ Automation dual-licenses commercially). C++ core with pybind11 bindings, so wheels/toolchain matter on Windows. IEC 60870-5-104 itself has no built-in authentication (IEC 62351 is a bolt-on almost nobody in India deploys).",
+      "fit_for_aquasync": "Medium. This is the protocol Indian transmission/SLDC SCADA actually speaks (IEC 101/104 dominate Asian and European transmission-level systems; DNP3 is a North American convention). If KSEB ever offers a direct RTU-level feed it will be IEC-104, so c104 is the right client - but read-only, monitor-direction only, never control-direction.",
+      "recent_updates": "PyPI c104 2.2.1 released 2025-04-23; GitHub Fraunhofer-FIT-DIEN/iec104-python 101 stars, pushed 2026-08-06, GPL-3.0, 22 open issues, Python >=3.7. Underlying mz-automation/lib60870: 592 stars, pushed 2026-07-15."
+    },
+    {
+      "name": "opendnp3 + pydnp3 / VOLTTRON dnp3-python",
+      "maturity": "research",
+      "limitations": "The Python ecosystem here is effectively DEAD. dnp3/opendnp3 is ARCHIVED on GitHub (335 stars, last push 2022-05-18). ChargePoint/pydnp3 last pushed 2022-03-28 with 38 stars and 22 open issues; PyPI pydnp3 is still at 0.1.0 released 2018-06-07. VOLTTRON/dnp3-python (20 stars, pushed 2024-12-15) is the only one with any 2024+ activity and it is a niche fork. Also DNP3 is a North American utility convention, not an Indian one.",
+      "fit_for_aquasync": "Very low. Do not build on this. If someone insists on DNP3, budget for a commercial stack (Triangle MicroWorks) or a protocol gateway appliance rather than Python bindings.",
+      "recent_updates": "None meaningful. opendnp3 3.x docs still published at dnp3.github.io but the upstream repo is archived."
+    },
+    {
+      "name": "libiec61850",
+      "maturity": "production",
+      "limitations": "GPL-3.0 (commercial licence available from MZ Automation). C library with no first-class Python binding. IEC 61850 in hydro requires the -7-410 hydro extension (logical nodes for gates, turbines, reservoirs), which is a niche, expensive integration; documented deployments are dominated by Spain (>10 projects), not India.",
+      "fit_for_aquasync": "Low today, rising later. IEC 61850-7-410 is the standard that would eventually let a dam expose reservoir/gate objects semantically. Nothing at Idukki speaks it today. Track it; do not build for it.",
+      "recent_updates": "GitHub 1,212 stars, pushed 2026-08-26, 243 open issues - actively maintained C codebase."
+    },
+    {
+      "name": "MQTT Sparkplug B v3.0 (Eclipse Tahu / pysparkplug)",
+      "maturity": "emerging",
+      "limitations": "Eclipse Tahu's reference implementations are Java-centric (264 stars, pushed 2026-08-10, EPL-2.0). The Python option pysparkplug is a one-maintainer project: 24 stars, last push 2025-05-10, PyPI 0.6.1 released 2025-05-10, Apache-2.0, Python >=3.9 - fine code, thin bus factor. Sparkplug also assumes you control the edge nodes; you cannot Sparkplug-ify someone else's SCADA without their cooperation.",
+      "fit_for_aquasync": "Medium-high for AquaSync's OWN telemetry, low for consuming KSEB's. If AquaSync ever fields its own gauges (a stage sensor at Neeleswaram, a tide gauge at Kochi), Sparkplug B gives birth/death certificates, state-of-health and store-and-forward semantics for free over an unreliable GPRS link - exactly the failure mode of the Encardio GSM/GPRS loggers. Spec: sparkplug-specification-3.0.0.pdf, verified 200.",
+      "recent_updates": "Sparkplug 3.0 is the current spec generation (superseded v2.2); Eclipse Sparkplug Working Group active."
+    },
+    {
+      "name": "pygeoapi",
+      "maturity": "production",
+      "limitations": "Requires Python >=3.12 as of 0.24.0 - a real constraint if AquaSync is pinned lower. EDR support is plugin-driven; you write the provider for your own data model. It is a publishing server, not an ingestion pipeline.",
+      "fit_for_aquasync": "BEST-VALUE standards play. Wrap AquaSync's existing reservoir/routing outputs in an OGC API - EDR endpoint so KSDMA or CWC can pull forecasts with a standard client instead of a bespoke integration. Realistic effort: ~1-2 days to a working /collections/{id}/position query over an existing time series.",
+      "recent_updates": "GitHub 623 stars, pushed 2026-08-18, MIT, 40 open issues; PyPI 0.24.0 released 2026-07-28. Used in production by USGS Western Water Data Hub for exactly this EDR-over-water-timeseries pattern."
+    },
+    {
+      "name": "FROST-Server (OGC SensorThings API reference implementation)",
+      "maturity": "production",
+      "limitations": "Java + PostgreSQL/PostGIS + Docker; a second runtime and a second database to operate alongside AquaSync's Python stack. LGPL-3.0. SensorThings' Thing/Datastream/Observation model is a poor fit for model OUTPUT (forecast ensembles); it is designed for sensor observations.",
+      "fit_for_aquasync": "Conditional. Only stand it up if a partner agency explicitly requires SensorThings conformance. Otherwise pygeoapi/EDR gets 90% of the interoperability for 20% of the ops cost.",
+      "recent_updates": "GitHub 227 stars, pushed 2026-08-24, LGPL-3.0, 86 open issues. Python client frost-sta-client on PyPI at 1.1.53 released 2025-09-19 (LGPL3) if you need to write into a FROST instance."
+    },
+    {
+      "name": "gost (Go SensorThings server)",
+      "maturity": "research",
+      "limitations": "ABANDONED: 61 stars, last push 2020-07-07, 22 open issues. Do not adopt.",
+      "fit_for_aquasync": "None. Listed only so nobody wastes a day on it.",
+      "recent_updates": "None since 2020."
+    },
+    {
+      "name": "DHARMA (Dam Health and Rehabilitation Monitoring Application, CWC)",
+      "maturity": "operational-deployed",
+      "limitations": "Closed, licensed, login-gated web platform - it is CWC intellectual property with per-user licences, no public API, no bulk export. It is an asset-management and inspection record system (structural health, inspection findings, rehabilitation status), NOT a real-time hydrological feed. The canonical host damsafety.cwc.gov.in and dharma.cwc.gov.in did not resolve from my network (curl 000 / ENOTFOUND) - likely geo-restricted to India; I could not inspect it directly.",
+      "fit_for_aquasync": "It is the SYSTEM OF RECORD AquaSync must not duplicate. All 6,628 specified dams are registered on it and ~13,000 inspections/year are logged through it. Position AquaSync as producing artefacts that feed DHARMA and the s.32(2) SDSO report, not as a rival database.",
+      "recent_updates": "PIB backgrounder of 15 May 2026 confirms all 6,628 specified dams registered, web + mobile app launched, Rapid Risk Screening completed for 5,553 dams. NDSA's own public API https://rrssd.ndsa.gov.in/api/dharma/dashboard (verified 200) returns inspection counts: 2023 pre/post-monsoon 208/354, 2024 6352/6430, 2025 6486/6544, 2026 6536/0."
+    },
+    {
+      "name": "C-FLOOD (CWC + C-DAC + NRSC unified inundation forecasting)",
+      "maturity": "operational-deployed",
+      "limitations": "Launched 2 July 2025 by the Union Minister of Jal Shakti. Covers Mahanadi (run on NSM HPC at C-DAC Pune) plus Godavari and Tapi (NRSC models built under NHP). PERIYAR AND KERALA ARE NOT COVERED. I could not find or verify a working public portal URL - cflood.gov.in and cflood.cdac.in both fail to resolve (curl 000); only the PIB release is verifiable.",
+      "fit_for_aquasync": "Strategic, not immediate. It is the template for GAP 4 (2D inundation): 2-D hydrodynamic modelling giving village-level inundation maps and water levels 48 h ahead. AquaSync's Periyar 2D case would be a basin C-FLOOD has not reached, which is a positioning argument, not a data source.",
+      "recent_updates": "Launched 2025-07-02; CWC separately stood up SWRMO-CoE (Sept 2024) building in-house AI/ML short-range models to push level-forecast lead time from 24 h to 7 days."
+    },
+    {
+      "name": "CWC Advisory Flood Forecast (AFF) - aff.india-water.gov.in",
+      "maturity": "operational-deployed",
+      "limitations": "Coupled hydrologic (rainfall-runoff) + hydrodynamic models across 20 river basin models, re-run every 3 hours, 7-day lead, driven by IMD GFS and WRF forecast rainfall plus satellite and rain-gauge observed rainfall, river cross-sections, historical discharge and bathymetry. No public API found; no Kerala/Periyar mention on the methodology page. Self-declared caveat on the page: 'the accuracy of the model is limited by the quality of data available.'",
+      "fit_for_aquasync": "THE deployment precedent to copy. CWC's whole flood-forecast function - including inflow forecasts at 128 reservoirs - is explicitly framed as ADVISORY, 'for assisting project authorities in reservoir regulation'. The dam owner retains the decision and the liability. AquaSync should adopt the identical posture and the identical vocabulary: advisory inflow/level forecast + candidate release schedules, decision stays with KSEB and the G.O. 453/2021 committee.",
+      "recent_updates": "Operational alongside ffs.india-water.gov.in (verified 200) and the 'Flood Watch' mobile app. CWC-Google collaboration on AI/ML and geospatial mapping is the other advisory precedent."
+    },
+    {
+      "name": "Encardio Rite 'Drishti' DBMS (the incumbent at Idukki)",
+      "maturity": "operational-deployed",
+      "limitations": "Proprietary vendor database with no published API, no open protocol, no documented export schema. Reached over GSM/GPRS from field loggers - a link that will drop during exactly the storm events that matter. Any AquaSync access is a commercial/contractual negotiation with Encardio and KSEB, not a technical one.",
+      "fit_for_aquasync": "This is the incumbent AquaSync has to sit beside, not replace. The realistic ask is a nightly CSV/DB view from the Pallam or Vazhathoppe server, not a live socket.",
+      "recent_updates": "Installed under DRIP Phase I contract 'RESHMI'; DRIP Phase II is extending real-time monitoring to further KSEB hydel dams (DRIP II/III operational Oct 2021, outlay Rs 10,211 crore, 736 dams across 19 states + CWC/BBMB/DVC, World Bank + AIIB co-financed)."
+    },
+    {
+      "name": "IEC 62443 (industrial OT security) as the audit yardstick",
+      "maturity": "production",
+      "limitations": "Not Indian law itself, but it is the international ICS baseline an NCIIPC/CEA CII audit will reference as evidence. Achieving a meaningful zone/conduit design requires the utility's cooperation, not just AquaSync's.",
+      "fit_for_aquasync": "Frame AquaSync as living entirely in a low-trust zone (Purdue Level 4/DMZ), fed by a unidirectional conduit, with zero control-direction capability. Documenting that up front is what makes a KSEB security review short instead of fatal.",
+      "recent_updates": "CEA amended the Cyber Security in Power Sector Guidelines 2021 in Sept 2022; periodic IT (6-monthly) and OT (annual) audits across SLDCs are now routine."
+    }
+  ],
+  "sources": [
+    {
+      "name": "KSEB Dam Safety Organisation - Monthly Statistics (daily reservoir water levels, 91 Excel workbooks)",
+      "url": "https://dams.kseb.in/?p=329",
+      "kind": "dataset",
+      "what_it_provides": "91 monthly .xlsx/.xls workbooks 'Water level of main reservoirs of KSEB Limited', Jan 2019 to Jul 2026, one sheet per day (sometimes 3-hourly during floods). Download pattern https://dams.kseb.in/?wpdmdl=<ID>, IDs 310 (Jan 2019) to 6380 (Jul 2026). Modern schema (Jul 2026): Sl.No | Reservoir | District | FRL | Rule level | Water level | MWL | Spillway Crest Level | Blue/Orange/Red Alert level | Live Storage at FRL (MCM) | Live Storage (MCM) | %Storage | Inflow (MCM). 2019 schema adds a 'Previous Year Water Level' column.",
+      "relevance": "high - authoritative primary KSEB source for Idukki and Idamalayar, starts 14 months before the amith-vp GitHub feed (2020-08-13), covers the corrupt 2020-09-25 to 2021-04-30 window with clean data, and its 2019 previous-year column yields ~100 days of genuine 2018 levels",
+      "http_status": "200",
+      "license": "Government of Kerala / KSEB Ltd public download, no explicit licence stated",
+      "last_activity": "July 2026 file published; page live 2026-08-26",
+      "download_hint": "curl -s -L -A \"Mozilla/5.0\" -OJ \"https://dams.kseb.in/?wpdmdl=315\"  (June 2019.xlsx, 1,511,065 bytes). Loop IDs 315,500..505 then 506..6380 from the page HTML.",
+      "caveat": "IDs 310-314 (Jan-May 2019) 302-redirect to http://kseboa.in/... which does not resolve (curl 000) - those five months are UNAVAILABLE. Aug-2019 (id 501) and Sep-2019 (id 502) workbooks are incomplete (10 and 9 sheets) so the 2018 previous-year series has a hole across 01-19 Aug 2018 - the flood peak days. Files are .xls for some 2021-2022 months (needs xlrd) and .xlsx otherwise (needs openpyxl); neither was installed in this environment, I parsed the OOXML by hand with zipfile+ElementTree."
+    },
+    {
+      "name": "KSEB monthly workbook, June 2019 (worked example / proof of 2018 data)",
+      "url": "https://dams.kseb.in/?wpdmdl=315",
+      "kind": "dataset",
+      "what_it_provides": "31 sheets: 'Sheet1 (2)' plus 01.06.19 to 30.06.19. Header row: SL NO | RESERVOIR | MWL (m) | FRL (m) | Crest Level (m) | Present Water Level (m) | Previous Year Water Level | Percentage Storage | Rainfall (mm) | Generation (Mu) | Spill (cumecs). Verified values on the 01.06.19 sheet: IDAMALAYAR present 126.25 m / previous-year 129.58 m; IDUKKI present 2314.64 ft / previous-year 2323.24 ft.",
+      "relevance": "high - the concrete proof that KSEB workbooks carry a same-date previous-year column, i.e. the mechanism that recovers 2018 Idukki/Idamalayar levels",
+      "http_status": "200",
+      "license": "KSEB Ltd public download",
+      "last_activity": "published 2020-05-26 (data-order 1590451200)",
+      "download_hint": "curl -s -L -A \"Mozilla/5.0\" -o june2019.xlsx \"https://dams.kseb.in/?wpdmdl=315\"",
+      "caveat": "Idukki levels are in FEET in these sheets, Idamalayar in METRES - mixed units within one row set. Kuttiyadi rows show an obvious data-entry error (MWL 758.04 vs FRL 2487) so per-row unit sanity checks are mandatory."
+    },
+    {
+      "name": "KSEB Ltd live dam water level dashboard",
+      "url": "https://kseb.in/dashboard/view/waterlevel",
+      "kind": "api",
+      "what_it_provides": "HTML table, 17 columns, all KSEB reservoirs: Today's Water level (m), Today's Live Storage (MCM), %Storage wrt Live Storage at FRL, Same day previous year Water level (m), Same day previous year Live Storage (MCM), Inflow (MU), Rainfall (mm), Blue level, Orange level, Red Level, MWL, FRL, Spillway Crest Level, Live Storage at FRL (MCM), Remarks. Accepts ?date=YYYY-MM-DD.",
+      "relevance": "high - the only free source I verified that publishes the seasonally varying Blue/Orange/Red alert bands AquaSync's policy search must honour, and it confirms Idukki Live Storage at FRL = 1459.49 MCM",
+      "http_status": "200",
+      "license": "KSEB Ltd public web page, no licence stated",
+      "last_activity": "live, serving 2026-08-26",
+      "download_hint": "curl -s -L --globoff -A \"Mozilla/5.0\" \"https://kseb.in/dashboard/view/waterlevel?date=2026-08-20\" then parse <tr> rows",
+      "caveat": "Archive is SHALLOW. Verified rows for 2026-08-01, 2026-08-20 and 2026-08-26; empty for 2026-07-01 and every earlier date I tried back to 2018. The DD-MM-YYYY format the form's own <input type=date> emits returns nothing - only ISO YYYY-MM-DD works. It is a rolling window, so scrape daily."
+    },
+    {
+      "name": "Kerala State Load Despatch Centre - System Statistics: Storage",
+      "url": "https://sldckerala.com/index.php?id=7",
+      "kind": "api",
+      "what_it_provides": "Daily reservoir table with columns MDDL (m) | FRL (m) | Effective Storage at FRL (mcm) | Gen. Capability at FRL (mu) | Reservoir | Level (m) | Effective Storage (mcm) | Storage (%) | Gen. Capability gross (mu) | Gen. Capability station (mu) | Rainfall (mm) | Spill | INFLOW (mcm/day) | Cum. inflow for month (MU) | Previous day's storage (%) | Remarks. Verified 25.08.2026: Idukki inflow 29.734 mcm/day, Idamalayar 2.61 mcm/day.",
+      "relevance": "high - free daily OBSERVED INFLOW for exactly AquaSync's two reservoirs, the variable the perfect-foresight optimiser currently assumes it knows",
+      "http_status": "200",
+      "license": "KSEB/Kerala SLDC public page, no licence stated",
+      "last_activity": "live, serving as-on 25.08.2026 on 2026-08-26",
+      "download_hint": "curl -s -L -A \"Mozilla/5.0\" \"https://sldckerala.com/index.php?id=7\" then parse <tr>/<td>",
+      "caveat": "HISTORICAL RETRIEVAL DOES NOT WORK. The page carries a POST form (action=index.php, hidden txtDate=943900200, submit name=sbtstore) and a calendar iframe writing date1. I tried POSTing txtDate as a unix timestamp and date1 in several formats to both index.php and index.php?id=7 - the header always came back 'STORAGE AS ON 25.08.2026'. Treat as a forward-only daily snapshot. Also sldckerala.com is not a gov.in domain; confirm provenance before citing it in a formal deliverable."
+    },
+    {
+      "name": "KSDMA - Dam Water Level (daily consolidated KSEB + Irrigation bulletins)",
+      "url": "https://sdma.kerala.gov.in/dam-water-level/",
+      "kind": "doc",
+      "what_it_provides": "Two daily PDFs - 'Water Levels of Major Reservoirs (KSEB)' and '(Irrigation)' - updated daily at 11:00 IST, plus a guidelines document on how to read the tables.",
+      "relevance": "high - this is the official disaster-management-side view of the same numbers, and it is what KSDMA staff actually look at; matching AquaSync's outputs to this document's fields is the fastest route to being legible to KSDMA",
+      "http_status": "200",
+      "license": "Government of Kerala",
+      "last_activity": "page dated 26/08/2026",
+      "download_hint": "curl -s -L \"https://sdma.kerala.gov.in/dam-water-level/\" then follow the two PDF links",
+      "caveat": "PDF ONLY - no CSV, no JSON, no API. Requires PDF table extraction. Combines KSEB (hydel) and Irrigation Department reservoirs in separate documents with different schemas."
+    },
+    {
+      "name": "CWC - Study Report: Kerala Floods of August 2018 (Hydrological Studies Organisation, Sept 2018)",
+      "url": "https://sdma.kerala.gov.in/wp-content/uploads/2020/08/CWC-Report-on-Kerala-Floods.pdf",
+      "kind": "paper",
+      "what_it_provides": "48 pp, 6.0 MB, fully text-extractable. Hourly narrative of Idukki reservoir operation 09-18 Aug 2018 (levels, spill, powerhouse release, peak inflow 2532 cumec at 22:00 on 15 Aug, 41% attenuation, FRL touched 01:00 on 17 Aug); Idamalayar operation (168.06 m on 8 Aug, peak inflow 1164 cumec on 16 Aug, average spill 1271 cumec, no attenuation); Neeleswaram G&D peak 8,800 cumec at 14:00-15:00 on 16 Aug 2018 at EL 12.4 m; Periyar drainage area 4,033 km2 to Neeleswaram, Mullaperiyar->Idukki free catchment 605 km2, Idamalayar catchment 472 km2; sub-basin rainfall depths for 15-17 Aug 2018 (Periyar 588 mm) compared against the 1924 Devikulam storm; Annex-I water level plots for CWC G&D sites.",
+      "relevance": "high - the single best verified source of 2018 Idukki/Idamalayar operational data AND the downstream gauge (Neeleswaram) that Muskingum must be calibrated against",
+      "http_status": "200",
+      "license": "Government of India / CWC, published by KSDMA",
+      "last_activity": "authored Sept 2018, hosted since Aug 2020",
+      "download_hint": "curl -s -L -A \"Mozilla/5.0\" -o cwc_kerala_2018.pdf \"https://sdma.kerala.gov.in/wp-content/uploads/2020/08/CWC-Report-on-Kerala-Floods.pdf\" then pypdf extract_text",
+      "caveat": "The hourly inflow/outflow/level series exist only as CHART IMAGES (Fig.4, Fig.5, Fig.3) - the PDF text layer preserves the axis tick labels (confirming hourly resolution and the 09-08-18 12:00 to 18-08-18 06:00 span) but NOT the plotted values. Recovering the series needs chart digitisation. CWC's own Limitation (ii) states gauge records at some G&D sites could not be observed on 16-17 Aug 2018 due to site inaccessibility, so the 8,800 cumec peak is partly estimated."
+    },
+    {
+      "name": "CWC - Report on Kerala Flood & Solutions (December 2018)",
+      "url": "https://sdma.kerala.gov.in/wp-content/uploads/2020/10/Kerala_28122018_CWC_December-2018.pdf",
+      "kind": "paper",
+      "what_it_provides": "60 pp, 9.7 MB, text-extractable. MIKE FLOOD / MIKE 11 2-D hydrodynamic modelling of Periyar, Pamba, Chalakudy and the Vembanad Lake catchment. Sec 7.1 MIKE 11 calibration at Neeleswaram. Sec 8.3.2.2: CWC proposes level forecasting at Neeleswaram from combined Idukki + Idamalayar discharges with a TRAVEL TIME OF 8 HOURS; Neeleswaram stage-discharge curve and cross-section give Warning Level 9 m, Danger Level 10 m; intervening-catchment unit hydrograph from ~12 IMD daily rain gauges. Sec 8.1 return-period-based inundation maps. Sec 8.4 water-level prediction downstream of any dam. States Idukki has released water on only three occasions ever: 1988, 1992, 2018.",
+      "relevance": "high - gives an officially published 8-hour Idukki+Idamalayar to Neeleswaram travel time (a direct calibration anchor for Muskingum K) and is the government's own precedent for 2D inundation on the Periyar",
+      "http_status": "200",
+      "license": "Government of India / CWC, published by KSDMA",
+      "last_activity": "authored Dec 2018, hosted since Oct 2020",
+      "download_hint": "curl -s -L -A \"Mozilla/5.0\" -o cwc_kerala_dec2018.pdf \"https://sdma.kerala.gov.in/wp-content/uploads/2020/10/Kerala_28122018_CWC_December-2018.pdf\"",
+      "caveat": "CWC explicitly notes 'the hourly dam inflow/outflow through rivers were not yet received from the project authorities' - so even CWC modelled Idukki/Idamalayar outflow with MIKE-11 rather than using KSEB's actual hourly records. Correlation curves and travel-time tables are figures, not tabulated numbers. Only 2018 was analysed for the Periyar reach."
+    },
+    {
+      "name": "Encardio Rite - Idukki Dam monitoring case study (the incumbent SHM/EWS system)",
+      "url": "https://www.encardio.com/blog/idukki-dam-monitoring",
+      "kind": "doc",
+      "what_it_provides": "Names the contract - 'Real-Time Early Warning Structure Health Monitoring and Data Interpretation (RESHMI)' under DRIP - and the stack: geotechnical + geodetic sensors (prism targets on the downstream intrados read by two robotic total stations with in-house control boxes), a weather station (air temp, wind speed/direction, RH, solar radiation, barometric pressure, rain gauge), seismic sensors, compact data loggers with DAS + interface unit + BusMux, GSM/GPRS modem transmission to a central server, and the proprietary 'Drishti' database management system.",
+      "relevance": "high - defines the actual technical boundary at Idukki: there is no open protocol endpoint, the integration is a vendor database export",
+      "http_status": "200",
+      "license": "vendor marketing content, all rights reserved",
+      "last_activity": "undated blog post, page live 2026-08-26",
+      "download_hint": "WebFetch or curl the page directly",
+      "caveat": "Vendor marketing, not a spec sheet: gives NO instrument COUNTS, no installation date, no protocol version, no sampling rate. Cross-check against DRIP documentation before quoting. The companion press piece (https://magazine.watertoday.org/news/national/early-warning-system-installed-on-idukki-dam, verified 200) adds that data goes to the KSEB monitoring station at Pallam, Kottayam and the dam monitoring & research station at Vazhathoppe, Idukki."
+    },
+    {
+      "name": "NDSA - Regulations notified under the Dam Safety Act 2021 (all 20)",
+      "url": "https://ndsa.gov.in/documents/dame-safety-act-regulation",
+      "kind": "standard",
+      "what_it_provides": "The complete notified regulation set with publish dates. The four that bind AquaSync: Reg 1 (13/03/2024) log books/database under s.18; Reg 5 (13/04/2024) EAP update interval under s.36(1)(b); Reg 8 (24/04/2024) minimum instrumentation sets and manner of installation under s.32(1); Reg 16 (20/05/2024) data requirements of hydro-meteorological stations under s.33(1); Reg 9 (24/04/2025) form, manner and time interval for forwarding the analysis of readings to the State Dam Safety Organisation under s.32(2). Also Reg 6 mandatory review of design flood under s.38(2)(b), Reg 12 risk assessment interval under s.35(2), Reg 18 vulnerability and hazard classification under s.17.",
+      "relevance": "high - this is the statutory basis for pitching AquaSync's telemetry layer as a compliance aid rather than a nice-to-have",
+      "http_status": "200",
+      "license": "Government of India, Official Gazette",
+      "last_activity": "latest regulation published 23/05/2025; files re-uploaded 2026-02",
+      "download_hint": "The site is a React SPA - the human route is /documents/dame-safety-act-regulation (note the 'dame' typo in the real route). For machine access see the API row below.",
+      "caveat": "The /documents/dam-safety-act-regulations spelling ALSO returns 200 but renders an empty shell; the working route is 'dame-safety-act-regulation'. WebFetch on either returns only the page header because the content is client-rendered."
+    },
+    {
+      "name": "NDSA public document API (undocumented but open)",
+      "url": "https://ndsa.gov.in/ndsa-backend/web/api/document-config",
+      "kind": "api",
+      "what_it_provides": "GET returns the document-type map: {guidelines, reports, order-and-notice, regulation} with frontendRoute/apiKey/apiEndpoint. Then POST https://ndsa.gov.in/ndsa-backend/web/regulation?lang=en with body {\"page\":0,\"sort\":\"\",\"search\":\"\"} returns {regulations:[{title, publish_date, due_date, pdf_title, pdf_link, ...}], pagination:{total_count:20, page_size:10, total_pages:2}}. Same pattern for guidelines / reports / order-and-notice.",
+      "relevance": "high - machine-readable, no auth, gives every Dam Safety Act regulation PDF link programmatically so AquaSync can track new notifications automatically",
+      "http_status": "200",
+      "license": "Government of India public data, no licence stated",
+      "last_activity": "queried live 2026-08-26, total_count=20",
+      "download_hint": "curl -s -X POST -H \"Content-Type: application/json\" -d '{\"page\":0,\"sort\":\"\",\"search\":\"\"}' \"https://ndsa.gov.in/ndsa-backend/web/regulation?lang=en\"",
+      "caveat": "UNDOCUMENTED and reverse-engineered from the SPA bundle (/assets/index-DC863BID.js, 7.4 MB) - it can change without notice. GET on /regulation returns a Drupal 11 404 page; it is POST-only. The pdf_link values come back with an http:// scheme that FAILS (curl 000) - rewrite to https:// before fetching. There is no /regulation/categories despite the frontend calling it."
+    },
+    {
+      "name": "NDSA Reg 9 - form, manner and time interval for forwarding instrument readings to the SDSO (s.32(2))",
+      "url": "https://ndsa.gov.in/ndsa-backend/web/sites/default/files/2026-02/the%20form%2C%20manner%20and%20time%20interval%20for%20forwarding%20the%20analysis%20of%20readings%20to%20the%20State%20Dam%20Safety%20Organisation%20under%20sub-section%20%282%29%20of%20section%2032%3B%20Reg%209.pdf",
+      "kind": "standard",
+      "what_it_provides": "The gazette notification of 24/04/2025 prescribing the form, manner and interval in which a dam owner must forward the ANALYSIS of instrument readings to the State Dam Safety Organisation.",
+      "relevance": "high - the single regulation that turns AquaSync's data pipeline into a statutory reporting instrument for KSEB",
+      "http_status": "200",
+      "license": "Government of India, Official Gazette",
+      "last_activity": "published 24/04/2025, file dated 2026-02",
+      "download_hint": "curl -s -L -A \"Mozilla/5.0\" -o reg9.pdf \"<the https URL above>\"  (1,906,475 bytes, 2 pages)",
+      "caveat": "SCANNED IMAGE - pypdf extracts 1 character from 2 pages. Needs OCR or manual reading to get the actual prescribed interval and form. Do not quote a cadence you have not read."
+    },
+    {
+      "name": "NDSA Reg 8 - minimum instrumentation in specified dams (s.32(1))",
+      "url": "https://ndsa.gov.in/ndsa-backend/web/sites/default/files/2026-02/the%20minimum%20number%20of%20set%20of%20instrumentations%20in%20the%20specified%20dams%20and%20the%20manner%20of%20their%20installation%20under%20sub-section%20%281%29%20of%20section%2032%3B%20Reg%208.pdf",
+      "kind": "standard",
+      "what_it_provides": "Gazette notification of 24/04/2024 prescribing the minimum number of sets of instrumentation at each specified dam and the manner of installation.",
+      "relevance": "high - defines the legally required sensor floor that AquaSync's telemetry layer can be mapped onto for Idukki and Idamalayar",
+      "http_status": "200",
+      "license": "Government of India, Official Gazette",
+      "last_activity": "published 24/04/2024, file dated 2026-02",
+      "download_hint": "curl -s -L -A \"Mozilla/5.0\" -o reg8.pdf \"<the https URL above>\"  (1,725,803 bytes, 2 pages)",
+      "caveat": "Scanned image, 1 character extractable from 2 pages. OCR required."
+    },
+    {
+      "name": "NDSA Reg 16 - data requirements of hydro-meteorological stations near specified dams (s.33(1))",
+      "url": "https://ndsa.gov.in/ndsa-backend/web/sites/default/files/2026-02/the%20data%20requirements%20of%20hydro-meteorological%20stations%20in%20the%20vicinity%20of%20specified%20dams%20under%20sub-section%20%281%29%20of%20section%2033%3B%20Reg%2016.pdf",
+      "kind": "standard",
+      "what_it_provides": "Gazette notification of 20/05/2024 prescribing what hydro-meteorological data a dam owner must collect at stations in the vicinity of a specified dam.",
+      "relevance": "high - this is the legal definition of the rainfall/met inputs AquaSync's SCS-CN module consumes, so aligning variable names and intervals to it is free credibility",
+      "http_status": "200",
+      "license": "Government of India, Official Gazette",
+      "last_activity": "published 20/05/2024, file dated 2026-02",
+      "download_hint": "curl -s -L -A \"Mozilla/5.0\" -o reg16.pdf \"<the https URL above>\"  (328,230 bytes, 1 page)",
+      "caveat": "Scanned image, ZERO extractable characters. Smallest of the four (1 page) so easiest to OCR first."
+    },
+    {
+      "name": "The Dam Safety Act, 2021 (Act 41 of 2021) - full text",
+      "url": "https://wrd.maharashtra.gov.in/Site/Upload/Pdf/DSA_2021_act.pdf?MenuID=1474",
+      "kind": "standard",
+      "what_it_provides": "Complete statute. Sections that matter here: s.18 log books/database; s.30 dam safety unit; s.31 inspections; s.32 instrumentation and forwarding of reading analysis to the SDSO; s.33 hydro-meteorological stations; s.34 seismological stations; s.35 risk assessment; s.36 emergency action plan; s.38 comprehensive dam safety evaluation and design-flood review; s.46 dams other than specified dams; Chapter X offences (up to 1 year imprisonment, 2 years where non-compliance causes loss of life or imminent danger).",
+      "relevance": "high - the primary legal instrument; cite section numbers, not summaries",
+      "http_status": "200",
+      "license": "Government of India statute, public domain",
+      "last_activity": "in force 30 Dec 2021; this mirror hosted by Maharashtra WRD",
+      "download_hint": "curl -s -L -A \"Mozilla/5.0\" -o dsa2021.pdf \"https://wrd.maharashtra.gov.in/Site/Upload/Pdf/DSA_2021_act.pdf?MenuID=1474\"",
+      "caveat": "This is a STATE MIRROR, not indiacode.nic.in. The canonical India Code URLs that search engines return - https://www.indiacode.nic.in/bitstream/123456789/17002/1/aA2021-41.pdf and https://www.indiacode.nic.in/handle/123456789/17002?locale=en - both returned 404 to curl even with full browser headers. UNEP LEAP holds a verified record page at https://leap.unep.org/en/countries/in/national-legislation/dam-safety-act-2021-no-41-2021 (200)."
+    },
+    {
+      "name": "PIB - 'Dam Rehabilitation: Strengthening Infrastructure through Policy and Technology' (15 May 2026)",
+      "url": "https://static.pib.gov.in/WriteReadData/specificdocs/documents/2026/may/doc2026515870801.pdf",
+      "kind": "doc",
+      "what_it_provides": "8 pp, current official numbers: India 3rd worldwide with 6,628 specified dams (6,545 operational, 83 under construction), ~330 BCM gross storage; 26% (1,681) over 50 years old, 291 over 100; 98.5% (6,448) state-owned. DRIP Phase I (2012-2021) covered 223 dams across 7 states INCLUDING KERALA. DRIP II & III operationalised Oct 2021, outlay Rs 10,211 crore (World Bank + AIIB), 736 dams / 19 states / 3 central agencies. Dam Safety Act in force 30 Dec 2021; four-tier NCDS / NDSA / SCDS / SDSO structure; all 31 dam-owning states have constituted SDSOs; 20 regulations gazetted; all 6,628 dams registered on DHARMA; ~13,000 inspections/year; Rapid Risk Screening done for 5,553 dams; April-2024 inspection regulation creates Category I/II/III (post-monsoon 2025: 3 dams Cat I, 188 Cat II). Act mandates 'Inflow Forecasting, Early Warning System, Integrated Operation of Reservoirs'.",
+      "relevance": "high - the most current, quotable, single-source framing of the regulatory landscape AquaSync is entering, and it names Kerala as a DRIP-I state",
+      "http_status": "200",
+      "license": "Press Information Bureau, Government of India",
+      "last_activity": "15 May 2026",
+      "download_hint": "curl -s -L -A \"Mozilla/5.0\" -o pib_dam.pdf \"https://static.pib.gov.in/WriteReadData/specificdocs/documents/2026/may/doc2026515870801.pdf\" then pypdf (text extracts cleanly, ~8 pages)",
+      "caveat": "A PIB backgrounder, not a regulation - use it for framing and figures, cite the Act and the gazette regulations for anything legal. WebFetch's summariser failed on this PDF (reported it as corrupt binary); pypdf extracts it fine, so download and parse locally."
+    },
+    {
+      "name": "NDSA Rapid Risk Screening / DHARMA dashboard API",
+      "url": "https://rrssd.ndsa.gov.in/api/dharma/dashboard",
+      "kind": "api",
+      "what_it_provides": "Open GET returning JSON: {\"status\":200,\"body\":{\"success\":true,\"data\":[{\"year\":2023,\"premonsoon\":208,\"postmonsoon\":354},{\"year\":2024,\"premonsoon\":6352,\"postmonsoon\":6430},{\"year\":2025,\"premonsoon\":6486,\"postmonsoon\":6544},{\"year\":2026,\"premonsoon\":6536,\"postmonsoon\":0}]}}",
+      "relevance": "medium - proves NDSA does expose public JSON, and quantifies the national inspection cadence AquaSync's outputs would slot into",
+      "http_status": "200",
+      "license": "Government of India public data, no licence stated",
+      "last_activity": "queried live 2026-08-26 (2026 pre-monsoon 6,536 already logged)",
+      "download_hint": "curl -s \"https://rrssd.ndsa.gov.in/api/dharma/dashboard\"",
+      "caveat": "Aggregate counts only - no per-dam data, no Kerala breakdown, no instrument readings. A sibling endpoint https://rrssd.ndsa.gov.in/api/getdatadashboard appears in the SPA bundle but I did not verify its response."
+    },
+    {
+      "name": "CERT-In Directions under s.70B(6) IT Act 2000, dated 28 April 2022",
+      "url": "https://www.cert-in.org.in/PDF/CERT-In_Directions_70B_28.04.2022.pdf",
+      "kind": "standard",
+      "what_it_provides": "The binding cyber-security directions: mandatory reporting of specified cyber incidents to CERT-In within SIX HOURS of noticing them; enabling and maintaining logs of all ICT systems for a ROLLING 180 DAYS, maintained WITHIN INDIA, and produced to CERT-In on demand or with an incident report; synchronised time source (NIC/NPL NTP); designated point of contact.",
+      "relevance": "high - directly sets AquaSync's logging, retention and hosting obligations if it touches KSEB systems or handles KSEB data",
+      "http_status": "200",
+      "license": "Government of India, MeitY/CERT-In",
+      "last_activity": "issued 28 April 2022, still the operative direction",
+      "download_hint": "curl -s -L -A \"Mozilla/5.0\" -o certin2022.pdf \"https://www.cert-in.org.in/PDF/CERT-In_Directions_70B_28.04.2022.pdf\"",
+      "caveat": "Applies to 'service provider, intermediary, data centre, body corporate and Government organisation' - broad enough that AquaSync-as-a-service almost certainly falls in scope, but get legal advice rather than assuming. The MeitY mirror at meity.gov.in/writereaddata/files/CERT-In_Directions_70B_28.04.2022.pdf returns 404."
+    },
+    {
+      "name": "CEA (Cyber Security in Power Sector) Guidelines, 2021",
+      "url": "https://www.aegcl.co.in/wp-content/uploads/2022/06/24062022_Guidelines_on_Cyber_Security_in_Power_Sector_2021.pdf",
+      "kind": "standard",
+      "what_it_provides": "Central Electricity Authority guidelines binding on all 'responsible entities' in the power supply system - generation utilities, transmission utilities, load dispatch centres, distribution utilities, exchanges, regional power committees, regulators, and their equipment suppliers and consultants. Requires IT systems audited at least every SIX MONTHS and OT systems at least ANNUALLY; identification and classification of OT assets (SCADA, PLC, RTU); mandatory CEA-designated cyber-security training for all IT/OT O&M personnel within 90 days of notification. IEC 62443 is the referenced OT baseline.",
+      "relevance": "high - KSEB is a generation utility and Kerala SLDC is a load dispatch centre, so these guidelines govern any AquaSync connection to either",
+      "http_status": "200",
+      "license": "Central Electricity Authority, Government of India",
+      "last_activity": "issued 2021, amended Sept 2022; this AEGCL mirror uploaded June 2022",
+      "download_hint": "curl -s -L -A \"Mozilla/5.0\" -o cea_cyber_2021.pdf \"https://www.aegcl.co.in/wp-content/uploads/2022/06/24062022_Guidelines_on_Cyber_Security_in_Power_Sector_2021.pdf\"",
+      "caveat": "This is a STATE UTILITY MIRROR (Assam Electricity Grid Corporation), not cea.nic.in - the CEA site is live (cea.nic.in returns 200) but I did not locate the guideline PDF on it. The Sept 2022 amendment is NOT included in this file. Verify against the CEA original before relying on a specific clause."
+    },
+    {
+      "name": "CWC - Flood Forecasting / Hydrological Observation",
+      "url": "https://cwc.gov.in/flood-forecasting-hydrological-observation",
+      "kind": "doc",
+      "what_it_provides": "The national flood-forecast network: 325 forecast stations covering 197 low-lying areas/cities/towns plus 128 RESERVOIRS, across 20 river basins; 878 hydrological and hydro-meteorological sites operated by CWC for gauge, discharge, sediment and water quality; ~1,054 telemetry-equipped stations. Data transmitted by wireless, telephone/mobile, VSAT and satellite telemetry. Inflow forecasts at the 128 reservoirs are provided to assist project authorities in reservoir regulation.",
+      "relevance": "high - establishes the ADVISORY posture (CWC forecasts assist, the dam owner decides) that AquaSync should adopt verbatim, and confirms Neeleswaram/Vandiperiyar exist as CWC hydrological observation stations on the Periyar",
+      "http_status": "200",
+      "license": "Government of India / CWC",
+      "last_activity": "live 2026-08-26",
+      "download_hint": "curl -s -L \"https://cwc.gov.in/flood-forecasting-hydrological-observation\"",
+      "caveat": "Narrative page, no station list download, no API. It does NOT confirm whether any Periyar station is a FORECAST station (as opposed to an observation station) - the Dec-2018 CWC report suggests Kerala forecast stations were still being proposed at that time."
+    },
+    {
+      "name": "CWC Advisory Flood Forecast (AFF) - methodology",
+      "url": "https://aff.india-water.gov.in/method.php",
+      "kind": "doc",
+      "what_it_provides": "AFF methodology: coupled hydrologic (rainfall-runoff) plus hydrodynamic river models; 20 river basin models covering the CWC flood forecasting network; models re-run EVERY THREE HOURS day and night; SEVEN-DAY lead time; inputs are satellite and rain-gauge observed rainfall plus IMD GFS and WRF forecast rainfall, river cross-sections, historical discharge and water level, bathymetry.",
+      "relevance": "high - the operational template for how a government-accepted advisory forecast is described, run and caveated in India; also the concrete 3-hourly / 7-day cadence AquaSync's forecast layer should aim to match or beat",
+      "http_status": "200",
+      "license": "Government of India / CWC",
+      "last_activity": "live 2026-08-26 (beta portal)",
+      "download_hint": "curl -s -L \"https://aff.india-water.gov.in/method.php\"",
+      "caveat": "Portal is labelled Beta. No Kerala or Periyar mention on the methodology page - AFF's 20 basin models may not include the Periyar. No public API. The page's own caveat: 'the accuracy of the model is limited by the quality of data available.' Companion operational portal https://ffs.india-water.gov.in/ verified 200 but is a Kendo/Angular SPA with no exposed JSON endpoint in its served HTML."
+    },
+    {
+      "name": "OGC SensorThings API Part 1: Sensing, Version 1.1 (OGC 18-088)",
+      "url": "https://docs.ogc.org/is/18-088/18-088.html",
+      "kind": "standard",
+      "what_it_provides": "The full Implementation Standard: OData-derived REST model with Thing / Location / Datastream / Sensor / ObservedProperty / Observation / FeatureOfInterest entities, full CRUD, $expand/$filter/$select query options, and MQTT extension for publish/subscribe on observations.",
+      "relevance": "medium - the right standard IF an agency partner demands sensor-observation interoperability; the MQTT extension is the natural bridge from a Sparkplug B edge to a standards-compliant store",
+      "http_status": "200",
+      "license": "OGC standard, freely available",
+      "last_activity": "v1.1 is current",
+      "download_hint": "curl -s -L \"https://docs.ogc.org/is/18-088/18-088.html\"",
+      "caveat": "NOT adopted by India-WRIS, NHP, CWC or KSDMA - adopting it buys international interoperability, not Indian integration. The data model fits OBSERVATIONS well and model FORECASTS badly; use EDR for forecast output."
+    },
+    {
+      "name": "OGC API - Environmental Data Retrieval Standard (OGC 19-086r6)",
+      "url": "https://docs.ogc.org/is/19-086r6/19-086r6.html",
+      "kind": "standard",
+      "what_it_provides": "Lightweight query interface family (position, radius, area, cube, trajectory, corridor, items, locations, instances) for spatio-temporal data - designed exactly for asking 'give me the time series at this point for this window' against gridded or model output.",
+      "relevance": "high - the lowest-effort way to make AquaSync's reservoir-level, discharge and inundation output machine-consumable by any agency, via pygeoapi",
+      "http_status": "200",
+      "license": "OGC standard, freely available",
+      "last_activity": "published Implementation Standard",
+      "download_hint": "curl -s -L \"https://docs.ogc.org/is/19-086r6/19-086r6.html\"",
+      "caveat": "Standards conformance is worth nothing on its own if no Indian counterparty consumes EDR - and none currently does. Justify it as future-proofing plus a clean internal API, not as an integration deliverable."
+    },
+    {
+      "name": "pygeoapi",
+      "url": "https://github.com/geopython/pygeoapi",
+      "kind": "repo",
+      "what_it_provides": "Python server implementing the OGC API suite (Features, Coverages, Tiles, Records, Processes, EDR) with a plugin provider mechanism; deploys as a Flask/Starlette app over an existing data source.",
+      "relevance": "high - pure Python, MIT, drops into AquaSync's existing stack, ~1-2 days to a working OGC API - EDR endpoint over the model's time series",
+      "http_status": "200",
+      "license": "MIT",
+      "stars": "623",
+      "last_activity": "pushed 2026-08-18; PyPI 0.24.0 released 2026-07-28",
+      "download_hint": "pip install pygeoapi==0.24.0  (requires Python >=3.12)",
+      "caveat": "0.24.0 requires Python >=3.12 - check AquaSync's interpreter before committing. 40 open issues. You must write an EDR provider plugin for your own data model; the shipped providers cover files/PostGIS/xarray, not a bespoke reservoir model."
+    },
+    {
+      "name": "FROST-Server (Fraunhofer IOSB) - OGC SensorThings reference implementation",
+      "url": "https://github.com/FraunhoferIOSB/FROST-Server",
+      "kind": "repo",
+      "what_it_provides": "The first complete open-source official reference implementation of the OGC SensorThings API, with a plugin system that can extend or replace the data model; ships as Docker images (fraunhoferiosb/frost-server on Docker Hub).",
+      "relevance": "medium - use only if a counterparty mandates SensorThings conformance; otherwise it is a Java+PostGIS operational burden beside a Python system",
+      "http_status": "200",
+      "license": "LGPL-3.0",
+      "stars": "227",
+      "last_activity": "pushed 2026-08-24",
+      "download_hint": "docker pull fraunhoferiosb/frost-server ; Python client: pip install frost-sta-client==1.1.53",
+      "caveat": "Java + PostgreSQL/PostGIS + Docker - a whole second runtime. 86 open issues. The Python client frost-sta-client (LGPL3, 1.1.53, released 2025-09-19) is maintained separately and less actively than the server."
+    },
+    {
+      "name": "pymodbus",
+      "url": "https://github.com/pymodbus-dev/pymodbus",
+      "kind": "repo",
+      "what_it_provides": "Full Modbus implementation in Python - client, server and simulator, sync and async APIs, TCP/RTU/ASCII/TLS.",
+      "relevance": "low for KSEB integration, high as a bench tool - Modbus is not how a dam SCADA in India exposes data northbound, but individual loggers and sensors often speak it",
+      "http_status": "200",
+      "license": "BSD-3-Clause (GitHub metadata says NOASSERTION; PyPI declares BSD-3-Clause)",
+      "stars": "2762",
+      "last_activity": "pushed 2026-08-25; PyPI 3.15.0 released 2026-08-13",
+      "download_hint": "pip install pymodbus==3.15.0  (requires Python >=3.10)",
+      "caveat": "Modbus carries no timestamp, no quality flag and no authentication. Anything you read has the poll time, not the measurement time - unacceptable for a flood record. Zero open issues on the repo (aggressively triaged), which can mask unresolved questions."
+    },
+    {
+      "name": "opcua-asyncio (asyncua)",
+      "url": "https://github.com/FreeOpcUa/opcua-asyncio",
+      "kind": "repo",
+      "what_it_provides": "Async Python OPC-UA client and server: browsing, subscriptions, historical data access, method calls, security policies and certificate handling.",
+      "relevance": "high - OPC-UA is the realistic read-only northbound boundary a modern SCADA/EMS will expose, and Kerala SLDC has a sanctioned SCADA/EMS replacement at Kalamassery that will offer it",
+      "http_status": "200",
+      "license": "LGPL-3.0",
+      "stars": "1468",
+      "last_activity": "pushed 2026-08-24; PyPI asyncua 2.0.1 released 2026-06-29",
+      "download_hint": "pip install asyncua==2.0.1  (requires Python >=3.10)",
+      "caveat": "LGPL-3.0 - fine as an imported library in a service, needs review if AquaSync is ever statically linked or shipped. 244 open issues. The 2.x major bump (June 2026) may contain breaking API changes versus tutorials written for 1.x. Getting certificates and a Basic256Sha256 policy working against a real utility server is where the schedule risk lives, not the Python."
+    },
+    {
+      "name": "iec104-python / c104 (Fraunhofer FIT) - IEC 60870-5-104 in Python",
+      "url": "https://github.com/Fraunhofer-FIT-DIEN/iec104-python",
+      "kind": "repo",
+      "what_it_provides": "Object-oriented Python module wrapping lib60870-C to simulate and speak IEC 60870-5-104 as SCADA master or RTU, with state structures and Python callback handlers.",
+      "relevance": "medium-high - IEC 101/104 is the protocol family Indian transmission-level SCADA actually uses (not DNP3), so this is the correct client if KSEB ever offers a direct RTU-level monitor-direction feed",
+      "http_status": "200",
+      "license": "GPL-3.0",
+      "stars": "101",
+      "last_activity": "pushed 2026-08-06; PyPI c104 2.2.1 released 2025-04-23",
+      "download_hint": "pip install c104==2.2.1  (requires Python >=3.7)",
+      "caveat": "GPL-3.0 IS A REAL BLOCKER if AquaSync is ever distributed rather than operated as a service - and the underlying mz-automation/lib60870 (592 stars, pushed 2026-07-15) is GPL-3.0 too, with a commercial licence available from MZ Automation. PyPI release is ~16 months behind the repo. IEC-104 has no native authentication; IEC 62351 security is a bolt-on rarely deployed in India. 22 open issues."
+    },
+    {
+      "name": "libiec61850 (MZ Automation) - IEC 61850 including the -7-410 hydro profile",
+      "url": "https://github.com/mz-automation/libiec61850",
+      "kind": "repo",
+      "what_it_provides": "C implementation of IEC 61850 client/server (MMS, GOOSE, Sampled Values) - the substrate for IEC 61850-7-410, which defines the logical nodes and data objects for hydropower plants (gates, turbines, reservoirs).",
+      "relevance": "low today, strategic later - nothing at Idukki speaks IEC 61850, but -7-410 is the only standard that would eventually let a dam expose reservoir and gate state semantically rather than as raw registers",
+      "http_status": "200",
+      "license": "GPL-3.0 (commercial licence available)",
+      "stars": "1212",
+      "last_activity": "pushed 2026-08-26",
+      "download_hint": "git clone https://github.com/mz-automation/libiec61850 ; no first-class Python binding - budget C/pybind11 work",
+      "caveat": "GPL-3.0 with the same distribution problem as lib60870. No maintained Python binding. 243 open issues. Documented IEC 61850 hydro deployments are dominated by Spain (>10 projects); Indian hydro adoption is not evidenced in anything I could verify."
+    },
+    {
+      "name": "Eclipse Tahu - MQTT Sparkplug B reference implementations",
+      "url": "https://github.com/eclipse-tahu/tahu",
+      "kind": "repo",
+      "what_it_provides": "Reference client libraries and compatible implementations for the Eclipse Sparkplug specification (currently v3.0), defining MQTT topic namespace, protobuf payload encoding, birth/death certificates and device state management for industrial telemetry.",
+      "relevance": "medium-high for AquaSync's OWN edge devices (a stage sensor at Neeleswaram, a Kochi tide gauge) over unreliable GPRS - Sparkplug's birth/death and state-of-health semantics are exactly what the Encardio GSM/GPRS failure mode needs",
+      "http_status": "200",
+      "license": "EPL-2.0",
+      "stars": "264",
+      "last_activity": "pushed 2026-08-10",
+      "download_hint": "Spec PDF (verified 200): https://sparkplug.eclipse.org/specification/version/3.0/documents/sparkplug-specification-3.0.0.pdf ; Python: pip install pysparkplug==0.6.1",
+      "caveat": "Tahu itself is JAVA-centric (language=Java). The Python option, matteosox/pysparkplug, is a single-maintainer project - 24 stars, last push 2025-05-10, PyPI 0.6.1 released 2025-05-10, Apache-2.0, Python >=3.9. Thin bus factor; read the code before depending on it. Sparkplug cannot be applied to KSEB's existing SCADA without KSEB's active participation."
+    }
+  ],
+  "dead_ends": [
+    "'OGC HydroDART' DOES NOT EXIST. A targeted search for the exact term returns only WaterML 2.0, HY_Features and GroundwaterML2 - nothing named HydroDART at OGC or anywhere else. This is another fabricated name from the planning material, in the same family as the repeated-ASIN problem. The real OGC water/hydro stack is: SensorThings API v1.1 (OGC 18-088), OGC API - EDR (OGC 19-086r6), WaterML 2.0 Part 1 Timeseries, and WaterML 2 Part 3 HY_Features (OGC 14-111r6). Use those names.",
+    "INDIA-WRIS IS UNREACHABLE FROM OUTSIDE INDIA - do not plan an integration you cannot test. https://indiawris.gov.in/wris/ times out (curl 000 after 21 s, and WebFetch gets ECONNREFUSED on 164.100.85.36:443). Same for the ArcGIS REST tier https://arc.indiawris.gov.in/server/rest/services?f=json (000) and https://indiawris.gov.in/downloads/India-WRIS-HelpManual.pdf (000). Also dead from here: http://nhp.mowr.gov.in/ (000). India-WRIS is an ArcGIS-Server stack (arc.indiawris.gov.in/server/rest/services/...) returning JSON/geoJSON, but it is geo-fenced. Any India-WRIS work needs an India-resident endpoint or a VPN, and must be budgeted as such. NWIC's own site https://nwic.gov.in/ IS reachable (200) and hosts India-WRIS documentation PDFs.",
+    "DHARMA AND THE CWC DAM SAFETY PORTAL ARE ALSO GEO-FENCED. https://damsafety.cwc.gov.in/ and https://damsafety.cwc.gov.in/dharma/Home1/index.php return curl 000 and WebFetch ENOTFOUND (damsafety.cwc.gov.in does not even resolve). https://dharma.cwc.gov.in/ likewise 000. I could not inspect DHARMA directly. What IS reachable: cwc.gov.in itself (200), ndsa.gov.in (200) and rrssd.ndsa.gov.in (200). Everything I report about DHARMA comes from the PIB backgrounder and NDSA's API, not from the platform.",
+    "THE PYTHON DNP3 ECOSYSTEM IS ABANDONED - do not spend a day on it. dnp3/opendnp3 is ARCHIVED (335 stars, last push 2022-05-18). ChargePoint/pydnp3: 38 stars, last push 2022-03-28, 22 open issues, and PyPI pydnp3 is still 0.1.0 from 2018-06-07. VOLTTRON/dnp3-python: 20 stars, last push 2024-12-15, 23 open issues. Compounding this, DNP3 is a North American utility convention - Indian transmission SCADA runs IEC 60870-5-101/104 and ICCP. If a DNP3 requirement ever appears, buy a commercial stack or a protocol gateway; do not build on these bindings.",
+    "gost/server (Go SensorThings implementation) IS DEAD: 61 stars, last push 2020-07-07, 22 open issues. Six years stale. FROST-Server is the only maintained open SensorThings server.",
+    "THE CANONICAL INDIA CODE URLs FOR THE DAM SAFETY ACT 2021 RETURN 404, despite being the top search result. Both https://www.indiacode.nic.in/bitstream/123456789/17002/1/aA2021-41.pdf and https://www.indiacode.nic.in/handle/123456789/17002?locale=en give 404 to curl even with full Chrome headers and a Google referer. Use the Maharashtra WRD mirror (https://wrd.maharashtra.gov.in/Site/Upload/Pdf/DSA_2021_act.pdf?MenuID=1474, 200) or the UNEP LEAP record (200) instead.",
+    "THE C-FLOOD PORTAL HAS NO VERIFIABLE URL. C-FLOOD is real (launched 2 July 2025 by the Union Minister of Jal Shakti; CWC + C-DAC + NRSC; 2-D hydrodynamic; village-level; 48 h ahead; Mahanadi on NSM HPC at C-DAC Pune, Godavari and Tapi from NRSC under NHP) but every plausible portal address I tried failed: https://cflood.gov.in/ (000) and https://cflood.cdac.in/ (000). Only the PIB release is verifiable. Also note it does NOT cover the Periyar or Kerala.",
+    "KSEB'S 2019 JAN-MAY MONTHLY FILES ARE GONE. Package IDs 310-314 on dams.kseb.in 302-redirect to http://kseboa.in/wp-content/uploads/2020/05/January-2019.xlsx and kseboa.in does not resolve (curl 000 on both the host root and the file). The usable KSEB archive therefore starts at June 2019 (id 315), not January 2019 as the listing page implies. Do not promise Jan-May 2019.",
+    "KERALA SLDC'S HISTORICAL DATE FORM DOES NOT WORK HEADLESSLY. sldckerala.com/index.php?id=7 carries a POST form (hidden txtDate=943900200, submit sbtstore=SHOW) plus a calendar iframe writing a date1 field in a malformed 'YYYY-MM/DD-YY' shape. I tried POSTing txtDate as unix timestamps for 2018/2019/2021/2026 dates and date1 in three formats, to both index.php and index.php?id=7 - every response came back with the SAME current-day header. It likely needs a PHP session established through cal/calendar_form.php, or a real browser. Treat SLDC as a forward-scraping daily feed only.",
+    "THE KSEB LIVE DASHBOARD HAS NO USEFUL HISTORY, AND ITS OWN DATE FORMAT IS WRONG. kseb.in/dashboard/view/waterlevel accepts ?date= but ONLY in ISO YYYY-MM-DD; the DD-MM-YYYY value its own <input type=date> renders (26-08-2026) silently returns an empty table, which looks like 'no data for that day' rather than a format error. Verified data exists for 2026-08-01 through 2026-08-26 and for nothing on or before 2026-07-01. Separately, https://www.keralafloodwatch.in/ (200) claims to aggregate IMD+CWC+KSDMA+KSEB+Google Flood Hub+Sentinel-1+NASA GPM across 44 rivers and 81 dams with '100% Official Source Attribution' - but it is not on a gov.in domain, I found no About/ownership page, and it advertises no API. Treat it as an UNVERIFIED third-party aggregator, not an official KSDMA feed, and do not cite it as a source of record."
+  ],
+  "_dimension_key": "integration",
+  "_stage": "research"
+}

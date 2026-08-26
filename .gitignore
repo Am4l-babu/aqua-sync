@@ -35,3 +35,8 @@ Thumbs.db
 research/repos/
 research/sources/datasets/*
 !research/sources/datasets/.gitkeep
+# Downloaded papers and official reports: ~100 MB, and some are journal
+# articles whose redistribution terms are not ours to assume. PROVENANCE.json
+# records exactly what was fetched and from where, so the set is reproducible.
+research/sources/papers/*
+!research/sources/papers/.gitkeep

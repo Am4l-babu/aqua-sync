@@ -1,0 +1,512 @@
+{
+  "dimension": "Open-source river routing, hydraulics and 2D flood inundation (plus the DEM / hydrography / gauge-data supply chain needed to drive them) for the Periyar basin",
+  "key_findings": [
+    "BIGGEST RESULT - the Muskingum calibration gap (#2) and part of the 2018 gap (#1) are closable TODAY with a free, no-login CSV. India's National Water Data Portal (nwdp.nwic.gov.in, CKAN, licence 'Other (Open)') publishes CWC 'River Water Level (Manual - Hourly)' by BASIN CODE, not by state. The Periyar sits in basin 031 'West flowing rivers from Tadri to Kanyakumari'. I actually downloaded both files (260 MB + 234 MB, HTTP 200, no auth) to C:\\Users\\AML\\AppData\\Local\\Temp\\claude\\d--aqua-sync\\0c88b1d1-311a-436c-be10-175528885a33\\scratchpad\\wl031.csv and wl031b.csv and parsed them.",
+    "NEELEESWARAM gauge on the Periyar (lat 10.18361111, lon 76.49555556, RL_of_zeroGauge = -3.0 m) has 31,172 hourly stage readings 2015-06-01 -> 2020-12-31 and 25,643 more 2021-01-01 -> 2025-12-31. The complete August 2018 flood is present at hourly resolution: 6.12 m at 2018-08-14 00:00 rising to a peak of 12.40 m at 2018-08-16 16:00. This is a genuine, gauged, hourly 2018 hydrograph - it directly contradicts the assumption that no pre-2020 Periyar operational data exists.",
+    "A second Periyar gauge, ARANGALI (10.28611111, 76.32222222, RL_zero -2.0 m), has 30,186 + 27,460 hourly readings over the SAME window (4.27 m -> 9.13 m across 14-16 Aug 2018). Two gauges on one river with synchronous hourly stage is exactly the input a Muskingum K/x least-squares or direct-optimisation fit needs. Cross-check the reach direction before use: portal coordinates put ARANGALI north-west of NEELEESWARAM, and ARANGALI is commonly associated with the Chalakudy, so confirm topology against MERIT-Basins before assuming an inflow->outflow pair.",
+    "The SAME basin-031 file carries reservoir levels: 'Idukki (Eb)/Idukki Arch Reservoir' (9.84N, 76.97E) 3,532 readings 2019-06-10 -> 2020-12-31 plus 9,477 readings 2021-05-12 -> 2025-12-31, and 'Idamalayar Reservoir' (10.22N, 76.70E) 3,621 + 9,561 readings over the same spans, at roughly 3-hourly cadence. Verified values: Idukki 722.31 m at 2020-08-13 01:00 and 728.69 m at 2021-10-15 01:00; Idamalayar 152.58 m at 2020-08-13 01:00 and 164.23 m at 2021-10-15 01:00. This starts 14 months BEFORE the amith-vp dataset (2020-08-13) and spans the corrupt 2020-09-25 -> 2021-04-30 window, so it is an independent source to both extend and repair that record, and an independent validator for the October 2021 flagship replay (currently checked only against the KSEB bulletin feed). Caveat: it does NOT reach back to 2018, and the columns contain some mislabelled rows (Idamalayar max 704.79 m, Idukki min 2.79 m) so QC-filter to plausible ranges before use.",
+    "Daily discharge is a separate, also-free NWDP dataset ('River Discharge (Manual - Daily), CWC', Kerala resources for 1950-2000, 2001-2025, 2026-2030). I downloaded the 2001-2025 Kerala file (39.4 MB, 217,538 rows, 40 stations). NEELEESWARAM has 8,478 daily discharge values 2001-01-01 -> 2025-12-31. Record max on file is 6,323.5 m3/s on 2013-08-05; 2018-08-15 reads 6,166.4 m3/s. The October 2021 case study is fully covered (2021-10-12 = 1,387.1 m3/s, 2021-10-09 = 695.5 m3/s).",
+    "VERIFIED NEGATIVE with a workaround: the daily discharge record has a 7-day hole from 2018-08-16 to 2018-08-22 - precisely across the flood peak. The 8,800 cumec / 16 Aug 14:00 figure everyone cites comes from a CWC report figure, NOT from the public daily series. But the hourly STAGE for those same days IS present. Fit a rating curve on the overlapping (hourly h, daily Q) pairs and you recover the 2018 peak discharge yourself. This is exactly the method the GUARDIAN paper (Sci Data 2024) used to build sub-daily discharge for 210 Indian stations.",
+    "There is NO hourly discharge for the Periyar anywhere public. CWC's 'River Discharge (Telemetry - Hourly)' dataset on NWDP has only 14 basin resources and basin 031 is not among them. Hourly stage + daily discharge + your own rating curve is the only route.",
+    "The CWC report 'Study Report Kerala Floods of August 2018' (Hydrology (S) Dte, Sept 2018), hosted on the KSDMA site itself, is the authoritative 2018 narrative and is full of usable numbers: Idukki 731.82 m at 10 Aug 00:00 with only ~40 MCM cushion; pre-release to 750 cumec spill + 118 cumec powerhouse by 17:00 on 10 Aug, dropping the level to 730.80 m (~90 MCM cushion); peak inflow 2,532 cumec at 22:00 on 15 Aug attenuated to 1,500 cumec spill (41% attenuation); FRL 732.43 m touched at 01:00 on 17 Aug. Idamalayar: 168.06 m on 8 Aug (97% of live storage), only ~60 MCM between FRL 169.0 and MWL 170.3, peak inflow 1,164 cumec on 16 Aug, average spill 1,271 cumec, ZERO attenuation. Neeleeswaram catchment = 4,033 km2; Mullaperiyar 637 km2; Idukki free catchment 605 km2; Idamalayar 472 km2. Text extracted to scratchpad\\cwc.txt.",
+    "t-route looks alive but its master branch is not. GitHub pushed_at is 2026-08-18 (55 stars, Apache-2.0), but the last commit ON MASTER is 2025-01-30 and the last tagged release is v2.4.0 from 2024-10-02. All 2026 activity sits in open NGWPC contract-delivery PRs (#882, #883). The README also concedes the code is still 'bespoke for NWM' and needs NHDPlus-HR or HY_Features hydrofabric. Requires GCC gfortran + NetCDF-Fortran 4.6.1 + ./compiler.sh, and Windows users must go through WSL2/Ubuntu. Realistically 1-2 weeks to force an arbitrary Indian network through it, for a Muskingum-Cunge you already have.",
+    "river-route (PyPI 2.1.1, released 2026-04-12, BSD-3-Clause-Clear, only 4 stars) is a much cheaper read but has NO calibration module. Its routing-parameters file is a single parquet with exactly four columns - river_id, downstream_river_id, k, x - rows sorted topologically, outlets flagged -1. Requires Python >=3.12 and numba/scipy/geopandas/xarray. Worth an afternoon as a reference implementation for sparse-matrix Muskingum, not as the calibrator.",
+    "Differentiable Muskingum-Cunge is research-only at the repo level but shipped as a global dataset. mhpi/dMC-Juniata-hydroDL2 is 11 stars, CC-BY-4.0, last push 2024-04-14, hard-wired to the Susquehanna/Juniata (needs a separate Zenodo graph download), Hydra-configured, no issues or PRs - paper replication, not a library. The living successor is DeepGroundwater/ddr (Apache-2.0, 11 stars, pushed 2026-08-19). Far more useful to AquaSync: the delta-HBV2 / delta-MC2 global run publishes streamflow for 2.94 million MERIT reaches, 1980-2020 (Zenodo 20684429, v5 dated 2026-06-18, 130.9 GB in 8 continent zips, Asia includes the Periyar). Licence is a PSU Non-Commercial Software License Agreement, and the record does not publish the learned Manning-n / channel-geometry parameters - only discharge.",
+    "For 2D inundation, SFINCS is the clear best fit and the only option that does not demand a compiler or a week of DEM conditioning. Deltares/SFINCS is GPL-3.0 source with a Deltares Freeware precompiled Windows exe at download.deltares.nl/sfincs and a deltares/sfincs-cpu Docker image for Linux; latest release v2.4.0_Galibier_release, 2026-06-15. hydromt_sfincs (GPL-3.0, PyPI 1.2.2) builds the whole schematisation from a YAML data catalogue plus an INI, and SFINCS natively accepts exactly AquaSync's three forcings - a discharge point source, a tidal water-level boundary, and rainfall. Realistic cost: 2-4 days to a running Aluva/Kochi model on Copernicus GLO-30 or FABDEM, versus 2-4 weeks for LISFLOOD-FP or HEC-RAS."
+  ],
+  "sources": [
+    {
+      "name": "CWC River Water Level (Manual - Hourly) - basin 031 West flowing rivers Tadri to Kanyakumari",
+      "url": "https://nwdp.nwic.gov.in/dataset/d951a09c-6cf8-470e-be77-e80116f13d34",
+      "kind": "dataset",
+      "what_it_provides": "Hourly manual river stage AND reservoir level CSVs. Basin-031 file 1991-2020 = 260 MB / 1,284,651 rows; 2021-2025 = 234 MB / 1,139,984 rows. Columns: Station, River, Basin, Latitude, Longitude, Is_DischargeDataAvailable, RL_of_zeroGauge, Data Acquisition Time, River Water Level Manual Hourly (meter). Periyar stations present: NEELEESWARAM (31,172 + 25,643 rows), ARANGALI (30,186 + 27,460), VANDIPERIYAR (48,949 + 26,714), Idukki (Eb)/Idukki Arch Reservoir (3,532 + 9,477), Idamalayar Reservoir (3,621 + 9,561).",
+      "relevance": "high - this single dataset closes the Muskingum-calibration gap (two synchronous hourly Periyar gauges), supplies a genuine hourly Aug-2018 flood hydrograph, and gives independent Idukki/Idamalayar levels back to 2019-06-10 that pre-date and can repair the corrupt amith-vp window",
+      "http_status": "200",
+      "license": "Other (Open) per CKAN license_id 'other-open'; publisher CWC / National Water Informatics Centre",
+      "last_activity": "records run to 2025-12-31; a 2026-2030 resource already exists",
+      "download_hint": "curl -L -o wl031.csv 'https://nwdp.nwic.gov.in/dataset/d951a09c-6cf8-470e-be77-e80116f13d34/resource/c94d9352-442c-4e99-ade4-537eebc251f4/download/rwl_manual_hr_cwc_031_1991_2020.csv' and .../a9f5d910-e360-42e0-a45c-637310b009c4/download/rwl_manual_hr_cwc_031_2021_2025.csv -- enumerate all 62 basin resources via https://nwdp.nwic.gov.in/api/3/action/package_show?id=river-water-level-manual-hourly-cwc-subernarekha (that odd slug is the whole CWC manual-hourly package)",
+      "caveat": "No login, but you MUST find it by basin code 031, not by state - searching 'Kerala' misses it entirely. Cadence is nominally hourly at river gauges but roughly 3-hourly at the reservoirs. Some rows are mislabelled across stations (Idamalayar max 704.79 m, Idukki min 2.79 m), so range-filter before use. Reservoir series start 2019-06-10 - there is NO 2018 reservoir level here."
+    },
+    {
+      "name": "CWC River Discharge (Manual - Daily) - Kerala",
+      "url": "https://nwdp.nwic.gov.in/dataset/river-discharge-manual-dailly-central-water-commission-cwc",
+      "kind": "dataset",
+      "what_it_provides": "Daily gauged discharge, 52 state resources. Kerala 2001-2025 file = 39.4 MB, 217,538 rows, 40 stations. Three on the Periyar: NEELEESWARAM 8,478 values 2001-01-01..2025-12-31; ARANGALI 7,518 values; VANDIPERIYAR 14,837 values (twice-daily). A separate Kerala 1950-2000 resource also exists (verified 200).",
+      "relevance": "high - the discharge half of the rating curve AquaSync needs to turn hourly Periyar stage into hourly Q, and an immediate independent validation series for the October 2021 case study",
+      "http_status": "200",
+      "license": "Other (Open); publisher CWC",
+      "last_activity": "2025-12-31 in the 2001-2025 resource",
+      "download_hint": "curl -L -o kerala_q.csv 'https://nwdp.nwic.gov.in/dataset/08fa3fd0-7861-471d-a295-27c1b239d1fa/resource/c3cbe74d-2442-4496-aab2-21e8b5faa12e/download/river_discharge_manual_daily_cwc_kl_2001_2025.csv'",
+      "caveat": "Manual observer record: roughly one missing day per week year-round, and a 7-day hole 2018-08-16..2018-08-22 straight across the flood peak. Record max is 6,323.5 m3/s (2013-08-05), so the CWC report's 8,800 cumec 2018 peak is NOT in this file."
+    },
+    {
+      "name": "CWC Study Report: Kerala Floods of August 2018 (Hydrology (S) Dte)",
+      "url": "https://sdma.kerala.gov.in/wp-content/uploads/2020/08/CWC-Report-on-Kerala-Floods.pdf",
+      "kind": "doc",
+      "what_it_provides": "5.7 MB PDF, Sept 2018. Section 4.1 is a Periyar-specific water balance: catchment areas (Neeleeswaram 4,033 km2, Mullaperiyar 637, Idukki free 605, Idamalayar 472), 15-17 Aug rainfall/runoff table, Idukki hourly operation narrative (731.82 m at 10 Aug 00:00; pre-release to 750 cumec spill; peak inflow 2,532 cumec at 22:00 on 15 Aug attenuated to 1,500 cumec spill = 41%; FRL 732.43 m reached 01:00 on 17 Aug), Idamalayar narrative (168.06 m on 8 Aug, peak inflow 1,164 cumec on 16 Aug, average spill 1,271 cumec, no attenuation), and Fig.3 Neeleeswaram hourly hydrograph peaking ~8,800 cumec at 14:00 on 16 Aug.",
+      "relevance": "high - the single most quotable ground-truth document for a 2018 replay scenario, and it is hosted on the KSDMA domain, which is also a soft opening for the agency-integration gap",
+      "http_status": "200",
+      "license": "Government of India report, freely hosted by KSDMA; no explicit open licence stated",
+      "last_activity": "published 2018-09-08 (PDF metadata)",
+      "download_hint": "curl -L -o cwc.pdf '<url>' then pdftotext -layout cwc.pdf cwc.txt (I extracted 1,766 lines to scratchpad\\cwc.txt)",
+      "caveat": "The hourly Idukki/Idamalayar/Neeleeswaram series exist only as chart images (Figs 3, 4, 5) - the axis labels survive pdftotext but the data values do not. You would have to digitise the figures, OR just use the NWDP hourly stage file instead, which is the real record."
+    },
+    {
+      "name": "NOAA-OWP/t-route",
+      "url": "https://github.com/NOAA-OWP/t-route",
+      "kind": "repo",
+      "what_it_provides": "Tree-based hydrologic/hydraulic routing: Muskingum-Cunge (per-segment, parallel) and Diffusive Wave (per-subnetwork, serial), Python orchestration over Fortran kernels, CLI and BMI interfaces.",
+      "relevance": "medium - the reference operational Muskingum-Cunge implementation, but it duplicates capability AquaSync already has and is expensive to point at a non-US network",
+      "http_status": "200",
+      "license": "Apache-2.0",
+      "stars": "55",
+      "last_activity": "pushed_at 2026-08-18, but last commit on master is 2025-01-30 and last release v2.4.0 is 2024-10-02; all 2026 work is in open NGWPC PRs #882/#883",
+      "download_hint": "git clone --branch master https://github.com/NOAA-OWP/t-route.git && ./compiler.sh (needs gfortran + NetCDF-Fortran 4.6.1, plus numpy pandas xarray netcdf4 joblib toolz pyyaml 'Cython>3,!=3.0.4' geopandas pyarrow deprecated wheel)",
+      "caveat": "SETUP COST: HIGH. No native Windows - README directs Windows users to install WSL2 with Ubuntu 20.04/22.04 first. Fortran toolchain + NetCDF-Fortran build is the main pain. README states the code is still 'bespoke for NWM' and expects NHDPlus-HR or HY_Features; generalisation to arbitrary networks is described as in progress, not done. Budget 1-2 weeks to a Periyar example. 168 open issues."
+    },
+    {
+      "name": "rileyhales/river-route",
+      "url": "https://github.com/rileyhales/river-route",
+      "kind": "repo",
+      "what_it_provides": "Pure-Python vectorised Muskingum-family routing (Muskingum, RapidMuskingum, UnitMuskingum) on vector stream networks using numba kernels and scipy sparse matrices. Params file is a parquet with exactly river_id, downstream_river_id, k, x, topologically sorted, outlets = -1.",
+      "relevance": "medium - cheapest possible sanity check on AquaSync's own Muskingum implementation and its sub-reaching logic; a half-day read, not a dependency",
+      "http_status": "200",
+      "license": "BSD-3-Clause-Clear",
+      "stars": "4",
+      "last_activity": "pushed 2026-07-06; PyPI 2.1.1 released 2026-04-12",
+      "download_hint": "pip install river-route (requires Python >=3.12; pulls dask geopandas netcdf4 networkx numba numpy pandas pyarrow pyyaml scipy shapely tqdm xarray). Docs at https://river-route.code.hales.app/",
+      "caveat": "NO calibration module - I checked the docs and the file-schema page; K and x are inputs you must supply from elsewhere. Only 4 stars, effectively a one-person project. The docs URL advertised on PyPI/GitHub (river-route.hales.app) does not resolve (curl 000); the working one is river-route.code.hales.app."
+    },
+    {
+      "name": "mhpi/dMC-Juniata-hydroDL2 (differentiable Muskingum-Cunge)",
+      "url": "https://github.com/mhpi/dMC-Juniata-hydroDL2",
+      "kind": "repo",
+      "what_it_provides": "PyTorch + Hydra implementation of Bindas et al. 2024 WRR: Muskingum-Cunge with an embedded NN mapping reach attributes (catchment area, sinuosity, slope) to Manning's n and channel geometry, trained only on downstream hydrographs.",
+      "relevance": "low as code, high as a method to copy - learning K and x from reach attributes is exactly right for an ungauged Periyar reach network, but this repo will not run on your basin without a rewrite",
+      "http_status": "200",
+      "license": "CC-BY-4.0 (an unusual choice for code)",
+      "stars": "11",
+      "last_activity": "last push 2024-04-14; 19 commits total, zero open issues or PRs",
+      "download_hint": "conda env create -f environment.yml; python -m dMC -- and separately download the Susquehanna river-graph from Zenodo record 10183429",
+      "caveat": "RESEARCH-ONLY, paper replication. Hard-wired to the Susquehanna/Juniata; no bundled data; no packaging as a library; abandoned for 2+ years. The maintained successor is DeepGroundwater/ddr (Apache-2.0, 11 stars, pushed 2026-08-19, https://github.com/DeepGroundwater/ddr, verified 200)."
+    },
+    {
+      "name": "delta-HBV2 / delta-MC2 global streamflow, 2.94M rivers 1980-2020",
+      "url": "https://www.nature.com/articles/s41467-025-64367-1",
+      "kind": "dataset",
+      "what_it_provides": "Nature Communications 2025 paper behind the global differentiable HBV + differentiable Muskingum-Cunge run. Companion dataset on Zenodo record 20684429 (v5, 2026-06-18): 130.9 GB in 8 continent zips, discharge for 2.94M MERIT flowline reaches, 1980-2020, partitioned by MERIT-Basins pfaf zone (South India = pfaf 4).",
+      "relevance": "medium-high - a plausible model-based 2018 (and 1980-2020) discharge series for Periyar reaches where no gauge exists, and the strongest published evidence that NN-learned Muskingum-Cunge parameters generalise",
+      "http_status": "200",
+      "license": "Penn State Non-Commercial Software License Agreement on the dataset - commercial use requires written PSU consent",
+      "last_activity": "dataset v5 published 2026-06-18",
+      "download_hint": "Asia zip from https://zenodo.org/records/20684429 (browser or WebFetch; curl from an Indian IP hits Zenodo's 403 traffic guard)",
+      "caveat": "Zenodo returned 403 to curl from this network (anti-abuse throttle, not a dead link) - it resolves fine in a browser. Discharge only: the learned Manning-n and channel-geometry parameters are NOT published, so you cannot lift K and x straight out of it. And it is a model reanalysis, not observation - do not validate against it."
+    },
+    {
+      "name": "Deltares/SFINCS (+ hydromt_sfincs)",
+      "url": "https://github.com/Deltares/SFINCS",
+      "kind": "tool",
+      "what_it_provides": "Reduced-complexity 2D compound-flood solver (SFINCS-LIE drops advection; SFINCS-SSWE keeps it). Handles fluvial + pluvial + tidal + wind/wave in one run with subgrid bathymetry, and accepts discharge point sources, water-level/tide boundaries and rainfall - exactly AquaSync's three forcings. Companion builder hydromt_sfincs (https://github.com/Deltares/hydromt_sfincs, 200, GPL-3.0, 35 stars, pushed 2026-08-18, PyPI hydromt-sfincs 1.2.2 on 2025-12-02) generates the whole schematisation from one YAML data catalogue plus an INI.",
+      "relevance": "high - the recommended path to close the 2D-inundation gap for Aluva and the Kochi backwaters; the only 2D code here that natively couples a river discharge boundary to a tidal boundary, which is the actual physics at Aluva",
+      "http_status": "200",
+      "license": "GPL-3.0 for source; precompiled executables under Deltares Freeware (commercial + research use allowed, no redistribution/modification)",
+      "stars": "83",
+      "last_activity": "pushed 2026-08-24; latest release v2.4.0_Galibier_release, 2026-06-15",
+      "download_hint": "Windows exe: https://download.deltares.nl/sfincs (200). Linux/Mac/HPC: docker pull deltares/sfincs-cpu (https://hub.docker.com/r/deltares/sfincs-cpu, 200). No Fortran build needed either way. pip install hydromt-sfincs for the builder.",
+      "caveat": "The release tags carry no GitHub assets - binaries come from download.deltares.nl or Docker Hub, so pin your version manually. Docs give no quantitative speedup figures; the framing paper is Eilander et al., NHESS 23, 823, 2023 (https://nhess.copernicus.org/articles/23/823/2023/, 200). HydroMT's shipped data catalogues are Europe/US-centric - you will write Kerala entries yourself."
+    },
+    {
+      "name": "LISFLOOD-FP 8.x (SEAMLESS-WAVE / Sheffield)",
+      "url": "https://www.seamlesswave.com/LISFLOOD8.0.html",
+      "kind": "tool",
+      "what_it_provides": "The canonical academic 2D floodplain code. 8.0 added DG2/FV1 solvers; 8.1 added GPU-accelerated uniform and non-uniform ACC solvers; 8.2 (GMD 18, 9827, 2025) added GPU multiwavelet DG with dynamic resolution adaptivity and a DG2-RANS solver. Cross-platform, CMake >= 3.13.",
+      "relevance": "medium - defensible and well-published, but it buys AquaSync accuracy it cannot yet justify at a setup cost it cannot yet afford",
+      "http_status": "200",
+      "license": "MUDDLED - the project page says 'GNU GPL v3.0 for any non-commercial use', the 8.0 Zenodo record (4073011, 2020-10-09) says 'GNU General Public License v2.0 only', and the 8.2 paper says GPL v3.0. Get this in writing before any commercial or KSEB deployment.",
+      "last_activity": "8.2 paper published 2025 in GMD (https://gmd.copernicus.org/articles/18/9827/2025/, 200); 8.1 paper GMD 16, 2391, 2023 (200)",
+      "download_hint": "Source zip via the Zenodo link on https://www.seamlesswave.com/Zenodo.html (200) - LISFLOOD-FP-8.zip, 53.0 MB, DOI 10.5281/zenodo.4073011. GPU 8.2 code at https://github.com/al0vya/gpu-mwdg2 (200, Cuda, 7 stars, last push 2024-05-19, NO LICENCE FILE).",
+      "caveat": "SETUP COST: HIGH. CMake + C++/CUDA build, and the 8.2 benchmarks ran on an NVIDIA A100 80 GB - the reported 1.1x-4.5x adaptivity speedups are relative to their own uniform GPU solver, not to CPU. Plus roughly a week of DEM burning/conditioning before a single run. The repo carrying the 8.2 kernels has no licence file at all."
+    },
+    {
+      "name": "jsosa/LFPtools",
+      "url": "https://github.com/jsosa/LFPtools",
+      "kind": "repo",
+      "what_it_provides": "Python CLI suite to prepare LISFLOOD-FP inputs from global data: lfp-getdepths (three methods incl. hydraulic geometry and simplified Manning), lfp-getwidths, lfp-getbankelevs, lfp-fixelevs, lfp-prepdata. Paper reports a 1 km Severn model built in 1.45 minutes.",
+      "relevance": "low-medium - the standard MERIT-Hydro-to-LISFLOOD bridge, and its bank-elevation and depth heuristics are worth reading even if you go the SFINCS route",
+      "http_status": "200",
+      "license": "BSD-3-Clause",
+      "stars": "40",
+      "last_activity": "last push 2021-04-19 - unmaintained for 5 years",
+      "download_hint": "pip install git+https://github.com/jsosa/LFPtools.git (a Dockerfile is in docker/)",
+      "caveat": "Effectively abandoned; expect Python-2-era and GDAL-version friction. Use the Docker image, not a fresh pip install. A LISFLOOD-FP 5.9 BMI wrapper also exists (openearth/lisflood-fp-bmi, GPL-3.0, 47 stars) but was last pushed 2021-04-12."
+    },
+    {
+      "name": "gpt-cmdr/ras-commander",
+      "url": "https://github.com/gpt-cmdr/ras-commander",
+      "kind": "repo",
+      "what_it_provides": "Python API for HEC-RAS 6.x: parallel plan execution, project/plan/geometry manipulation, and - crucially - standalone HDF result reading. HdfResultsMesh exposes 2D mesh depths, velocities and WSE, with export_max_depth_raster() writing a COG.",
+      "relevance": "medium - the standalone HDF reader means AquaSync could consume someone else's calibrated Periyar HEC-RAS 2D model without running HEC-RAS at all",
+      "http_status": "200",
+      "license": "MIT",
+      "stars": "76",
+      "last_activity": "pushed 2026-08-25; PyPI 0.99.1 released 2026-07-21 - the most actively maintained tool in this whole dimension",
+      "download_hint": "pip install ras-commander[all] (Python >=3.10; pulls h5py numpy pandas requests geopandas shapely; pywin32 on Windows). Docs at https://rascommander.info/ (200).",
+      "caveat": "RUNNING simulations needs a real HEC-RAS install on Windows - Linux is not supported for execution. Declared version support is 3.1, 4.1, 5.0.x, 6.0, 6.3, 6.6, with HDF features targeting 6.2+; HEC-RAS 7.0.1 (reportedly 2026-06-02) is newer than that list, so verify 7.x HDF compatibility before relying on it."
+    },
+    {
+      "name": "psu-efd/pyHMT2D",
+      "url": "https://github.com/psu-efd/pyHMT2D",
+      "kind": "repo",
+      "what_it_provides": "Control and semi-automation of 2D hydraulic models plus pre/post-processing. Supports SRH-2D, HEC-RAS and Backwater-1D; ras-commander credits it as the origin of its 2D data handling.",
+      "relevance": "medium - the multi-model option if you ever need SRH-2D as well, and the more academically cited of the two HEC-RAS Python layers",
+      "http_status": "200",
+      "license": "MIT",
+      "stars": "127",
+      "last_activity": "pushed 2026-08-09; PyPI 2.0.0 released 2026-04-04 (Python >=3.8,<3.14)",
+      "download_hint": "pip install pyHMT2D",
+      "caveat": "Same fundamental constraint as ras-commander: it drives HEC-RAS/SRH-2D, it does not replace them, so you still need the Windows binaries."
+    },
+    {
+      "name": "HEC-RAS (USACE) downloads",
+      "url": "https://www.hec.usace.army.mil/software/hec-ras/download.aspx",
+      "kind": "tool",
+      "what_it_provides": "Free 1D/2D hydraulic modelling suite. Reported current release 7.0.1 (2026-06-02, ~171 MB setup, bug-fix over 7.0); a HEC-RAS 2025 Beta 0.1.0.2965 patch reportedly issued 2026-04-17. Windows 10/11 64-bit only.",
+      "relevance": "medium - the model KSEB/KSDMA consultants and the published Periyar literature actually use, so it matters for credibility and interoperability even if AquaSync never runs it",
+      "http_status": "000 (connection refused / unreachable from this Indian network; DNS resolves to 155.83.205.15 but both HTTPS and HTTP fail, and WebFetch got ECONNREFUSED)",
+      "license": "US public domain, free of charge",
+      "last_activity": "7.0.1 reportedly released 2026-06-02",
+      "download_hint": "Likely needs a VPN or non-Indian egress. hec.usace.army.mil was unreachable in every attempt from here.",
+      "caveat": "DO NOT report this URL as live without re-testing from the deployment network - I could not reach the host at all. The version numbers above come from search-result snippets of hec.usace.army.mil pages, NOT from a page I fetched, so treat 7.0.1/2026-06-02 as unconfirmed. Windows-only; no Linux/server automation path."
+    },
+    {
+      "name": "Deltares/pyflwdir",
+      "url": "https://github.com/Deltares/pyflwdir",
+      "kind": "repo",
+      "what_it_provides": "Pure-Python numba-accelerated terrain analysis: flow direction from elevation, upstream accumulation, Strahler/classic stream order, basin and Pfafstetter subbasin delineation, flow-direction upscaling, stream vectorisation, hydrologic elevation adjustment, and - confirmed on the docs landing page - height above nearest drainage (HAND) and geomorphic floodplain delineation.",
+      "relevance": "high - the cheapest credible half-step toward 2D. HAND + a stage-discharge relation turns AquaSync's existing Periyar discharge into a flood-extent raster in hours, with no solver, no mesh and no CFL condition",
+      "http_status": "200",
+      "license": "MIT",
+      "stars": "116",
+      "last_activity": "pushed 2026-08-25; PyPI 0.5.12 released 2026-07-01 (Python >=3.11)",
+      "download_hint": "pip install pyflwdir; docs https://deltares.github.io/pyflwdir/latest/ (200)",
+      "caveat": "HAND is a terrain index, not hydrodynamics: no momentum, no backwater, no timing - so it cannot represent the tidal backwater at Aluva that AquaSync already models better. Treat it as a fast screening layer, not the 2D answer. The docs landing page does not enumerate which flow-direction conventions (D8/LDD/NEXTXY) are supported; check the API reference."
+    },
+    {
+      "name": "Landlab (OverlandFlow component)",
+      "url": "https://landlab.csdms.io/",
+      "kind": "tool",
+      "what_it_provides": "Python earth-surface modelling framework; the OverlandFlow component implements the de Almeida et al. (2012) local-inertial approximation of the 2D shallow water equations on a raster grid, returning depth, discharge and shear stress. Documented in GMD 10, 1645, 2017 (https://gmd.copernicus.org/articles/10/1645/2017/, 200).",
+      "relevance": "low-medium - a pip-installable 2D solver with no compiler, but the wrong stability profile for the Periyar's steep upper basin",
+      "http_status": "200",
+      "license": "MIT",
+      "stars": "437",
+      "last_activity": "pushed 2026-08-26; PyPI landlab 2.11.0 released 2026-04-06 (Python >=3.11)",
+      "download_hint": "pip install landlab; tutorials at https://landlab.csdms.io/tutorials/ (200); component user guide at https://landlab.readthedocs.io/en/latest/user_guide/overland_flow_user_guide.html (200)",
+      "caveat": "The user guide states outright that the algorithm 'is most stable in flat environments' and that 'instabilities can arise when trying to apply the algorithm to steep landscapes', with very small timesteps hurting performance. Fine for the flat Aluva-to-backwater reach, poor above Neeleeswaram. The GitHub Releases page is stale (v2.0.1, 2020) - go by PyPI."
+    },
+    {
+      "name": "ANUGA (anuga-community/anuga_core)",
+      "url": "https://anuga.readthedocs.io/",
+      "kind": "tool",
+      "what_it_provides": "Finite-volume unstructured-triangle 2D shallow water solver for dam-break, riverine and tsunami inundation, in Python with C kernels.",
+      "relevance": "low-medium - genuinely open and maintained, and unstructured meshes suit an estuary, but it needs mesh-generation work AquaSync has no budget for yet",
+      "http_status": "200",
+      "license": "reported as 'Other' by the GitHub licence API (not a clean SPDX identifier) - verify before commercial use",
+      "stars": "53 on the maintained anuga-community fork; 227 on the older GeoscienceAustralia/anuga_core (last push 2026-06-22)",
+      "last_activity": "anuga-community pushed 2026-08-26; releases 3.3.10 (2026-07-28) and 3.3.9 (2026-07-27)",
+      "download_hint": "See readthedocs install page; conda-forge is the usual route",
+      "caveat": "Two live forks with different star counts is a real governance smell - use anuga-community, not GeoscienceAustralia. Unstructured meshing is the hidden cost: budget days of mesh design for the Periyar-to-backwater domain."
+    },
+    {
+      "name": "open TELEMAC-MASCARET",
+      "url": "https://www.opentelemac.org/index.php/download",
+      "kind": "tool",
+      "what_it_provides": "EDF-led CFD suite; TELEMAC-2D solves depth-averaged Saint-Venant on unstructured meshes. Consortium-governed open source since 2010.",
+      "relevance": "low - overkill for AquaSync's question, and the heaviest setup cost in this list",
+      "http_status": "200",
+      "license": "GPLv3 (BIEF library under LGPL) - see https://www.opentelemac.org/index.php/licence (200)",
+      "last_activity": "actively developed; official git at https://gitlab.pam-retd.fr/otm/telemac-mascaret (200)",
+      "download_hint": "Easiest entry is a Docker image (e.g. flussplan/docker-telemac) or the SALOME-HYDRO Debian package; a source build is Fortran + Python + MPI",
+      "caveat": "SETUP COST: VERY HIGH. Fortran toolchain, MPI, and a mesh/GIS pre-processing chain (SALOME-HYDRO is Debian-only). Weeks, not days. Do not pick this over SFINCS for a decision-support tool."
+    },
+    {
+      "name": "Iber (+ IberSWMM+)",
+      "url": "https://www.iberaula.es/space/54/downloads",
+      "kind": "tool",
+      "what_it_provides": "2D depth-averaged shallow-water model with hydrodynamics, sediment transport, water quality and rainfall-runoff; a C++/OpenMP/CUDA GPU build reports up to ~200x over the sequential version for large models. IberSWMM+ couples it 2D-1D with EPA SWMM for urban pluvial flooding (J. Hydrology 2025).",
+      "relevance": "low-medium - free, GUI-driven, GPU-capable, and the SWMM coupling is the natural route if Kochi street drainage ever matters (pyswmm, PyPI 2.1.0 on 2025-09-09, 381 stars, would be the Python side)",
+      "http_status": "200",
+      "license": "free of charge from iberaula.es; NOT a recognised open-source licence - source is not openly distributed",
+      "last_activity": "IberSWMM+ published 2025",
+      "download_hint": "Register/download installer at https://www.iberaula.es/space/54/downloads",
+      "caveat": "'Free' is not 'open source' - you get executables, not code, so it cannot be embedded in an AquaSync deployment the way SFINCS or LISFLOOD-FP can. Windows-oriented GUI workflow. Note iberaula.com does not resolve (curl 000); the correct domain is iberaula.es."
+    },
+    {
+      "name": "NOAA-OWP/inundation-mapping (HAND-FIM)",
+      "url": "https://github.com/NOAA-OWP/inundation-mapping",
+      "kind": "repo",
+      "what_it_provides": "The operational HAND-based Flood Inundation Mapping framework: derives HAND from a DEM, builds reach-averaged synthetic rating curves, and converts a discharge forecast to an inundation raster at continental scale.",
+      "relevance": "medium - the reference implementation of the exact discharge-to-extent trick AquaSync needs, and the cheapest bridge from its existing Periyar discharge output to a map",
+      "http_status": "200",
+      "license": "Apache-2.0",
+      "stars": "129",
+      "last_activity": "pushed 2026-08-26 - very active",
+      "download_hint": "Docker-based workflow in the repo README; a lighter wrapper is sdmlua/FIMserv (AGPL-3.0, 30 stars, pushed 2026-08-17, https://github.com/sdmlua/FIMserv, verified 200), published as FIMserv v1.0 in Env. Model. & Software 2025",
+      "caveat": "Hard-wired to US inputs: NHDPlus V21 hydrofabric, NWM reach IDs, US HUC8 tiling, USGS 3DEP DEMs. Porting to the Periyar means substituting MERIT-Basins reaches plus a Kerala DEM and rebuilding the synthetic rating curves - realistically 1-2 weeks. Reimplementing the concept on pyflwdir's HAND is probably faster than porting this."
+    },
+    {
+      "name": "FABDEM V1-2 (Forest And Buildings removed Copernicus DEM)",
+      "url": "https://research-information.bris.ac.uk/en/datasets/fabdem-v1-2/",
+      "kind": "dataset",
+      "what_it_provides": "Global 1 arc-second (~30 m) bare-earth DEM produced by machine-learning removal of tree and building height bias from Copernicus GLO-30. Published behind Hawker et al., Environ. Res. Lett. 17, 024016 (https://dx.doi.org/10.1088/1748-9326/ac4d4f, verified 200). Distributed as 10x10 degree zips of 1-degree tiles.",
+      "relevance": "high - for floodplain hydraulics a bare-earth DEM matters more than raw resolution, and FABDEM is the best free bare-earth option over Kerala's heavily vegetated Periyar corridor",
+      "http_status": "200 (this Bristol landing page). The actual data host data.bris.ac.uk returned 000 from this network - DNS resolves to 137.222.0.78 but the connection fails in 0.67 s, so it appears blocked rather than down.",
+      "license": "CC BY-NC-SA 4.0 - NON-COMMERCIAL. Commercial queries go to fabdem@fathom.global",
+      "last_activity": "V1-2 is the current release; V1-0 is superseded",
+      "download_hint": "Tile zips live under https://data.bris.ac.uk/data/dataset/s5hqmjcdj8yo2ibzi9b4ew3sn - retest from the deployment network. A Google Earth Engine community copy exists at https://gee-community-catalog.org/projects/fabdem/ (verified 200).",
+      "caveat": "TWO blockers: the NC clause rules out any commercial KSEB deployment without a Fathom licence, and I could not reach data.bris.ac.uk at all from here. Verify both before committing the DEM choice."
+    },
+    {
+      "name": "Copernicus DEM GLO-30",
+      "url": "https://registry.opendata.aws/copernicus-dem/",
+      "kind": "dataset",
+      "what_it_provides": "Global 30 m DSM with flattened water bodies, consistent river flow direction, and edited shorelines. Free and open worldwide. Mirrored on AWS Open Data (S3, no egress cost) and on OpenTopography.",
+      "relevance": "high - the pragmatic default DEM for a first SFINCS build: openly licensed, no registration, and its hydrologically-edited water surfaces beat raw SRTM/NASADEM",
+      "http_status": "200",
+      "license": "free and open (ESA/Copernicus licence, permits commercial use) - unlike FABDEM",
+      "last_activity": "2024_1 release current on the Earth Engine catalogue",
+      "download_hint": "AWS S3 per the registry page, or the OpenTopography raster UI at https://portal.opentopography.org/raster?opentopoID=OTSDEM.032021.4326.3 (verified 200). NOTE: the programmatic endpoint portal.opentopography.org/API/globaldem returned 401 to an unauthenticated call - a free API key is required.",
+      "caveat": "It is a DSM, not bare earth - tree canopy and buildings are in the surface, which will over-constrain floodplain conveyance along the vegetated Periyar. Use it for the first cut, then A/B against FABDEM. NASADEM (https://lpdaac.usgs.gov/products/nasadem_hgtv001/, verified 200, open licence, Earthdata login) is strictly worse for this purpose - older radar DSM, worse vegetation bias - so do not bother re-researching it."
+    },
+    {
+      "name": "MERIT Hydro / MERIT DEM",
+      "url": "https://global-hydrodynamics.github.io/MERIT_Hydro/",
+      "kind": "dataset",
+      "what_it_provides": "90 m globally consistent hydrography built on the error-corrected MERIT DEM: flow direction, flow accumulation, river width, upstream area, upstream gradient, and HAND - explicitly designed for large-scale hydrodynamic and flood simulation. Base DEM at https://hydro.iis.u-tokyo.ac.jp/~yamadai/MERIT_DEM/ (verified 200).",
+      "relevance": "high - the standard input to LFPtools, hydromt_sfincs and MERIT-Basins; the pre-computed river width and HAND layers save real work",
+      "http_status": "200",
+      "license": "free for research; registration required",
+      "last_activity": "v0.7 is the version MERIT-Basins v1.0 is built on",
+      "download_hint": "Complete a Google Form on the MERIT Hydro page; the download password arrives by email. Not a direct curl.",
+      "caveat": "90 m is coarse for street-level Kochi flooding - use it for network topology, reach geometry priors (width, slope) and Muskingum K estimates, and use GLO-30/FABDEM for the inundation grid. The registration gate means you cannot script the fetch."
+    },
+    {
+      "name": "MERIT-Basins (reachhydro.org)",
+      "url": "https://www.reachhydro.org/home/params/merit-basins",
+      "kind": "dataset",
+      "what_it_provides": "Global vector hydrography: ~2.94M river reaches plus unit catchments, derived from MERIT-Hydro v0.7. Files named riv_pfaf_XX_MERIT_Hydro_v07_Basins_v01.shp and cat_pfaf_XX_... . Attributes include lengthkm, slope, uparea, order (Strahler), and topology fields NextDownID, maxup, up1-up4. South India/Kerala falls in Pfafstetter level-1 zone 4.",
+      "relevance": "high - gives AquaSync a ready-made reach network with the length and slope a geometry-based Muskingum K needs, keyed on the same COMIDs as the delta-MC2 and GRFR global datasets",
+      "http_status": "200",
+      "license": "CC BY-NC-SA 4.0 - non-commercial",
+      "last_activity": "v1.0 built on MERIT-Hydro v0.7; bugfix distribution via Google Drive",
+      "download_hint": "Google Drive folder linked from the page (pfaf zone 4 for South Asia); Globus mirror also offered",
+      "caveat": "NC licence again - a recurring theme across the best hydrography (MERIT-Basins, GRFR and FABDEM are all NC). Channel WIDTH is not an attribute here (slope is); width comes from MERIT Hydro rasters. Cite Lin et al. 2019 WRR (doi 10.1029/2019WR025287; note agupubs returns 403 to curl - publisher bot guard, not a dead DOI)."
+    },
+    {
+      "name": "GRFR - Global Reach-level Flood Reanalysis",
+      "url": "https://www.reachhydro.org/home/records/grfr",
+      "kind": "dataset",
+      "what_it_provides": "3-hourly and daily river discharge for the same 2.94M MERIT-Basins reaches, 1980-2019, with extracted flood events using a 2-year return-flow threshold. Citation Yang et al. 2021 BAMS.",
+      "relevance": "medium-high - an immediately usable 3-hourly modelled 2018 Periyar hydrograph at reach level, which is the right temporal resolution for Muskingum work, unlike the daily gauge record",
+      "http_status": "200",
+      "license": "CC BY-NC-SA 4.0 (UCSD provisions)",
+      "last_activity": "covers through 2019",
+      "download_hint": "Daily via Google Drive folder 1hBtu-wOWbY3UUal73tdpEWx3DX6nlf5i (verified 200); 3-hourly discharge and runoff via Globus endpoints listed on the page",
+      "caveat": "Naturalised reanalysis - it does NOT know about Idukki, Idamalayar or Mullaperiyar operations, so it will badly misrepresent regulated Periyar flow. Use it for unregulated tributary inflows and reach travel-time priors, never as a validation target. The BAMS DOI returns 403 to curl (publisher bot guard)."
+    },
+    {
+      "name": "HydroSHEDS / HydroRIVERS",
+      "url": "https://www.hydrosheds.org/products/hydrorivers",
+      "kind": "dataset",
+      "what_it_provides": "Global river network line shapefiles at 15 arc-second resolution, distributed by continent (Asia covers India), with HydroBASINS catchments and HydroATLAS attributes alongside.",
+      "relevance": "medium - the only major hydrography here with a licence permitting commercial use, which matters if AquaSync ever ships to KSEB commercially",
+      "http_status": "200",
+      "license": "free for scientific, educational AND commercial use with attribution - the cleanest licence of any hydrography in this list",
+      "last_activity": "v1.1 GeoTIFF core data is current; v1.0 BIL/GRID legacy formats are declared obsolete",
+      "download_hint": "Continental zips from https://www.hydrosheds.org/hydrosheds-core-downloads (200); technical doc at https://data.hydrosheds.org/file/technical-documentation/HydroRIVERS_TechDoc_v10.pdf (200)",
+      "caveat": "Coarser and less hydrodynamically tuned than MERIT-Basins - fine for maps and basin delineation, weaker for reach geometry. Download by continent, not country."
+    },
+    {
+      "name": "ISRO Bhoonidhi (NRSC) - CartoDEM access",
+      "url": "https://bhoonidhi.nrsc.gov.in/bhoonidhi/registration.html",
+      "kind": "dataset",
+      "what_it_provides": "ISRO's current EO data hub and the live route to CartoDEM (Cartosat-1 derived Indian national DEM). CartoDEM at 30 m and coarser is free; the archive documents 1/3 arc-sec source subsampled to 1 and 3 arc-sec.",
+      "relevance": "medium - the politically and institutionally right DEM for an India-deployed system, and the one KSEB/KSDMA would recognise, but not obviously better than GLO-30 for hydraulics",
+      "http_status": "200",
+      "license": "EULA acceptance required at registration; government users (ministries, PSUs, government R&D and academic institutions) get data without further clearance. Sub-30 m products are commercial via NSIL.",
+      "last_activity": "Bhoonidhi brochure dated 2025; the UIM2024 CartoDSM help doc verified 200",
+      "download_hint": "EXACT PROCEDURE: (1) register at bhoonidhi.nrsc.gov.in/bhoonidhi/registration.html and accept the EULA; (2) log in; (3) search by AOI; (4) free products land in the 'Direct download' half of the Open Data Cart (the other half is 'On Order'). Legacy route: Bhuvan Open Data Archive at https://bhuvan-app3.nrsc.gov.in/data/download/index.php (200) -> Satellite/Sensor -> Cartosat-1 -> CartoDEM Versions. CartoDEM readme: https://bhuvan-app3.nrsc.gov.in/data/download/tools/document/CartoDEMReadme_v1_u1_23082011.pdf (200)",
+      "caveat": "Registration-gated, tile-by-tile, no scriptable API - budget half a day of clicking for the Periyar corridor. CartoDEM v1 vertical accuracy over vegetated Western Ghats terrain is not well characterised in the free documentation, which dates from 2011. Also NOT bare-earth."
+    },
+    {
+      "name": "GHI / GHSA - Geospatial dataset for Hydrologic analyses in India / South Asia",
+      "url": "https://essd.copernicus.org/articles/15/4389/2023/",
+      "kind": "dataset",
+      "what_it_provides": "Quality-controlled CWC/WRIS gauge metadata, catchment boundaries and hydrometeorological time series. v1 (ESSD 2023): 472 vetted stations, Peninsular India, water years 1950-2020. v2 (Zenodo 13852439, 2024-09-27, ghi_v2409.zip 653.4 MB): 1,677 stations with a 48-field stations_ghi.txt, basins_ghi shapefile and per-station catchment shapefiles. GHSA (ghsa_v2504.zip, 784.3 MB): 1,702 stations across Bhutan, China, India, Nepal, Pakistan, 1950-2023.",
+      "relevance": "medium - the fastest way to get a QC'd, relocated gauge location and delineated catchment for Neeleeswaram, to sanity-check a Muskingum reach and the CWC report's 4,033 km2 catchment area",
+      "http_status": "200 (paper). Zenodo records returned 403 to curl from this IP but resolve fine via browser/WebFetch.",
+      "license": "CC BY 4.0 - commercially usable, unlike most of the hydrography above",
+      "last_activity": "GHSA v2504 is the current release; GHI v2 dated 2024-09-27",
+      "download_hint": "https://doi.org/10.5281/zenodo.7563599 resolves to the latest version (currently GHSA). GHI v2 specifically: https://zenodo.org/records/13852439",
+      "caveat": "IMPORTANT LIMITATION I verified in the readme: streamflow is distributed at ANNUAL and MONTHLY resolution only (flow_mcm_obs, flow_mcm_tot), with days_avail/days_tot as mere counters. DAILY streamflow is NOT in the package despite the paper discussing daily data. So it is a metadata/catchment resource for AquaSync, not a hydrograph source - go to NWDP for the actual series."
+    },
+    {
+      "name": "GUARDIAN - sub-daily river discharge over India",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11489425/",
+      "kind": "paper",
+      "what_it_provides": "Scientific Data 2024. Extends India-WRIS stage into sub-daily discharge at 210 gauging stations: hourly during the monsoon (June-Sept), sub-daily otherwise, 2020 onward, by fitting rating curves with four algorithms and keeping only those with NSE >= 0.6. ~800,000 discharge points per year.",
+      "relevance": "high as METHOD - precisely the recipe AquaSync should run on Neeleeswaram to convert its hourly stage into hourly discharge, complete with an NSE acceptance threshold and published code",
+      "http_status": "200",
+      "license": "paper CC BY-NC-ND 4.0; data on figshare doi 10.6084/m9.figshare.27004282 (verified, resolves 202)",
+      "last_activity": "code repo girishpatidar/discharge_india last push 2025-07-09",
+      "download_hint": "Code: https://github.com/girishpatidar/discharge_india (verified 200, Jupyter Notebook, 5 stars, NO LICENCE FILE). Data: figshare DOI above.",
+      "caveat": "The paper never confirms Neeleeswaram is among the 210 stations - the station list is a figure, not a parseable table. Coverage starts 2020, so it will not give you 2018. Treat this as a method to copy, not a dataset to consume. The code repo has no licence and is one person's notebooks."
+    },
+    {
+      "name": "Global Flood Database v1 (2000-2018)",
+      "url": "https://developers.google.com/earth-engine/datasets/catalog/GLOBAL_FLOOD_DB_MODIS_EVENTS_V1",
+      "kind": "dataset",
+      "what_it_provides": "913 mapped flood events from MODIS at 250 m, each image giving maximum flood extent, inundation duration and cloud-observation quality, filterable by date, country or Dartmouth Flood Observatory ID. The August 2018 Kerala event is in the collection.",
+      "relevance": "medium - an OBSERVED 2018 inundation extent to validate any 2D model AquaSync eventually builds, which is otherwise the hardest thing to obtain for this basin",
+      "http_status": "200",
+      "license": "open via the Earth Engine catalogue",
+      "last_activity": "v1 ends 2018 - exactly the year of interest",
+      "download_hint": "Earth Engine ImageCollection GLOBAL_FLOOD_DB/MODIS_EVENTS/V1, filter to the Kerala 2018 DFO event; portal at https://global-flood-database.cloudtostreet.ai/ (verified 200)",
+      "caveat": "250 m MODIS under monsoon cloud is a weak validation target - persistent cloud on 15-17 Aug 2018 means the max-extent layer is partly interpolated. Better alternatives: the PLOS One Sentinel-1/Otsu Kerala-2018 study (https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0237324, verified 200) describes a reproducible GEE workflow, and the International Charter activated for this event (https://disasterscharter.org/activations/flood-in-india-activation-582-, verified 200). NOTE: I found NO evidence of a Copernicus EMS EMSR activation for Kerala 2018 - India went via the Charter instead."
+    },
+    {
+      "name": "ec-jrc/lisflood-code (LISFLOOD-OS, the JRC hydrological model)",
+      "url": "https://github.com/ec-jrc/lisflood-code",
+      "kind": "repo",
+      "what_it_provides": "Spatially distributed rainfall-runoff-routing model in Python, the engine behind EFAS and GloFAS v3.1+ and the European Drought Observatory. Represents snow, interception, infiltration, groundwater, lakes, DAMS, irrigation and channel/floodplain flow.",
+      "relevance": "low-medium - NAME COLLISION WARNING: this is NOT LISFLOOD-FP. It is catchment hydrology, not a 2D inundation solver. Its reservoir module is worth reading for how an operational forecasting system parameterises dam releases, which is a live AquaSync design question.",
+      "http_status": "200",
+      "license": "EUPL-1.2 - a genuine open-source licence, commercially usable",
+      "stars": "167",
+      "last_activity": "pushed 2026-08-18 - actively maintained",
+      "download_hint": "See https://ec-jrc.github.io/lisflood-code/ (verified 200); model docs at ec-jrc.github.io/lisflood-model",
+      "caveat": "Confusing the two LISFLOODs is the most common error in this literature. LISFLOOD-FP = Bristol/Sheffield 2D floodplain hydraulics. LISFLOOD-OS = JRC distributed hydrology. They share nothing but a name. JRC LISFLOOD also needs a large static-map parameter set; the GloFAS maps are at https://data.jrc.ec.europa.eu/dataset/68050d73-9c06-499c-a441-dc5053cb0c86."
+    }
+  ],
+  "technologies": [
+    {
+      "name": "NOAA-OWP t-route",
+      "maturity": "operational-deployed (in NWM/NextGen) but the public master branch is stale",
+      "limitations": "Master branch last committed 2025-01-30; last release v2.4.0 (2024-10-02); all 2026 activity is in unmerged NGWPC contract PRs. README concedes it is 'bespoke for NWM'. Needs gfortran + NetCDF-Fortran 4.6.1 + ./compiler.sh; Windows requires WSL2/Ubuntu. Expects NHDPlus-HR or HY_Features hydrofabric. 168 open issues.",
+      "recent_updates": "Diffusive-wave solver and BMI interface matured; PR #883 (Aug 2026) adds streamflow data assimilation for routing models - worth watching, since assimilation is the honest answer to AquaSync's perfect-foresight problem",
+      "fit_for_aquasync": "Poor value: 1-2 weeks of Fortran/WSL setup to obtain a Muskingum-Cunge AquaSync already has. Read its data-assimilation PR and its automatic-subreaching logic; do not adopt the code."
+    },
+    {
+      "name": "river-route (PyPI)",
+      "maturity": "emerging / single-maintainer",
+      "limitations": "4 stars. No calibration module - K and x are inputs only. Python >=3.12. Params must be a topologically sorted parquet with exactly river_id, downstream_river_id, k, x. The docs domain advertised on PyPI (river-route.hales.app) is dead.",
+      "recent_updates": "v2.1.1 released 2026-04-12; repo pushed 2026-07-06",
+      "fit_for_aquasync": "Half a day of reading value, not a dependency. Its sparse-matrix formulation of network Muskingum is a clean cross-check on AquaSync's routing, and its 4-column schema is a good export target if you ever publish the Periyar network."
+    },
+    {
+      "name": "Differentiable Muskingum-Cunge (dMC / delta-MC2)",
+      "maturity": "research for the reference repo; the derived global dataset is production-scale",
+      "limitations": "mhpi/dMC-Juniata-hydroDL2 is abandoned since 2024-04, hard-wired to the Susquehanna, CC-BY-4.0 licensed code with no library packaging. The global delta-HBV2/delta-MC2 dataset publishes discharge only - the learned Manning-n and channel geometries are withheld - and carries a Penn State non-commercial licence.",
+      "recent_updates": "Nature Communications 2025 paper; global 2.94M-reach dataset v5 posted 2026-06-18 (130.9 GB); active successor DeepGroundwater/ddr pushed 2026-08-19",
+      "fit_for_aquasync": "Adopt the IDEA, not the code: learn K and x (or Manning-n and geometry) from reach attributes rather than assuming geometry. With only 2-3 Periyar gauges you cannot train a network, but you CAN use the published attribute-to-parameter relationships as informed priors and fit the residual on the Neeleeswaram/Arangali hourly pair."
+    },
+    {
+      "name": "SFINCS + HydroMT-SFINCS",
+      "maturity": "production",
+      "limitations": "Reduced-complexity: SFINCS-LIE drops the advection term (fine for sub-critical flow, wrong for supercritical reaches and hydraulic jumps). No published speedup numbers in the docs. Precompiled binaries carry a Deltares Freeware licence separate from the GPL-3.0 source. HydroMT data catalogues are Europe/US-centric.",
+      "recent_updates": "v2.4.0_Galibier_release 2026-06-15; hydromt_sfincs pushed 2026-08-18; subgrid and quadtree grid support matured",
+      "fit_for_aquasync": "BEST FIT for closing the 2D gap. The only tool here that natively takes a discharge point source AND a tidal water-level boundary AND rainfall in one model - exactly the Aluva/Kochi compound-flood situation AquaSync already half-models. No compiler needed (Windows exe or Docker). Estimate 2-4 days to a first Periyar-mouth model on GLO-30."
+    },
+    {
+      "name": "LISFLOOD-FP 8.x",
+      "maturity": "production in academia",
+      "limitations": "CMake 3.13+ C++/CUDA build. GPU benchmarks in the 8.2 paper used an NVIDIA A100 80 GB. Licence is stated inconsistently across sources (GPL v2.0-only on Zenodo, GPL v3.0 on the project page and in the 8.2 paper, with a 'non-commercial use' qualifier). The 8.2 GPU kernels live in a 7-star repo with no licence file.",
+      "recent_updates": "8.1 (GMD 2023) GPU ACC solvers, 2-28x uniform and up to 320x non-uniform over CPU; 8.2 (GMD 2025) multiwavelet DG with dynamic adaptivity plus a DG2-RANS solver, 1.1-4.5x over their own uniform GPU baseline",
+      "fit_for_aquasync": "Label it clearly: C++/CUDA toolchain plus roughly a week of DEM conditioning and channel burning before the first useful run, and settle the licence question in writing first. Choose it only if a reviewer specifically demands LISFLOOD-FP. Otherwise SFINCS gets you there in a fifth of the time."
+    },
+    {
+      "name": "HEC-RAS 2D + Python automation (ras-commander, pyHMT2D)",
+      "maturity": "production (HEC-RAS); the Python layers are emerging but very actively maintained",
+      "limitations": "Windows-only for execution - no Linux path, which kills server-side automation. ras-commander declares support through 6.6 while the current HEC-RAS is reportedly 7.0.1. And critically: hec.usace.army.mil was completely unreachable from this Indian network (curl 000 on every attempt, WebFetch ECONNREFUSED).",
+      "recent_updates": "HEC-RAS 7.0.1 reportedly released 2026-06-02 (unconfirmed - I could not reach the site); ras-commander PyPI 0.99.1 on 2026-07-21, repo pushed 2026-08-25; pyHMT2D 2.0.0 on 2026-04-04",
+      "fit_for_aquasync": "Strategic rather than technical value: HEC-RAS is what Kerala consultants and the published Periyar literature use, so being able to READ their HDF outputs (ras-commander's standalone HdfResultsMesh, no HEC-RAS install required) is a cheap interoperability win and a soft path toward KSDMA. Do not plan to RUN HEC-RAS server-side."
+    },
+    {
+      "name": "HAND (pyflwdir, NOAA-OWP inundation-mapping, FIMserv)",
+      "maturity": "operational-deployed in the US; the pyflwdir building block is production-grade and trivially installable",
+      "limitations": "HAND is a terrain index - no momentum, no backwater, no timing, so it cannot represent the tidal backwater AquaSync already models. NOAA-OWP's implementation is hard-wired to NHDPlus V21, NWM reach IDs, US HUC8 tiling and 3DEP DEMs.",
+      "recent_updates": "pyflwdir 0.5.12 (2026-07-01); NOAA-OWP/inundation-mapping pushed 2026-08-26; FIMserv v1.0 published in Env. Model. & Software 2025",
+      "fit_for_aquasync": "The best effort-to-value ratio in this whole dimension. pip install pyflwdir, run HAND on a GLO-30 or FABDEM clip of the lower Periyar, pair it with a stage-discharge relation at Neeleeswaram, and AquaSync's existing discharge output becomes an inundation raster in hours. Ship this as an interim answer to gap #4 while a SFINCS model is built properly."
+    },
+    {
+      "name": "Landlab OverlandFlow",
+      "maturity": "production framework, mature component",
+      "limitations": "The user guide explicitly warns the de Almeida (2012) local-inertial scheme 'is most stable in flat environments' and that 'instabilities can arise when trying to apply the algorithm to steep landscapes'; very small timesteps degrade performance badly. Raster grids only.",
+      "recent_updates": "landlab 2.11.0 on PyPI 2026-04-06; repo pushed 2026-08-26 with 437 stars (the GitHub Releases page is stale at v2.0.1/2020 - trust PyPI)",
+      "fit_for_aquasync": "Usable for the flat Aluva-to-backwater reach and nothing above it. Its real appeal is zero setup cost - pip install, pure Python - so it is a good way to prototype 2D thinking before committing to SFINCS. Do not point it at the Western Ghats headwaters."
+    },
+    {
+      "name": "ANUGA",
+      "maturity": "production but with fragmented governance",
+      "limitations": "Two live forks: anuga-community/anuga_core (53 stars, pushed 2026-08-26, releases 3.3.10 on 2026-07-28) versus the older, better-starred GeoscienceAustralia/anuga_core (227 stars, pushed 2026-06-22). GitHub reports the licence as 'Other', not a clean SPDX id. Unstructured meshing is a real time cost.",
+      "recent_updates": "Rapid release cadence on the community fork - 3.3.9 and 3.3.10 both in late July 2026",
+      "fit_for_aquasync": "Credible open alternative, and unstructured triangles genuinely suit an estuary. But between mesh design and licence ambiguity it costs more than SFINCS for a similar answer. Second choice, not first."
+    },
+    {
+      "name": "TELEMAC-MASCARET",
+      "maturity": "production, consortium-governed",
+      "limitations": "Fortran + Python + MPI build; the friendly pre/post GUI (SALOME-HYDRO) is Debian-only. Full CFD with a correspondingly heavy mesh and boundary-condition workflow.",
+      "recent_updates": "Active development on GitLab PAM (gitlab.pam-retd.fr/otm/telemac-mascaret); community Docker images available",
+      "fit_for_aquasync": "Label: Fortran toolchain plus weeks of mesh and BC work. Overkill for a decision-support twin whose current bottleneck is inflow forecasting, not hydraulic fidelity. Skip."
+    },
+    {
+      "name": "Iber (+ IberSWMM+)",
+      "maturity": "production, widely used in Spain and Latin America",
+      "limitations": "Free of charge but NOT open source - executables only, no distributable source, so it cannot be embedded in AquaSync. Windows GUI workflow. GPU build reports up to ~200x over sequential for large models.",
+      "recent_updates": "IberSWMM+ 2D-1D urban pluvial coupling published in J. Hydrology 2025",
+      "fit_for_aquasync": "Only interesting if Kochi street drainage becomes a requirement, where the SWMM coupling is genuinely differentiating. The non-open licence rules it out as an embedded component."
+    },
+    {
+      "name": "Delft3D FM / D-HYDRO + dfm_tools",
+      "maturity": "production",
+      "limitations": "Kernel compilation is notoriously difficult; the Deltares/Delft3D repo (56 stars, C++, pushed 2026-08-26) reports 'NOASSERTION' for licence. Full 3D/2DH estuarine physics with the corresponding setup burden.",
+      "recent_updates": "dfm_tools (GPL-3.0, 91 stars, github.com/Deltares/dfm_tools) 0.47.0 on PyPI 2026-07-01, repo pushed 2026-08-11; hydromt_delft3dfm (GPL-3.0, 18 stars) pushed 2026-08-20; GUIs via oss.deltares.nl/web/delft3dfm",
+      "fit_for_aquasync": "Right tool for a future Kochi backwater salinity or morphology study; wrong tool for a fast reservoir decision twin. If you want Deltares physics, take SFINCS - same house, an order of magnitude less setup."
+    },
+    {
+      "name": "pyswmm / EPA SWMM5",
+      "maturity": "production",
+      "limitations": "Storm-sewer model, not a river router - it will not touch the Muskingum problem. Licence metadata is murky across all three relevant repos ('NOASSERTION' or none; github.com/pyswmm/pyswmm 381 stars, engine fork 117 stars, USEPA upstream 355 stars). Needs a pipe/inlet network inventory for Kochi that is unlikely to exist openly.",
+      "recent_updates": "pyswmm 2.1.0 (2025-09-09); engine fork pushed 2026-07-15; EPA upstream last pushed 2025-05-01",
+      "fit_for_aquasync": "Out of scope for now. Revisit only if the project extends from river discharge to urban street flooding in Kochi, and then pair it with SFINCS or Iber rather than using it alone."
+    },
+    {
+      "name": "LISFLOOD-OS (JRC) - name collision, not a 2D model",
+      "maturity": "operational-deployed (EFAS, GloFAS, EDO)",
+      "limitations": "It is a distributed catchment hydrology model in Python, NOT the Bristol 2D floodplain code. Needs a substantial static parameter-map set to run anywhere new.",
+      "recent_updates": "EUPL-1.2, 167 stars, pushed 2026-08-18; main GloFAS hydrological engine since v3.1",
+      "fit_for_aquasync": "Do not confuse with LISFLOOD-FP. Its actual value is its reservoir/dam module and operational-forecasting reservoir parameterisation, directly analogous to the release-policy problem AquaSync is solving. EUPL-1.2 also makes it one of the few commercially usable options here."
+    },
+    {
+      "name": "Flood surrogate / emulator models",
+      "maturity": "research, fast-moving, no production-grade reusable package found",
+      "limitations": "Every candidate is a one-paper code drop, not a library. Examples surfaced via search only (NOT fetched, so treat as unverified): a random-forest surrogate for LISFLOOD-FP 8.1 (Env. Model. & Software 2025, code reportedly on Zenodo record 14599130 - Zenodo 403s to curl from here); the physics-guided LSG model benchmarked against 1dCNN, LSTM-SRR, GP-EOF and LSTM-EOF (Water Research 2024). None ships as an installable package; none is trained on anything resembling the Periyar.",
+      "recent_updates": "Strong 2024-2025 activity, with the field shifting from classification-style flood mapping toward genuine hydrodynamic emulation",
+      "fit_for_aquasync": "Premature. A surrogate needs a high-fidelity model to emulate, and AquaSync has no 2D model yet - so this is strictly a phase-3 idea. Build the SFINCS model first; if runtimes then block the exhaustive policy search, revisit. In the meantime HAND is the cheap surrogate."
+    }
+  ],
+  "dead_ends": [
+    "indiawris.gov.in is unreachable (curl 000, repeated, on both bare and /wris paths) from this network, and multiple sources report that daily discharge for some stations there is classified behind a login. Do NOT route AquaSync's gauge ingestion through India-WRIS. Use nwdp.nwic.gov.in (National Water Data Portal, CKAN, verified 200, no login, working /api/3/action/package_search and package_show) instead - it is the same CWC data, openly downloadable.",
+    "GHI / GHSA (Zenodo, CC BY 4.0) looks like the obvious Indian streamflow dataset and is NOT a hydrograph source. I read its readme: streamflow is distributed at ANNUAL and MONTHLY resolution only (flow_mcm_obs, flow_mcm_tot), with days_avail/days_tot merely counting how many daily observations existed upstream. Daily series are not in the package. Use it for QC'd station coordinates and catchment shapefiles only.",
+    "CWC 'River Discharge (Telemetry - Hourly)' on NWDP has only 14 basin resources and basin 031 (West flowing rivers Tadri to Kanyakumari) is NOT among them. There is no public hourly discharge for the Periyar anywhere. Stop looking - build the rating curve from hourly stage plus daily discharge instead.",
+    "The 8,800 cumec / 16 Aug 2018 14:00 Neeleeswaram peak cannot be sourced from any machine-readable public record. The NWDP daily discharge series has a 7-day hole from 2018-08-16 to 2018-08-22, and the CWC report carries it only as a chart image (Fig. 3) whose axis labels survive pdftotext but whose data points do not. Either digitise the figure or derive it from the hourly stage.",
+    "The Idukki and Idamalayar reservoir level series on NWDP start 2019-06-10, NOT 2018. They are genuinely valuable (they pre-date the amith-vp feed by 14 months and span its corrupt window) but they do NOT close the 2018 reservoir-operations gap. Only the CWC report narrative covers 2018 Idukki/Idamalayar operations.",
+    "www.hec.usace.army.mil is completely unreachable from this network - curl returns 000 on both HTTPS and HTTP after DNS resolves to 155.83.205.15, and WebFetch got ECONNREFUSED. Every HEC-RAS version claim in circulation (7.0.1, 2026-06-02, 171 MB) therefore comes from search snippets, not a fetched page. Assume US .mil geoblocking and plan for a VPN, or drop HEC-RAS from the execution path and use ras-commander purely as an HDF reader.",
+    "data.bris.ac.uk - the actual FABDEM file host - is unreachable from here (curl 000 in 0.67 s despite DNS resolving to 137.222.0.78; data.bristol.ac.uk also 000). Only the Bristol research-information landing page responds. Combined with FABDEM's CC BY-NC-SA 4.0 licence (commercial queries go to fabdem@fathom.global), do not assume FABDEM is available for a KSEB deployment until both network access and licence are settled.",
+    "MERIT Hydro cannot be scripted: access requires completing a Google Form and waiting for a download password by email. Budget a day of latency, not a curl command. MERIT-Basins and GRFR are distributed via Google Drive and Globus - also not curl-able.",
+    "The OpenTopography programmatic DEM endpoint (portal.opentopography.org/API/globaldem) returns 401 to an unauthenticated request - a free API key is mandatory. Only the interactive /raster UI works without one. Register before writing any DEM-fetch automation. Separately, I found NO Copernicus EMS EMSR activation for Kerala August 2018 - India went through the International Charter instead (activation 582), so do not hunt for an EMS delineation product.",
+    "Zenodo consistently returns 403 to curl from this IP ('Access to this resource has been restricted due to unusual traffic'), including record and API endpoints for GHI, LISFLOOD-FP and the delta-MC2 global dataset. These are NOT dead links - all resolve normally via browser/WebFetch. Any status-checking script should treat zenodo.org 403 as 'reachable, throttled' rather than broken. Likewise agupubs.onlinelibrary.wiley.com, mdpi.com, sciencedirect.com and tandfonline.com all return 403 to curl as publisher bot guards."
+  ],
+  "_dimension_key": "hydro-modeling",
+  "_stage": "research"
+}
