@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Third-party data snapshots. These change daily and are re-fetchable with
+# scripts/fetch_data.py. data/processed/ IS committed on purpose, so a result
+# quoted in the dossier can still be checked if the upstream feed changes.
+data/raw/
+data/external/
+!data/raw/.gitkeep
+
+# Firmware
+.pio/
+.pioenvs/
+.piolibdeps/
+firmware/**/config_local.h
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Secrets
+.env
+*.local
