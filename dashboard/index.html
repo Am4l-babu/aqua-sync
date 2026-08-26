@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AquaSync — live digital twin</title>
+<link rel="stylesheet" href="css/dashboard.css">
+<script type="importmap">
+{
+  "imports": {
+    "three": "./vendor/three.module.js",
+    "three/addons/": "./vendor/addons/"
+  }
+}
+</script>
+</head>
+<body>
+
+<div id="app">
+  <header id="topbar">
+    <div class="brand">
+      <span class="mark"></span>
+      <div>
+        <h1>AquaSync</h1>
+        <p>Idukki · Periyar basin digital twin</p>
+      </div>
+    </div>
+    <div id="link-state" class="pill pill-warn">CONNECTING</div>
+  </header>
+
+  <aside id="panel">
+    <section class="card">
+      <h2>Reservoir</h2>
+      <div class="readout">
+        <span id="level" class="big">—</span><span class="unit">m MSL</span>
+      </div>
+      <div class="bands" id="bands">
+        <div class="band-track"><div class="band-fill" id="band-fill"></div></div>
+        <div class="band-labels">
+          <span>dead</span><span id="lbl-rule">rule</span><span id="lbl-frl">FRL</span>
+        </div>
+      </div>
+      <dl class="kv">
+        <dt>Freeboard to FRL</dt><dd id="freeboard">—</dd>
+        <dt>Live storage</dt><dd id="storage">—</dd>
+        <dt>Time to FRL</dt><dd id="ttf">—</dd>
+      </dl>
+    </section>
+
+    <section class="card">
+      <h2>Flows</h2>
+      <dl class="kv">
+        <dt>Inflow</dt><dd id="inflow">—</dd>
+        <dt>Turbine</dt><dd id="turbine">—</dd>
+        <dt>Spillway</dt><dd id="spill">—</dd>
+        <dt>Gate opening</dt><dd id="gate">—</dd>
+      </dl>
+      <div class="spark" id="spark"></div>
+    </section>
+
+    <section class="card" id="advice-card">
+      <h2>Recommendation</h2>
+      <p id="advice">Waiting for telemetry…</p>
+      <p class="note">Advisory only. A named operator approves every release.</p>
+    </section>
+
+    <section class="card">
+      <h2>What-if</h2>
+      <label class="slider">
+        <span>Release <b id="whatif-val">0</b> cumecs</span>
+        <input type="range" id="whatif" min="0" max="900" value="0" step="10">
+      </label>
+      <button id="whatif-reset" class="btn">Return to recommended</button>
+    </section>
+  </aside>
+
+  <main id="stage"></main>
+
+  <footer id="statusbar">
+    <span id="clock">—</span>
+    <span id="scenario">scenario: —</span>
+    <span id="source">source: replay</span>
+  </footer>
+</div>
+
+<script type="module" src="js/twin.js"></script>
+</body>
+</html>

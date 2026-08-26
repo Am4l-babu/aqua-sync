@@ -1,0 +1,22 @@
+# AquaSync backend
+#
+# The simulation core (aquasync/twin) needs only numpy. Everything else
+# supports ingestion, the API, or the analysis scripts.
+
+numpy>=1.26
+pandas>=2.0
+scipy>=1.11
+
+# API + telemetry
+fastapi>=0.110
+uvicorn[standard]>=0.29
+websockets>=12.0
+pydantic>=2.6
+
+# Analysis and reporting
+matplotlib>=3.8
+reportlab>=4.0
+pillow>=10.0
+
+# Development
+pytest>=8.0

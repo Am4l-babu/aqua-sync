@@ -1,0 +1,13 @@
+{
+  "flagship_scenario": "periyar_oct_2021",
+  "storm_date": "2021-10-16",
+  "breakeven_lead_days": 0,
+  "freeboard_at_zero_lead_m": 2.7203105837114663,
+  "cost_at_zero_lead_cr": 5.081832764475071,
+  "caveats": [
+    "Daily bulletin data interpolated to hourly; sub-daily peaks are smoothed.",
+    "Muskingum K and x for the Periyar reaches are geometry estimates, not gauge-calibrated. Downstream discharge figures are indicative.",
+    "Tariff values are indicative KSEB time-of-day bands, not a current KSERC order.",
+    "Energy-neutral rows cap mean turbine discharge at the observed mean, so the optimiser cannot book revenue the grid would not have taken. Quote these, not the unconstrained rows."
+  ]
+}
