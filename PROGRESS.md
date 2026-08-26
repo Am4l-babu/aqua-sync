@@ -31,7 +31,7 @@ Preparedness · MACE IoT Club, Kothamangalam.
 | Source-material analysis | ✅ Done | Am4l-babu | `feature/project-scaffold` | Analysed `analyze_1.pdf` + EVOKE chat export. Found 2 load-bearing errors in the brief — see [docs/data-sources.md](docs/data-sources.md) |
 | Data ingestion (KSEB bulletin) | ✅ Done | Am4l-babu | `feature/project-scaffold` | `aquasync.io.kseb_dataset`. 18 dams, 2020-08 → 2026-08 |
 | Data validation layer | ✅ Done | Am4l-babu | `feature/project-scaffold` | Found ~11% of the source feed is physically impossible. `quality_ok` flag + `quality_report()` |
-| Test suite & CI | 📋 Todo | — | — | pytest scaffolded; GitHub Actions workflow not yet wired |
+| Test suite & CI | ✅ Done | Am4l-babu | `feature/api-and-validation` | 46 physics/behaviour tests passing; CI runs tests + ruff + a guard that the twin core stays web-framework-free |
 | Deployment | 📋 Todo | — | — | Expo runs offline on a laptop by design. Optional: Streamlit Cloud / Fly.io free tier for a public link. **Do not** put this on paid infra |
 
 ## Simulation Core
@@ -89,8 +89,8 @@ Preparedness · MACE IoT Club, Kothamangalam.
 | Component | Status | Assigned To | Branch | Notes |
 |---|---|---|---|---|
 | 3D twin dashboard | ✅ Done | Am4l-babu | `feature/project-scaffold` | Three.js, no build step, WebSocket telemetry with lerp smoothing |
-| FastAPI backend | 📋 Todo | — | — | REST scenarios + telemetry WebSocket. Skeleton only |
-| What-if panel | 📋 Todo | — | — | Manual release override, live consequence |
+| FastAPI backend | ✅ Done | Am4l-babu | `feature/api-and-validation` | Scenario / what-if / tide endpoints + telemetry WebSocket fan-out. Serves the dashboard same-origin |
+| What-if panel | 🔄 Ongoing | Am4l-babu | — | Slider works client-side and `/api/whatif` exists; they need wiring together |
 | Crisis Commander mode | 📋 Todo | — | — | "You are the operator, it is 16 Oct 2021." High demo value, low build cost |
 | Malayalam alerting | 📋 Todo | — | — | Last-mile. Nice-to-have, not expo-critical |
 
@@ -103,7 +103,7 @@ Preparedness · MACE IoT Club, Kothamangalam.
 | Data sources & corrections | ✅ Done | Am4l-babu | `feature/project-scaffold` | [docs/data-sources.md](docs/data-sources.md) |
 | Roadmap | ✅ Done | Am4l-babu | `feature/project-scaffold` | [ROADMAP.md](ROADMAP.md) |
 | Action plan | ✅ Done | Am4l-babu | `feature/project-scaffold` | [ACTION_PLAN.md](ACTION_PLAN.md) |
-| Validation report | 📋 Todo | — | — | Consolidate replay + lead-time + out-of-sample into one document |
+| Validation report | ✅ Done | Am4l-babu | `feature/api-and-validation` | [docs/validation.md](docs/validation.md) — includes an explicit list of what is **not** yet validated |
 | Poster (A1) | 📋 Todo | — | — | Figures 1, 4 and 5 carry it. Print by expo minus 3 days |
 | Pitch rehearsal | 📋 Todo | — | — | Script is in the dossier §12 |
 
