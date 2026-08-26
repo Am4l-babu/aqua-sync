@@ -132,7 +132,7 @@ def fig_cascade() -> dict:
     fig, axes = plt.subplots(1, 2, figsize=(9.2, 3.5))
     stats = {}
 
-    for ax, res in zip(axes, (IDUKKI, IDAMALAYAR)):
+    for ax, res in zip(axes, (IDUKKI, IDAMALAYAR), strict=True):
         rec = load_dam(res.name, cache_dir=RAW)
         w = rec.window("2021-10-10", "2021-10-26").copy()
         w = w.set_index("date").asfreq("D").reset_index()

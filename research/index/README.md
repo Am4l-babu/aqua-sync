@@ -5,7 +5,7 @@ Regenerate with `python scripts/acquire.py --index-only`.
 
 **14 acquired** (561.0 MB) · **0 need manual registration** · **0 unavailable**
 
-Last run: 2026-08-26 12:59 UTC
+Last run: 2026-08-26 13:22 UTC
 
 ---
 

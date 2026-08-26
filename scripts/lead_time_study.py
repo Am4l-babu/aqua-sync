@@ -45,7 +45,10 @@ STORM_DATE = np.datetime64("2021-10-16")
 LEAD_DAYS = (0, 3, 5, 7, 10, 14, 21, 30)
 
 
-def run(lead_days: int, cache_dir: Path, n_candidates: int, energy_neutral: bool, seed: int = 7) -> dict:
+def run(
+    lead_days: int, cache_dir: Path, n_candidates: int,
+    energy_neutral: bool, seed: int = 7,
+) -> dict:
     """One replay at a given lead time."""
     scenario = dc_replace(
         SCENARIOS["periyar_oct_2021"],
@@ -63,9 +66,14 @@ def run(lead_days: int, cache_dir: Path, n_candidates: int, energy_neutral: bool
 
     res, reach = IDUKKI, REACHES["periyar_lower"]
     curve = LevelStorageCurve(res)
-    initial = ReservoirState(level=float(level[0]), storage=curve.storage_from_level(float(level[0])))
+    start_level = float(level[0])
+    initial = ReservoirState(
+        level=start_level, storage=curve.storage_from_level(start_level)
+    )
 
-    observed_turbine_mean = float(np.minimum(observed_release, res.turbine_rated_flow).mean())
+    observed_turbine_mean = float(
+        np.minimum(observed_release, res.turbine_rated_flow).mean()
+    )
     limits = OperationalLimits(
         max_release_cumecs=1500.0,
         max_ramp_cumecs_per_hour=60.0,
@@ -104,7 +112,8 @@ def run(lead_days: int, cache_dir: Path, n_candidates: int, energy_neutral: bool
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--candidates", type=int, default=0, help="unused; policy search is an exhaustive grid")
+    ap.add_argument("--candidates", type=int, default=0,
+                    help="unused; policy search is an exhaustive grid")
     ap.add_argument("--cache-dir", type=Path, default=ROOT / "data" / "raw")
     ap.add_argument("--out", type=Path, default=ROOT / "data" / "processed")
     args = ap.parse_args()

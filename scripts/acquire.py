@@ -26,7 +26,7 @@ import json
 import subprocess
 import sys
 import urllib.request
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -115,7 +115,8 @@ def acquire_clone(entry: dict, dest: Path) -> dict:
         with urllib.request.urlopen(req, timeout=300) as resp:
             archive.write_bytes(resp.read())
     except Exception as exc:  # noqa: BLE001
-        return {"status": "failed", "error": f"tarball download failed: {type(exc).__name__}: {exc}"}
+        return {"status": "failed",
+                "error": f"tarball download failed: {type(exc).__name__}: {exc}"}
 
     if archive.stat().st_size > MAX_CLONE_MB * 1024 * 1024:
         size = archive.stat().st_size
@@ -151,7 +152,8 @@ def acquire_curl(entry: dict, dest: Path) -> dict:
             payload = resp.read()
             ctype = resp.headers.get("Content-Type", "")
     except Exception as exc:  # noqa: BLE001 - one bad URL must not stop the run
-        return {"status": "failed", "error": f"{type(exc).__name__}: {exc}"}
+        return {"status": "failed",
+                "error": f"{type(exc).__name__}: {exc}"}
 
     if not payload:
         return {"status": "failed", "error": "empty response"}
@@ -174,7 +176,9 @@ def acquire_api(entry: dict, dest: Path) -> dict:
         return {"status": "already-present", "bytes": dest.stat().st_size}
 
     dest.parent.mkdir(parents=True, exist_ok=True)
-    req = urllib.request.Request(entry["url"], headers={"User-Agent": UA, "Accept": "application/json"})
+    req = urllib.request.Request(
+        entry["url"], headers={"User-Agent": UA, "Accept": "application/json"}
+    )
     try:
         with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
             payload = json.loads(resp.read().decode("utf-8"))
@@ -210,7 +214,9 @@ def build_index(manifest: list[dict], results: dict) -> str:
     manual = by_status.get("manual-registration", [])
     failed = by_status.get("failed", []) + by_status.get("skipped-too-large", [])
 
-    total_bytes = sum(results.get(e["name"], {}).get("bytes", 0) for e in got)
+    total_bytes = sum(
+        results.get(e["name"], {}).get("bytes", 0) for e in got
+    )
 
     lines = [
         "# Research index",
@@ -222,7 +228,7 @@ def build_index(manifest: list[dict], results: dict) -> str:
         f"**{len(manual)} need manual registration** · "
         f"**{len(failed)} unavailable**",
         "",
-        f"Last run: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}",
+        f"Last run: {datetime.now(UTC).strftime('%Y-%m-%d %H:%M UTC')}",
         "",
         "---",
         "",
@@ -250,7 +256,8 @@ def build_index(manifest: list[dict], results: dict) -> str:
             "|---|---|---|",
         ]
         for e in sorted(manual, key=lambda x: x["name"]):
-            lines.append(f"| {e['name']} | {e.get('note', e.get('kind', '—'))} | [link]({e['url']}) |")
+            note = e.get("note", e.get("kind", "—"))
+            lines.append(f"| {e['name']} | {note} | [link]({e['url']}) |")
 
     if failed:
         lines += [
@@ -339,7 +346,8 @@ def main() -> int:
                 continue
 
             if args.dry_run:
-                print(f"[{i:>2}/{len(manifest)}] {name:<44} would {method} -> {entry['destination']}")
+                print(f"[{i:>2}/{len(manifest)}] {name:<44} "
+                      f"would {method} -> {entry['destination']}")
                 continue
 
             res = fn(entry, dest)
