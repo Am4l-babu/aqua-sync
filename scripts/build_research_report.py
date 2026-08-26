@@ -60,17 +60,13 @@ from _pdfkit import (  # noqa: E402
     BG,
     BLUE,
     CONTENT_W,
-    GREEN,
-    INK,
     MARGIN,
-    MUTED,
     PAGE_H,
     RED,
     RULE_C,
     S,
     TINT_AMBER,
     TINT_BLUE,
-    TINT_GREEN,
     TINT_RED,
     VIOLET,
     badge,
@@ -156,7 +152,6 @@ def status_badge(code: str) -> str:
 
 def cover(data: dict, acq: dict) -> list:
     dims = data.get("dimensions", [])
-    synth = data.get("synthesis", {}) or {}
 
     n_sources = sum(len(d.get("confirmed_sources", [])) for d in dims)
     n_rejected = sum(len(d.get("rejected", [])) for d in dims)

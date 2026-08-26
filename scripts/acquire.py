@@ -23,10 +23,8 @@ from __future__ import annotations
 
 import argparse
 import json
-import shutil
 import subprocess
 import sys
-import textwrap
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
