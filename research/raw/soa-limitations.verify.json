@@ -1,0 +1,414 @@
+{
+  "dimension": "State of the art in dam operation decision support: what is deployed, what fails",
+  "confirmed_sources": [
+    {
+      "name": "CAG Report No. 6 of 2021 - Performance Audit: Preparedness and Response to Floods in Kerala",
+      "url": "https://cag.gov.in/uploads/download_audit_report/2021/Kerala_Au.I_Rep_6_2021-0618cb7f2db0035.98377057.pdf",
+      "kind": "Official government performance audit (PDF, 144 pages, 6.68 MB, tabled 11 Nov 2021)",
+      "what_it_provides": "Downloaded and parsed page by page. VERIFIED VERBATIM: IISc Bangalore engaged as Consultant, Prof. P. Pradeep Mujumdar and team (pdf p.21, p.48). Idukki spills 14-18 Aug 2018: actual 467.51 MCM vs 1983 rule curve 558.19 MCM vs 1983-curve-from-lower-level 308.13 MCM (Table 3.6, pdf p.67); 2020 rule curve 531.03 MCM (Table 3.7, pdf p.68). Idamalayar: actual 340.50 vs 2020 curve 323.49 MCM (Table 3.8, pdf p.68-69). Appendix 3.3 (pdf p.122) gives the 2020 rule curve at 18 ten-day steps, EXACTLY as claimed - Idukki 723.29/723.29/723.29/724.00/724.80/725.60/726.50/727.50/728.50/729.25/730.00/730.59/730.84/731.17/731.31/731.46/731.53/731.53 m MSL; Idamalayar 161.00 x3/161.50/161.75/162.50/163.00/163.50/164.00/165.00/166.00/166.30/166.60/166.80/167.00/168.50 x3. Table 3.4 (pdf p.64) daily Neeleswaram observed flow 14-18 Aug = 196.13/532.83/793.93/796.44/612.75 MCM with spill contributions 46.43/36.12/29.54/23.34/16.99 per cent. HEC-RAS no-spill scenario 520.04 -> 441.44 km2, Neeleswaram depth 12.32 -> 9.68 m (pdf p.69). LULC 1985-2015: built-up +450% (60 -> 330 km2), water bodies -17% (267 -> 221.44 km2); 1985 land use scenario gives 12.32 -> 10.03 m and 520.04 -> 414.76 km2 (pdf p.77, p.13). KSEB government reply: combined inflow 946.40 MCM, outflow 815.37 MCM, moderation 131.03 MCM (pdf p.70). Appendices 3.5/3.6/3.7 each contain exactly 112 daily rows, 10-06-2018 to 29-09-2018 (pdf pages ~124-137, report pages 96-109).",
+      "relevance": "Single most valuable document for AquaSync. Supplies the exact official 2020 rule curve to target, a genuine daily 2018 inflow and powerhouse-discharge series for both reservoirs, and the central inconvenient result that the post-2018 rule curve would have INCREASED Idukki spills.",
+      "http_status": "200",
+      "content_matches_claim": "partly - every headline NUMBER checks out verbatim, but the description of Appendices 3.5-3.7 is materially wrong. They are titled 'Sample simulations of Idukki/Idamalayar reservoir using the 1983/2020 rule curve'. I diffed 3.5 against 3.6 row by row: the INFLOWS TO RESERVOIR column is identical between them (14-18 Aug: 84.18 / 165.06 / 154.96 / 111.70 / 92.51 MCM) and so is PH discharge on the flood days (9.99/9.99/9.95/9.98/9.66) - those are genuine observed forcing. But RESERVOIR LEVEL and SPILLS differ completely between the two appendices for the same dates (14-08: level 727.84 vs 726.90, spill 0.00 vs 68.63), because they are COUNTERFACTUAL SIMULATION TRAJECTORIES, not observed operations. The column ORDER is also level, PH discharge, inflow, evaporation - not the order stated.",
+      "license": "Government of India / CAG - public audit report tabled in the State Legislature",
+      "last_activity": "Presented to the Legislature 11 November 2021",
+      "download_hint": "curl -sL -A 'Mozilla/5.0' -o cag.pdf '<url>' then PyMuPDF page.get_text(); plain get_text() reading order already yields clean rows via regex (\\d{2}-\\d{2}-2018)\\s+((?:[\\d.]+\\s+){5,12}) - word coordinates were not needed. Appendix tables sit at PDF pages ~123-137 (report pages 94-109), one page later than the '123-136' previously stated.",
+      "caveat": "Do NOT ingest the level/storage/spill columns of Appendices 3.5-3.7 as observed 2018 data. Only the inflow column (and PH discharge / evaporation on days when the simulated level permits generation) is real. In Appendix 3.5 the PH discharge is zeroed in early July because the 1983-lower-level run starts at 705.00 m, below the operating level."
+    },
+    {
+      "name": "CWC Study Report: Kerala Floods of August 2018 (Hydrology (S) Directorate, September 2018)",
+      "url": "https://sdma.kerala.gov.in/wp-content/uploads/2020/08/CWC-Report-on-Kerala-Floods.pdf",
+      "kind": "Official Central Water Commission study report (PDF, 48 pages, 6.0 MB)",
+      "what_it_provides": "Downloaded and parsed. VERIFIED: Idukki 731.82 m at 00:00 on 10 Aug, 0.61 m below FRL, ~40 MCM cushion (p.12); drawn to 730.80 m by 13 Aug giving ~90 MCM (p.13); peak inflow 2532 cumec at 22:00 on 15 Aug against 1614 cumec release, attenuation 2532 -> 1500 cumec = about 41% (p.13); FRL 732.43 m touched at 01:00 on 17 Aug (p.13); of a 435 MCM three-day (15-17 Aug) inflow, 345 MCM spilled + 30 MCM to powerhouse, so about 60 MCM absorbed (p.12). Idamalayar 168.06 m on 8 Aug, ~97% of live storage, dedicated flood space FRL-MWL only about 60 MCM; peak inflow 1164 cumec on 16 Aug, average spill 1271 cumec, NO attenuation (pp.14-15). Neeleswaram maximum 8800 cumec, max WL EL 12.4 m against 1974 HFL EL 11.105 m (pp.11, 35); free catchment downstream contributed about 7300 cumec (p.14). Discharging capacities 5013 cumec Idukki / 3012 cumec Idamalayar (p.36). Recommendation to review rule curves for all Kerala reservoirs, particularly those above 200 MCM live storage (pp.36-37), and the explicit finding that even a 75%-filled reservoir could not have mitigated the event (p.37).",
+      "relevance": "The primary official 'dams did not cause it' analysis and the counterweight to CAG/IISc. Gives hourly-resolution facts about the 2018 event and an authoritative statement of how little cushion existed.",
+      "http_status": "200",
+      "content_matches_claim": "yes - every figure confirmed verbatim. One internal inconsistency in the report itself, not in the claim: the 8800 cumec peak is timed at 14:00 on p.11 and at 15:00 on p.35.",
+      "license": "Government of India / CWC, hosted by Kerala SDMA",
+      "last_activity": "Report dated September 2018; file hosted since Aug 2020",
+      "download_hint": "curl -sL -A 'Mozilla/5.0'; text extracts cleanly with PyMuPDF"
+    },
+    {
+      "name": "Sudheer et al. (2019), Role of dams on the floods of August 2018 in Periyar River Basin, Kerala, Current Science 116(5):780-794",
+      "url": "https://www.currentscience.ac.in/Volumes/116/05/0780.pdf",
+      "kind": "Peer-reviewed research article (PDF, 15 pages), doi 10.18520/cs/v116/i5/780-794",
+      "what_it_provides": "Downloaded and parsed. THE HEADLINE FORECAST-SKILL CLAIM IS CONFIRMED VERBATIM (p.789): 'The probability of detection (POD) of higher rainfall (>25 mm/day) at short range (3-day) or medium range (5-day) even with the ensemble of models is still low at about 20% to 30% only with a large probability of false alarm.' Also verified: Aug 2018 PRB rainfall 145-year return period; Neeleswaram flood 142-year (1971-2018 record); only 16-21% peak attenuation possible from advance emptying; bank-full about 3400 m3/s at L1 and 4200 m3/s at L2 against an 8800 m3/s event; virgin (no-dam) simulation peaks 8224 m3/s at L1 and 11990 m3/s at L2, giving 33% attenuation at L1 and 17% at L2; scenarios at 85/75/50/25% storage at end-June and end-July under AMC-II and AMC-III; below 50% storage downstream flows become insensitive to reservoir state. Authors K. P. Sudheer, S. Murty Bhallamudi, B. Narasimhan, J. Thomas, V. M. Bindhu, V. Vema, C. Kurian (IIT Madras).",
+      "relevance": "The strongest single argument against a perfect-foresight optimiser in this basin, and it comes from the pro-dam side. A 20-30% POD at 3-5 day lead with high false-alarm rate is a far worse forecast floor than the California FIRO sites operate under.",
+      "http_status": "200",
+      "content_matches_claim": "yes - all claims confirmed. Note the POD figure is Sudheer et al. citing their references 23 and 24, not an original result of theirs; it is still their stated position.",
+      "license": "Current Science / Indian Academy of Sciences - freely downloadable PDF",
+      "last_activity": "Published 10 March 2019; received 31 Oct 2018, revised accepted 6 Nov 2018",
+      "download_hint": "Direct PDF, no bot blocking. De-hyphenate before searching - a naive regex for '20% to 30%' fails because of line-break hyphenation."
+    },
+    {
+      "name": "Mishra et al., The Kerala flood of 2018: combined impact of extreme rainfall and reservoir storage (HESS Discussions preprint hess-2018-480)",
+      "url": "https://hess.copernicus.org/preprints/hess-2018-480/",
+      "kind": "Open discussion preprint with full public review thread, doi 10.5194/hess-2018-480",
+      "what_it_provides": "Fetched and parsed the live page. STATUS LINE CONFIRMED VERBATIM: 'this discussion paper is a preprint. It has been under review for the journal Hydrology and Earth System Sciences (HESS). The manuscript was not accepted for further review after discussion.' Abstract confirms: 53% above-normal monsoon rainfall to 21 Aug; 1/2/3-day extreme rainfall return periods 75/200/100 years; 'Six out of seven major reservoirs were at more than 90% of their full capacity on August 8, 2018'; extreme rainfall at 1-15 day durations upstream of Idukki, Kakki and Periyar had return period of more than 500 years; conclusion that reservoir operations need a skilful forecast of extreme rainfall at 4-7 day lead.",
+      "relevance": "Shows that the most-quoted 'reservoirs made it worse' study was never peer-reviewed. Directly relevant to how AquaSync should cite the 2018 controversy.",
+      "http_status": "200",
+      "content_matches_claim": "partly - status line and all scientific figures confirmed, but the thread composition is misstated. Actual thread is TWO referee comments (RC1 Sudheer Padikkal 27 Sep 2018; RC2 Amit Kumar 27 Oct 2018), THREE short comments (SC1 Jeroen van der Valk; SC2 EVT Kumar; SC3 Sudeep Jain) and FIVE author responses (AC1-AC5, all Vimal Mishra, 04 Dec 2018) - not '1 referee report'. I could not verify the separate assertion that the court-appointed Amicus Curiae relied on it; that is outside the page.",
+      "license": "CC BY 4.0",
+      "last_activity": "Discussion closed; last author responses 4 Dec 2018",
+      "download_hint": "Preprint PDF and every comment are individually downloadable from the Discussion tab"
+    },
+    {
+      "name": "SANDRP guest article: Role of dams in Kerala floods - Distortion of Science (J. Harsha, Director, CWC Chennai)",
+      "url": "https://sandrp.in/2020/08/25/role-of-dams-in-kerala-floods-distortion-of-science/",
+      "kind": "Technical rebuttal published as a guest article after journal refusal",
+      "what_it_provides": "Fetched and parsed (241 KB, 78 comment elements). VERIFIED: attacks Sudheer et al.'s stated assumptions, listed explicitly as 'SCS-CN method and lambda = 0.2 is valid in PRB' and 'The land use/land cover in PRB derived from the data for the year 2010 is valid in 2018'; argues SCS-CN and lambda=0.2 came from USDA (1954, NEH-4 1956) 'developed based on limited set of watershed data without peer-review' and was never developed for PRB; argues the 2010 IRS AWiFS extrapolation 'assumed stationarity of runoff processes in PRB'. Section 6 'Where are the reservoir rule curves?' notes no rule-curve data for 'all the seventeen reservoirs of PRB' and no statement of reservoir age or 'the eventual loss of live storage'. Publication history confirmed verbatim: 'after keeping the rebuttal idle for more than six to seven months, Current Science abruptly communicated refusal to publish. Current Science did not conduct any peer-review...'. The comment thread carries the counter-calculation: with a 25% cushion Idukki could have absorbed 365 MCM against a 435 MCM three-day inflow (leaving 40 MCM), and Idamalayar 255 MCM against 199 MCM of releases. Byline: J Harsha, Director, Central Water Commission, Chennai.",
+      "relevance": "Harsha's two charges land directly on AquaSync's own method: an SCS-CN with lambda=0.2 imported from USDA and unvalidated for the Periyar, and stationary land cover. Read this before defending the CN module.",
+      "http_status": "200",
+      "content_matches_claim": "yes - with one wording note. The article criticises missing rule curves and 'loss of live storage of aging large dams'; it never uses the word 'sedimentation'. The 365/255 MCM counter-calculation is in the comment thread, as stated.",
+      "license": "SANDRP - freely readable; views stated as personal",
+      "last_activity": "Published 25 Aug 2020, updated 26 Aug 2020; comments continue to 2024"
+    },
+    {
+      "name": "SANDRP, the two halves of the Sudheer/Harsha exchange (19 Sep 2020) - response and rejoinder",
+      "url": "https://sandrp.in/2020/09/19/response-of-sudheer-et-al-to-the-comments-by-mr-j-harsha-on-the-article-role-of-dams-on-the-floods-of-aug-2018-in-periyar-river-basin-kerala/",
+      "kind": "Two separate SANDRP articles published the same day - both fetched and verified 200",
+      "what_it_provides": "PART 1 (the URL above, Sudheer et al.'s response): contains the IIT Madras defence of lambda=0.2 verbatim - 'in the case of Sudheer et al (2019), where simulation of high flows are performed with wet antecedent conditions only for the 2018 event, and in the premise that the curve number is automatically adjusted for wet conditions within HEC-HMS, an average value of lambda = 0.2 is valid... when CN and P are large, the corresponding C-value is also large, but insensitive to the variation of lambda' - plus the defence of the 2010 NRSC land cover. PART 2 (Harsha's rejoinder, MISSING from the original source list, URL recovered by me from the 'Next Post' link and verified 200): https://sandrp.in/2020/09/19/role-of-dams-in-2018-kerala-floods-rejoinder-of-j-harsha-to-the-response-by-sudheer-et-al/ - carries Table-1 'List of evidences presented in the rebuttal not refuted by Sudheer et al. (2019)', citing Faizalhakim et al. (2016) and Yuan et al. (2014) against lambda=0.2 even for US watersheds, IRS AWiFS 56 m vs Landsat 8 30 m resolution, and the concession extracted from the original authors that there was 'about 0.5% change in vegetation cover in PRB and 16.51% change in built up area between the years 2010 and 2016'.",
+      "relevance": "Part 1 is the technically strongest available defence of exactly the modelling choice AquaSync makes (lambda=0.2 under AMC-II/III for a high-flow event) - a citable justification. Part 2 supplies the 16.51% built-up change 2010-2016, conceded by the original authors, which is a directly usable number for arguing CN non-stationarity in the Periyar.",
+      "http_status": "200 (both URLs independently verified)",
+      "content_matches_claim": "partly - the response page carries ONLY Sudheer et al.'s reply. The claim that it also contains Harsha's rejoinder and is 'the only place the full argument appears in one thread' is wrong; the rejoinder is a separate post whose URL I have supplied above. You need both links, not one.",
+      "license": "SANDRP",
+      "last_activity": "Both published 19 September 2020"
+    },
+    {
+      "name": "Vegad & Mishra (2025), Climate change and effectiveness of dams in flood mitigation in India, npj Natural Hazards 2:63",
+      "url": "https://www.nature.com/articles/s44304-025-00117-z",
+      "kind": "Peer-reviewed open-access article, doi 10.1038/s44304-025-00117-z (10-page PDF downloaded)",
+      "what_it_provides": "Downloaded the OA PDF and parsed. VERIFIED: 178 major dams, in-situ and satellite observations plus H08/CaMa-Flood model simulations; 'flood mitigation depends more on antecedent reservoir storage than upstream rainfall'; 'Downstream floods are more likely when reservoirs exceed 90% of their full capacity'; largest reservoirs (>1000 MCM) reduce high-flow magnitude by 47-59% (median); highest attenuation occurs in July, persisting weaker through Aug-Sep; compound high-inflow/high-storage events rise from 0.55 +/- 0.22 per year at 1 C to 1.1 +/- 0.4 per year at 3 C.",
+      "relevance": "Independent, India-wide, recent confirmation that antecedent storage - not forecast quality alone - is the dominant control, and that the 90% threshold is the operative one. Supports making reservoir state the primary decision variable in AquaSync.",
+      "http_status": "200 (landing page and .pdf both)",
+      "content_matches_claim": "partly - the storage-duration numbers are wrong as stated. The paper says a THREEFOLD increase in the median CHANGE in number of days above 90% live storage, 'from 4.7 +/- 6.7 days at 1.0 C warming to 14.6 +/- 15.11 days at 3.0 C warming (Fig. 4F)', measured against a 1995-2014 reference - not 'from ~6 at 1C to 23 at 3C', and not absolute day counts. The closing recommendation is also a paraphrase presented as a quote; the actual text is 'the need for advanced approaches for dam operations (maintaining buffer storage) integrated with early warnings of extreme inflow in India'.",
+      "license": "CC BY-NC-ND 4.0",
+      "last_activity": "Published 17 July 2025; 5 citations",
+      "download_hint": "https://www.nature.com/articles/s44304-025-00117-z.pdf downloads directly with a browser UA",
+      "caveat": "The standard deviations exceed the medians (4.7 +/- 6.7, 14.6 +/- 15.11) - the projected signal is noisy across GCMs."
+    },
+    {
+      "name": "Suresh et al. (2024), Satellite-based Tracking of Reservoir Operations for Flood Management during the 2018 Extreme Weather Event in Kerala, India - open NASA NTRS manuscript",
+      "url": "https://ntrs.nasa.gov/api/citations/20240007715/downloads/Manuscript_RSE_Revised_03262024_clean.pdf",
+      "kind": "Accepted-manuscript PDF (56 pages) of the Remote Sensing of Environment paper, doi 10.1016/j.rse.2024.114149, RSE Vol. 307, June 2024",
+      "what_it_provides": "Downloaded and parsed. Table 4 confirmed EXACTLY as claimed: Idamalayaar r=0.81 / RMSE 135.29 cumec / NRMSE 13.30%; Banasurasagar 0.78 / 31.81 / 14.14%; IDUKKI 0.63 / 217.94 cumec / 12.45%; Kakki 0.83 / 83.54 / 11.19%. Confirmed: Idukki degradation attributed to upstream regulation (Section 3.2.1.1 'Reservoir Inflow to Idukki Reservoir regulated by Upstream storage'), with Mullaperiyar operated by Tamil Nadu. Cloud cover verbatim: 'the average cloud cover for the time period of 2017-07-01 to 2019-07-01 being greater than 40% for all the dams. During periods of high precipitation such as the Monsoon period, the cloud cover is over 80%... not possible without the use of cloud-piercing SAR imagery.' Ryan et al. 2020 Kakki finding confirmed: a week of drawdown from >=90% capacity would have given ~50% peak-outflow reduction. Filling: 9 of 19 reservoirs at 90% of maximum nominal surface area by 25 July 2018, 14 of 19 by 1 August, 16 of 19 by 8 August. Authors: Suresh, Hossain, Minocha, Das, Khan, Lee, Andreadis, Oddo (UW / U. Houston / UMass / NASA GSFC).",
+      "relevance": "The published skill ceiling for satellite-derived Idukki inflow (r=0.63) is a hard benchmark AquaSync must beat or acknowledge. Confirms Mullaperiyar as the specific reason Idukki is the hardest reservoir in the basin to model.",
+      "http_status": "200",
+      "content_matches_claim": "yes - every number verified verbatim",
+      "license": "NASA NTRS public access copy of the accepted manuscript",
+      "last_activity": "Manuscript revised 26 March 2024; published RSE June 2024",
+      "download_hint": "NTRS serves the PDF directly with no bot blocking - use this rather than ScienceDirect"
+    },
+    {
+      "name": "Das et al. (2025), Forecast-Informed Reservoir Operations within a Satellite-Based Framework for Mountainous and High-Precipitation Regions: Case of the 2018 Kerala Floods, J. Hydrologic Engineering 30(2)",
+      "url": "https://ascelibrary.org/doi/10.1061/JHYEFF.HEENG-6276",
+      "kind": "Peer-reviewed journal article, doi 10.1061/JHYEFF.HEENG-6276",
+      "what_it_provides": "Existence and metadata confirmed independently via Crossref: exact title as claimed, Journal of Hydrologic Engineering vol. 30 issue 2, issued April 2025, ASCE, authors Das P; Suresh S; Hossain F; Balakrishnan V; Jainet P; Lee H and 4 more - the same UW/SASWE group as the RSE paper. 1 citation to date.",
+      "relevance": "Closest published prior art to AquaSync's core thesis: forecast-informed reservoir operation applied to the 2018 Kerala flood inside the RAT satellite framework. Must be cited and differentiated from.",
+      "http_status": "403-bot-blocked (ASCE blocks curl and WebFetch alike; existence and full metadata confirmed via api.crossref.org)",
+      "content_matches_claim": "partly - the citation is exactly right, but I could NOT read the text, so the substantive claim (that GEFS has sufficient skill, when used for trends with bias adjustment, to predict inflow peaks about a week ahead with good peak timing and rate of rise) is UNVERIFIED. Treat it as an unchecked assertion.",
+      "license": "Closed access - OpenAlex reports is_oa = false, no open version anywhere",
+      "last_activity": "April 2025 issue",
+      "caveat": "Paywalled with no green OA copy. This is the one paper on the list that is both closest to AquaSync's thesis and genuinely unreadable - budget for institutional access or an author request."
+    },
+    {
+      "name": "KSDMA Dam Water Level portal (daily KSEB and Irrigation bulletins)",
+      "url": "https://sdma.kerala.gov.in/dam-water-level/",
+      "kind": "Official state disaster-management authority live data page",
+      "what_it_provides": "Fetched and parsed today. Live and current: the page now carries 'Water Levels of Major Reservoirs (KSEB) - 26/08/2026 - 11.00 AM' and 'Water Levels of Major Reservoirs (IRRIGATION) - 26/08/2026 - 11.00 AM'. I extracted the three actual link targets: /wp-content/uploads/2026/08/KSEB-SITE-13.pdf, /wp-content/uploads/2026/08/IRR-SITE-20.pdf, and the Malayalam explanatory note at /wp-content/uploads/2020/06/...-1.pdf ('Guidelines to interpret the tables of KSEB and IRRIGATION') - all three independently verified 200.",
+      "relevance": "The stable, official entry point. Better provenance than the GitHub scrape AquaSync currently uses, and it carries rule level and Blue/Orange/Red alert levels that the scrape does not.",
+      "http_status": "200",
+      "content_matches_claim": "yes - and it is one day fresher than reported (26/08/2026 rather than 25/08/2026)",
+      "license": "Government of Kerala / KSDMA",
+      "last_activity": "Live, updated daily at 11:00 AM IST",
+      "download_hint": "Scrape this page for the current href rather than hardcoding a PDF filename - see the caveat on the bulletin entry"
+    },
+    {
+      "name": "KSDMA daily KSEB dam bulletin (current file)",
+      "url": "https://sdma.kerala.gov.in/wp-content/uploads/2026/08/KSEB-SITE-13.pdf",
+      "kind": "Daily operational bulletin PDF (1 page, 65 KB, produced from DAILY ALERTS 2026.xlsx via Print To PDF)",
+      "what_it_provides": "Downloaded and parsed. Header dated 25/08/2026 - 11.00 AM, PDF creationDate D:20260825094020+05'30'. Schema confirmed as 14 columns: Sl.No, Name of the Dam, District, FRL, Today's Water Level, rule level (ft/m), then ALERT LEVELS Blue/Orange/Red (metre), Total Live Storage at FRL (MCM), Live Storage (MCM), Percentage Storage, Current Spillway Release (cumecs), Remarks. IDUKKI ROW VERIFIED EXACTLY: 2403.00 ft / 2364.22 ft / rule 2390.09 ft / blue 2382.09 / orange 2388.09 / red 2389.09 / 1459.49 MCM at FRL / 852.090 MCM / 58.38%. IDAMALAYAR ROW VERIFIED EXACTLY: 169.00 m / 156.36 m / rule 164.00 / blue 162.50 / orange 163.00 / red 163.50 / 1017.80 MCM at FRL / 664.640 MCM / 65.30%. Covers 17 KSEB reservoirs. Alert levels sit below the rule level as claimed.",
+      "relevance": "Confirms AquaSync's 1459 Mm3 Idukki live storage against the official figure (1459.49 MCM) and supplies the operational alert-level structure the model currently lacks.",
+      "http_status": "200 (Last-Modified: Tue, 25 Aug 2026 12:08:19 GMT, Content-Length 65116)",
+      "content_matches_claim": "yes - both rows match to the last decimal, and 2390.09 ft = 728.4994 m confirms the arithmetic cross-check against CAG Appendix 3.3",
+      "license": "KSEB Ltd / KSDMA, public bulletin",
+      "last_activity": "File last modified 25 Aug 2026 12:08 GMT",
+      "caveat": "This URL is NOT a stable archive endpoint. The portal still points at KSEB-SITE-13.pdf on 26/08 while the file itself still holds the 25/08 table, so KSEB overwrites the same filename in place and the '-13' index rotates periodically. There is no historical series at this URL - to build a time series you must poll daily and store your own copies."
+    },
+    {
+      "name": "KSEB Limited Dam Safety Organisation",
+      "url": "https://dams.kseb.in/?page_id=39",
+      "kind": "Official dam-owner institutional site",
+      "what_it_provides": "Fetched and parsed. Confirmed table 'Basic Details of 59 Dams of KSEB Limited' with columns Name, District, FRL (m), gated yes/no, large dam yes/no, criteria for major-dam classification, including Idukki, Idamalayar, Kakki-Anathode and Banasurasagar as the four majors. Navigation confirms a Downloads menu with Emergency Action Plan, Monthly Statistics and O & M Manuals of Dams; sub-pages ?p=333, ?p=329 and ?p=336 all return 200. ICOLD large-dam definition (>15 m) stated. Site credit: Regional IT Unit, Kozhikode; content licensed CC BY-SA 2.5 IN.",
+      "relevance": "The institutional counterpart AquaSync must integrate with under the Dam Safety Act, and the only source of KSEB's own EAPs, O&M manuals and monthly statistics.",
+      "http_status": "200",
+      "content_matches_claim": "yes",
+      "license": "CC BY-SA 2.5 IN (stated in the site footer)",
+      "last_activity": "Live; FRL values consistent with the current KSDMA bulletin"
+    },
+    {
+      "name": "Dam Safety Act 2021 (Act No. 41 of 2021) - full gazette text",
+      "url": "https://wrd.maharashtra.gov.in/Site/Upload/Pdf/DSA_2021_act.pdf?MenuID=1474",
+      "kind": "Full statute text, gazette reprint (PDF, 21 pages, 459 KB)",
+      "what_it_provides": "Downloaded and parsed. Header confirmed: 'THE DAM SAFETY ACT, 2021 / NO. 41 OF 2021 / [13th December, 2021.]' with 'THE GAZETTE OF INDIA EXTRAORDINARY [PART II-' running footers. VERIFIED VERBATIM - s.35(1): 'Every owner of a specified dam... shall,- (a) establish well designed hydro-meteorological network and an inflow forecasting system; (b) establish an emergency flood warning system for the probable flood affected areas downstream of the dam; (c) test or cause to be tested periodically the functioning of systems referred to in clauses (a) and (b); ... (e) make available the information relating to maximum anticipated inflows and outflows including flood warning and an adverse impact of the same... to the concerned district authorities and also make available the information in public domain; and (f) render necessary assistance to the Authority in establishment and running of the early warning system for the exchange of real time hydrological and meteorological data'. s.35(2) risk assessment, first study within five years. s.36(1) emergency action plan. s.41: obstruction or refusal to comply with a direction punishable with imprisonment up to one year or fine or both, 'and if such obstruction or refusal to comply with directions results in loss of lives or imminent danger thereof, shall be punishable with imprisonment for a term which may extend to two years'. s.42(1): where an offence is committed by a Department of the Government, 'the head of the Department shall be deemed to be guilty of the offence'.",
+      "relevance": "India already has a statutory mandate for precisely what AquaSync does (s.35(1)(a) inflow forecasting system; s.35(1)(e) public-domain anticipated inflows/outflows) alongside a personal criminal-liability regime (s.41, s.42) that explains operator conservatism better than any technical barrier.",
+      "http_status": "200",
+      "content_matches_claim": "yes - every cited clause verified word for word",
+      "license": "Government of India statute - public domain",
+      "last_activity": "Act dated 13 December 2021",
+      "caveat": "This is a state-government (Maharashtra WRD) mirror of the central gazette, not the canonical India Code or eGazette copy. The text is a genuine gazette reprint, but for formal citation prefer indiacode.nic.in."
+    },
+    {
+      "name": "Lake Mendocino FIRO Final Viability Assessment (December 2020)",
+      "url": "https://cw3e.ucsd.edu/FIRO_docs/LakeMendocino_FIRO_FVA.pdf",
+      "kind": "Steering-committee viability assessment (PDF, 141 pages, 11.3 MB)",
+      "what_it_provides": "Downloaded and parsed. VERIFIED: Table E.1 evaluates four FIRO options plus current operations against 16 objective metrics, with median 10-May storage increase over baseline of 0% (baseline), 27% (EFO, 'operates without a traditional guide curve and uses the 15-day ensemble streamflow forecasts to identify required flood releases') and 15% (Hybrid EFO, 'used for major deviation operations in WYs 2019 and 2020'), with Modified Hybrid EFO as the preferred option. WY2020: 19% storage increase, more than 11,000 acre-feet (Figure E.2). Forecast verification Table 2.1 (CNRFC deterministic cool-season QPF, Jan 2000-May 2017): 24-hr R2 = 0.83 / 0.76 / 0.65 / 0.54 / 0.39 at 1-5 day lead. Table 2.2 (inflow, Jan 2005-Mar 2017): 24-hr R2 = 0.84 / 0.80 / 0.73 / 0.66 / 0.53. Economics: 'The Modified Hybrid EFO results in total estimated annual benefits of $9.4 million. The reach alternative, EFO, has estimated total annual benefits of $9.9 million' and 'FIRO will lead to positive benefits in all these areas except hydropower'. Section 4 documents the WY2019 and WY2020 major deviations including the +11,650 ac-ft conservation-pool increase (Nov 1 - Feb 28). Disclaimer verbatim: 'The FVA does not address all USACE regulations and requirements for a potential update of the Water Control Manual at Coyote Valley Dam-Lake Mendocino.'",
+      "relevance": "The definitive FIRO reference, and the source of the honest forecast-skill decay numbers that make the perfect-foresight assumption in AquaSync's optimiser untenable as it stands.",
+      "http_status": "200",
+      "content_matches_claim": "yes - all figures confirmed. I did not separately locate the '20%' for Modified Hybrid EFO or '18%' for Five-Day Deterministic in the extracted Table E.1 block; the baseline/EFO/Hybrid values and the preferred designation all match.",
+      "license": "Public - also archived at eScholarship (escholarship.org/uc/item/3b63q04n)",
+      "last_activity": "December 2020"
+    },
+    {
+      "name": "Prado Dam FIRO Final Viability Assessment (December 2023)",
+      "url": "https://cw3e.ucsd.edu/FIRO_docs/Prado/FIRO_Prado_FVA.pdf",
+      "kind": "Steering-committee viability assessment (PDF, 136 pages, 10.0 MB)",
+      "what_it_provides": "Downloaded and parsed. VERIFIED: 'In April 2021, the Prado Dam interim WCM was modified to increase the buffer pool elevation from 498 feet to 505 feet throughout the year', the current buffer pool storing a maximum of 20,000 acre-feet at 505 ft. Recharge findings verbatim: 'On average, FIRO strategies from elevation 508 feet to 512 feet are estimated to yield 4,000 to 6,000 acre-feet per year of additional groundwater recharge over existing operations. Increasing the maximum buffer pool elevation to 520 feet yields an average of 12,000 acre-feet of recharge annually.' Hindcast period 1990-2019 plus scaled 100-, 200- and 500-year three-day volume events. Final maximum release rate 30,000 cfs with current 543-ft and future 563-ft spillway. A planned MINOR deviation to the WCM is identified as the near-term implementation mechanism, with an adaptive decision support system to be integrated into the USACE Los Angeles District DSS framework. Steering committee co-chairs listed from 2017 (Greg Woodside, OCWD, 2017-2023).",
+      "relevance": "Second completed FVA; shows the same deviation-first, manual-last institutional route as Lake Mendocino, at a different reservoir with a different objective (groundwater recharge rather than water supply).",
+      "http_status": "200",
+      "content_matches_claim": "yes on all quantitative claims. The '26 scenarios against 12 decisional metrics' detail I did not independently locate in the extracted text - treat that as unverified.",
+      "license": "Public (CW3E)",
+      "last_activity": "December 2023"
+    },
+    {
+      "name": "Scripps/UCSD: New forecast-informed decision-making tool implemented at Coyote Valley Dam and Lake Mendocino",
+      "url": "https://scripps.ucsd.edu/news/new-forecast-informed-decision-making-tool-implemented-coyote-valley-dam-and-lake-mendocino",
+      "kind": "Institutional news release, dated Oct 22, 2025",
+      "what_it_provides": "Fetched and parsed. VERIFIED VERBATIM: signing ceremony 22 October 2025 by USACE, Sonoma County Water Agency, UC San Diego Scripps CW3E and California DWR; 'The revised manual redefines the operating rules around flood control schedules for the first time in the dam's 66-year history'; 'The revised water control manual allows for an additional 11,650 acre-feet of water storage into the flood control space at USACE discretion when forecast and advanced decision support tools indicate that it is safe to do so.' Additional context found: 'Since the Corps completed construction of Coyote Valley Dam in 1959, the water control manual has been updated just twice in its existence - once in 1986, when the City of Ukiah's hydro...'",
+      "relevance": "Closes the FIRO institutional timeline: 2014 steering committee to signed water control manual in October 2025, with the permanent manual authorising exactly the same 11,650 acre-feet the five-year deviation had already allowed.",
+      "http_status": "200",
+      "content_matches_claim": "yes - the discretionary language is quoted correctly to the word",
+      "license": "UC San Diego news, freely readable",
+      "last_activity": "22 October 2025"
+    },
+    {
+      "name": "USACE/Sonoma Water Draft EA: Water Year 2021-2026 Major Planned Deviation to the Coyote Valley Dam-Lake Mendocino Water Control Manual",
+      "url": "https://www.sonomawater.org/media/PDF/Environment/Environmental%20Documents/lake-mendocino-deviation/Lake%20Mendo%20DRAFT%20EA%20USACE.pdf",
+      "kind": "NEPA Draft Environmental Assessment (PDF, 127 pages, 17.2 MB), OCTOBER 2020",
+      "what_it_provides": "Downloaded and parsed. Cover verified: 'Water Year 2021 - 2026 Major Planned Deviation to the Coyote Valley Dam-Lake Mendocino Water Control Manual, Draft Environmental Assessment, OCTOBER 2020', prepared for USACE San Francisco District by Sonoma County Water Agency. VERIFIED: the deviation 'would allow the Corps to store an additional 11,650 acre-feet of water above the existing guide curve... for Water Year (WY) 2021 through WY 2026 between November 1 and February 28 in each year, with an option to begin the increase in spring storage on February 15'. Alternatives: no action plus Proposed Action (Hybrid and Modified Hybrid operations), Ensemble Forecast Operations (EFO) and the 5-day Deterministic Forecast. NMFS Biological Opinion for Russian River operations referenced; USACE determined no effect on federally listed species.",
+      "relevance": "The NEPA instrument that bridged the 2020 FVA and the 2025 permanent WCM, and the proof that the deviation figure and the permanent manual figure are literally identical (11,650 AF).",
+      "http_status": "200",
+      "content_matches_claim": "yes on the substance. Nuance: EFO and the 5-day Deterministic were carried forward from the FVA but 'eliminated from further consideration' in the EA, so they were screened rather than co-adopted.",
+      "license": "US Government NEPA document, public",
+      "last_activity": "October 2020 draft"
+    },
+    {
+      "name": "Forbis & Ly (2025), Application of forecast-informed reservoir operations at US Army Corps of Engineers dams in California, J. Flood Risk Management 18(1)",
+      "url": "https://doi.org/10.1111/jfr3.13051",
+      "kind": "Peer-reviewed open-access article (CC BY 4.0), doi 10.1111/jfr3.13051",
+      "what_it_provides": "Metadata and abstract confirmed via Crossref and the DOAJ API. Authors are Joe Forbis (USACE ERDC Coastal and Hydraulics Laboratory, Sacramento) and Cuong Ly (USACE South Pacific Division, Los Angeles) - TWO authors, so 'Forbis & Ly', not 'Forbis et al.'. Journal of Flood Risk Management vol. 18 issue 1, March 2025 issue, published online 16 Dec 2024. Gold OA, CC BY. Abstract confirms the institutional framing: USACE 'prescribes flood control operations for reservoirs it regulates in watershed-specific water control manuals (WCMs), which can be decades-old and may not capture changed conditions in the watersheds or include the benefit of state-of-the-science weather and streamflow prediction', and that 'The lessons learned from the FIRO pilot projects are being used to inform the development of the FIRO Screening Process, a screening level framework intended to scale up the implementation of FIRO. The lessons learned could support FIRO implementation at suitable USACE reservoirs by updating WCMs.'",
+      "relevance": "USACE-authored account of what actually blocks FIRO deployment. The abstract independently confirms that WCM updating is the implementation mechanism and that a Screening Process exists to scale it.",
+      "http_status": "403-bot-blocked at both onlinelibrary.wiley.com and the pdfdirect route; existence, authorship, OA status and abstract confirmed via api.crossref.org, api.openalex.org and doaj.org",
+      "content_matches_claim": "partly - the framing and the FIRO Screening Process are confirmed from the abstract, but the specific figures previously attributed to it (more than 400 WCMs, 'would take decades', 'nearly exclusively based on rule curves', steering committee 2021, South Pacific Division beta test 2022-2024, Stage A/Stage B timings) are UNVERIFIED because Wiley blocks all automated access. Do not quote those numbers until someone reads the PDF in a browser.",
+      "license": "CC BY 4.0 (gold OA)",
+      "last_activity": "Online 16 Dec 2024; 6-7 citations",
+      "download_hint": "Open https://doi.org/10.1111/jfr3.13051 in a normal browser - it is free to read, only bot-blocked"
+    },
+    {
+      "name": "Delaney et al. (2020), Forecast Informed Reservoir Operations Using Ensemble Streamflow Predictions for a Multipurpose Reservoir in Northern California, Water Resources Research 56(9)",
+      "url": "https://doi.org/10.1029/2019WR026604",
+      "kind": "Peer-reviewed open-access article, doi 10.1029/2019WR026604",
+      "what_it_provides": "Metadata confirmed via Crossref and OpenAlex: Water Resources Research vol. 56 issue 9, September 2020, AGU, CC BY 4.0, authors Delaney C; Hartman R; Mendoza J; Dettinger M; Delle Monache L; Jasperse J and 5 more. The EFO algorithm it defines is independently corroborated by the Lake Mendocino FVA, which I did read: EFO 'operates without a traditional guide curve and uses the 15-day ensemble streamflow forecasts to identify required flood releases' and delivers a 27% increase in median 10-May storage.",
+      "relevance": "The operational algorithm actually deployed at Lake Mendocino, and the concrete alternative to a perfect-foresight optimiser: route each ensemble member separately, compute exceedance probability against critical thresholds, release to hold risk under a pre-trained risk tolerance curve.",
+      "http_status": "403-bot-blocked at agupubs.onlinelibrary.wiley.com; existence and metadata confirmed via Crossref/OpenAlex",
+      "content_matches_claim": "partly - citation, journal, authorship and CC BY status confirmed exactly; the algorithm description is corroborated second-hand by the FVA rather than read from the paper itself. Citation count: 114 per Crossref but 143 per OpenAlex, so the '114 citations' figure is source-specific and now stale.",
+      "license": "CC BY 4.0",
+      "last_activity": "September 2020"
+    },
+    {
+      "name": "Brodeur, Delaney, Whitin & Steinschneider (2024), Synthetic Forecast Ensembles for Evaluating Forecast Informed Reservoir Operations, Water Resources Research 60(2)",
+      "url": "https://doi.org/10.1029/2023WR034898",
+      "kind": "Peer-reviewed open-access article, doi 10.1029/2023WR034898",
+      "what_it_provides": "Metadata confirmed via Crossref and OpenAlex: WRR vol. 60 issue 2, February 2024, AGU, CC BY 4.0, four authors exactly as named. OpenAlex reports a working OA PDF at onlinelibrary.wiley.com/doi/pdfdirect/10.1029/2023WR034898 (bot-blocked from here but browser-accessible).",
+      "relevance": "Addresses AquaSync's evaluation problem head-on: you cannot honestly evaluate a forecast-informed policy on a handful of real forecast years. Synthetic ensembles with controllable skill let a policy be stress-tested across far more events than the record contains - directly applicable to the Periyar, where the real forecast archive is thin.",
+      "http_status": "403-bot-blocked at agupubs.onlinelibrary.wiley.com; existence and metadata confirmed via Crossref/OpenAlex",
+      "content_matches_claim": "partly - citation and 18 Crossref citations confirmed exactly (OpenAlex says 16); the methodological description was not read from the text",
+      "license": "CC BY 4.0",
+      "last_activity": "February 2024"
+    },
+    {
+      "name": "zpb4/syn-forecast_stochastic - synthetic hydrology and forecast generation with a FIRO model",
+      "url": "https://github.com/zpb4/syn-forecast_stochastic",
+      "kind": "GitHub repository (Python)",
+      "what_it_provides": "GitHub API confirms the repo exists: full_name zpb4/syn-forecast_stochastic, language Python, license MIT, archived false, created 2026-03-19, pushed 2026-08-19 (one week ago), stargazers_count 1, forks 0. Top level contains LICENSE, README.md, src. Description confirms the claimed manuscript title: 'Synthetic hydrology and forecast generation codebase with FIRO model for Lake Oroville to support manuscript Forecast Informed Reservoir Operations (FIRO) for the future: Exploring the operational implications of climate extremes and evolving forecast skill with large-sample synthetic hydrology and forecasts'.",
+      "relevance": "Live successor code to the 2024 synthetic-ensemble paper; the closest thing to a reusable implementation for stress-testing a forecast-informed policy without a long forecast archive.",
+      "http_status": "200 (GitHub API 200)",
+      "content_matches_claim": "yes on every checkable fact, but the framing overstates its maturity. 1 star, 0 forks, created five months ago, contents limited to LICENSE/README/src. It is manuscript-support code, not an established tool.",
+      "license": "MIT",
+      "stars": "1",
+      "last_activity": "pushed_at 2026-08-19; created 2026-03-19; not archived"
+    },
+    {
+      "name": "Albano et al. (2026), Characterizing Watershed Responses and Reservoir Operational Flexibilities: Analyses to Support Forecast-Informed Reservoir Operations (FIRO) Planning and Assessments, Water Resources Research 62(7)",
+      "url": "https://doi.org/10.1029/2025WR042131",
+      "kind": "Peer-reviewed open-access article, doi 10.1029/2025WR042131",
+      "what_it_provides": "Metadata confirmed via Crossref and OpenAlex: Water Resources Research vol. 62 issue 7, issued July 2026, AGU, CC BY-NC 4.0. Full author list Albano C; Shearer E; Forbis J; Yeates E; Kalansky J; Painter C; Tustison B; Wilson A - confirming USACE (Forbis, Yeates) and CW3E (Kalansky) co-authorship as claimed. 0 citations (very recent).",
+      "relevance": "A screening method for whether FIRO is viable at a given reservoir before committing to a full viability assessment - potentially the cheapest way to test whether Idukki/Idamalayar are even candidates, and to derive the required forecast lead time from reservoir geometry rather than assuming it.",
+      "http_status": "403-bot-blocked (doi.org redirects to agupubs/Wiley, which blocks curl and WebFetch); existence and metadata confirmed via Crossref/OpenAlex",
+      "content_matches_claim": "partly - title, journal, volume/issue, date and full author list confirmed exactly. The substantive claims (the 'operational flexibility' metric, 32 reservoirs in California and western Nevada, snow-dominated basins needing longer lead times, automated baseflow separation) are UNVERIFIED - I could not read the text.",
+      "license": "CC BY-NC 4.0",
+      "last_activity": "July 2026 issue; 0 citations"
+    },
+    {
+      "name": "F. M. Ralph, FIRO briefing to the California Water Commission, 16 April 2025",
+      "url": "https://cwc.ca.gov/-/media/CWC-Website/Files/Documents/2025/04_April/April2025_Item_10_Attach_1_FIRO_Final.pdf",
+      "kind": "Public-agency briefing slide deck (PDF, 35 pages, 4.7 MB)",
+      "what_it_provides": "Downloaded and parsed. Cover confirmed: F. Martin Ralph, Director CW3E at UCSD/SIO, FIRO National Expansion Pathfinder Chief Scientist. Pilot roster verified verbatim: Howard Hanson Dam (Green River, Seattle District USACE); Willamette Valley (14 Dams, Portland District USACE); New Bullards Bar Dam - FVA Complete (Yuba River, Yuba Water Agency); Oroville Dam (Feather River, CA DWR / Sacramento District); Lake Mendocino, Lake Sonoma - FVA Complete (Russian River, San Francisco District); Prado Dam, Seven Oaks Dam - FVA Complete (Santa Ana River, LA District / San Bernardino County FCD). Yuba-Feather FIRO Space verbatim: '90,000 Acre-feet at New Bullards Bar / 175,000 Acre-feet at Oroville / Combined: 265,000 Acre feet'. WY2025 Lake Mendocino: 'Over 10,000 acre-feet of additional water stored'. Atmospheric rivers: '41 atmospheric rivers impacted California between October 1st 2024 and March 14th 2025' and 'in northern California 85% of the variance in annual precipitation is due to variance in the 5% wettest days each year, which are almost all AR events'.",
+      "relevance": "Authoritative snapshot of FIRO deployment status as of April 2025 - which sites have completed viability assessments and which have not, plus the quantified storage benefit at scale.",
+      "http_status": "200",
+      "content_matches_claim": "yes - every figure verified verbatim",
+      "license": "California Water Commission public meeting material",
+      "last_activity": "16 April 2025"
+    },
+    {
+      "name": "GAO-16-685: Army Corps of Engineers - Additional Steps Needed for Review and Revision of Water Control Manuals",
+      "url": "https://www.gao.gov/products/gao-16-685",
+      "kind": "US Government Accountability Office audit report, published 26 July 2016",
+      "what_it_provides": "Retrieved via WebFetch (curl is hard-blocked). CONFIRMED: the Corps operates 'more than 700 dams and their associated reservoirs across the country'; engineer regulations mandate that water control manuals 'should be reviewed no less than every 10 years'; officials from all 15 districts stated they do not document informal reviews because they consider such work 'part of the daily routine of operating projects'; only one of the eight divisions tracked whether the water control plans in its water control manuals reflected actual operations. Both recommendations were 'Closed - Implemented' in November 2018, the Corps having updated its regulations and developed a centralized database to track water control manual status.",
+      "relevance": "Documents the institutional failure mode in the world's largest dam-operating agency: the governing documents are not tracked, and nobody knows whether they describe what operators actually do. Directly relevant to how AquaSync should expect KSEB's rule-curve documentation to behave.",
+      "http_status": "403-bot-blocked to curl (both /products/ and /assets/gao-16-685.pdf); full content retrieved and verified via WebFetch",
+      "content_matches_claim": "yes - every claim confirmed including the November 2018 closure date",
+      "license": "US Government work - public domain",
+      "last_activity": "Published 26 July 2016; recommendations closed November 2018"
+    },
+    {
+      "name": "Delft-FEWS FAQ (Deltares)",
+      "url": "https://oss.deltares.nl/web/delft-fews/faq",
+      "kind": "Vendor FAQ page",
+      "what_it_provides": "Fetched and parsed. LICENSING CONFIRMED VERBATIM: 'Is Delft-FEWS open source? Delft-FEWS is Open Software, but not Open Source. Delft-FEWS is used in many critical operational systems, and our users prefer that one organization control the code. The open software approach still makes it possible to customize Delft-FEWS to your individual needs with the General Adapter and the open API.' Cost confirmed: 'Is Delft-FEWS free to use? Yes it is! You only need to accept the license agreement... Are you going to use Delft-FEWS operationally? Then we will provide you the full version of Delft-FEWS after you sign the license agreement.' Release cadence confirmed: 'A new version of Delft-FEWS is released twice a year. If you have a support and maintenance agreement, you get a new release once per year.' Extension routes documented: combining transformation modules, running Python/R scripts through the General Adapter, or the Delft-FEWS Web Services API.",
+      "relevance": "The de facto operational forecasting platform AquaSync would have to sit beside or inside. The General Adapter / Web Services API is the concrete integration path for a custom model.",
+      "http_status": "200",
+      "content_matches_claim": "partly - the licensing, cost and release-cadence statements are confirmed word for word. But 'pricing is only via Deltares Services' does not appear on the FAQ, and the companion About-page statistics (40+ operational forecasting centres since 2002/2003, 100+ information sources, 50+ simulation modules, HEC/MIKE/HBV/SOBEK) are NOT present at https://oss.deltares.nl/web/delft-fews/about - I fetched it and none of those terms occur. See rejected list.",
+      "license": "Zero-cost licence, sign the agreement for the operational build; source not public",
+      "last_activity": "Live; site shows 2026 events and news"
+    },
+    {
+      "name": "UW-SASWE/RAT - Reservoir Assessment Tool 3.0",
+      "url": "https://github.com/UW-SASWE/RAT",
+      "kind": "GitHub repository (Python)",
+      "what_it_provides": "GitHub API confirms: full_name UW-SASWE/RAT, description 'Reservoir Assessment Tool', homepage http://satellitedams.net, language Python, license GPL-3.0, archived false, created 2022-05-12, pushed 2026-01-13, stargazers_count 26, forks 6. Release history verified EXACTLY as claimed: v3.0.19 published 2025-11-25 ('Release v3.0.19 with SWOT Plugin'), v3.0.18 2025-08-18, v3.0.17 2025-04-11, plus v3.0.16 down to v3.0.12. Estimates surface area, storage change, inflow (VIC hydrological model + MetSim), outflow, evaporation (Penman combination) and area-elevation curves, per the project's own About page.",
+      "relevance": "The satellite-based reservoir monitoring framework behind both Kerala papers, and the direct comparator for AquaSync's inflow estimation.",
+      "http_status": "200 (GitHub API 200)",
+      "content_matches_claim": "yes - stars, licence, activity and the exact three release dates all confirmed",
+      "license": "GPL-3.0 - a real consideration if any of it is reused inside AquaSync",
+      "stars": "26",
+      "last_activity": "pushed_at 2026-01-13; latest release v3.0.19 on 2025-11-25; not archived"
+    },
+    {
+      "name": "SASWE operational Kerala reservoir monitoring instance (RAT-WQ2 3.0)",
+      "url": "https://depts.washington.edu/saswe/kerala/",
+      "kind": "Live web dashboard (Plotly/Leaflet front end)",
+      "what_it_provides": "Fetched and parsed the page and its About sub-page. Confirmed: title 'RAT WQ2-Kerala', product name 'Reservoir Assessment Tool WQ2 (RAT-WQ2 3.0) - Kerala', tabs for Inflow, Outflow, Surface Area, Temperature, Storage Change, Area-Elevation Curve, Evaporation and SSC, a Forecast Date selector with 'Update Forecast Inflow', and a Download Data section. Attribution: 'Developed by Sarath Suresh at SASWE Labs, Department of Civil and Environmental Engineering, University of Washington'. The About page carries the primary citations including Suresh et al., RSE Vol 307, 2024, doi 10.1016/j.rse.2024.114149.",
+      "relevance": "A live Kerala deployment by the group that published the closest prior art. Worth probing the Download Data endpoint as an alternative or cross-check data source for Idukki/Idamalayar.",
+      "http_status": "200 (about.html also 200)",
+      "content_matches_claim": "partly - the interface, feature list and developer attribution are confirmed exactly. TWO corrections: (1) the page carries a visible banner reading '**Note: Data is still being populated', so describing it as a fully live operational deployment overstates it; (2) the claimed funding attribution to NASA, KSCSTE and CWRDM appears nowhere on the main page or the About page - I searched both for 'NASA', 'KSCSTE', 'CWRDM', 'fund' and 'acknowledg' and found none.",
+      "license": "Not stated on the page",
+      "last_activity": "Live, but self-described as still being populated"
+    },
+    {
+      "name": "Koo, Abraham, Jonoski & Solomatine (2025), Balancing Operators' Risk Averseness in Model Predictive Control for Real-time Reservoir Flood Control",
+      "url": "https://arxiv.org/abs/2407.04506",
+      "kind": "arXiv preprint (eess.SY), v1 5 Jul 2024, v2 29 Mar 2025; published in Journal of Hydroinformatics 2025 (jh2025019), doi 10.2166/hydro.2025.019",
+      "what_it_provides": "Fetched and parsed the arXiv abstract page. DEPLOYMENT-FAILURE STATEMENT CONFIRMED VERBATIM: 'Despite many studies on reservoir flood control and their theoretical contribution, optimisation methodologies have not been widely applied in real-time operation due to disparities between research assumptions and practical requirements. To address this gap, we include practical objectives, such as minimising the magnitude and frequency of changes in the existing outflow schedule.' Method confirmed as Parameterised Dynamic MPC (PD-MPC) with dynamic optimisation of objective weights and model parameters via model-based learning; 'we demonstrate that the weights and parameters vary with changing hydrological conditions'. Case study: Daecheong multipurpose reservoir, South Korea.",
+      "relevance": "States AquaSync's central adoption risk in one sentence and prescribes the fix: an optimiser that ignores the cost of deviating from the existing schedule will not be used. Adding a penalty on the magnitude and frequency of changes to the current release plan is a cheap, concrete change to AquaSync's objective function.",
+      "http_status": "200",
+      "content_matches_claim": "yes - quoted verbatim. Note the authors are at IHE Delft and TU Delft (Ja-Ho Koo, Edo Abraham, Andreja Jonoski, Dimitri P. Solomatine), not a Korean institution; only the case study is Korean.",
+      "license": "arXiv preprint; journal version in Journal of Hydroinformatics",
+      "last_activity": "v2 29 March 2025; journal publication 2025",
+      "download_hint": "PDF at https://arxiv.org/pdf/2407.04506v2"
+    },
+    {
+      "name": "Rayner, Lach & Ingram (2005), Weather forecasts are for wimps: why water resource managers do not use climate forecasts, Climatic Change 69(2-3):197-227",
+      "url": "https://link.springer.com/article/10.1007/s10584-005-3148-z",
+      "kind": "Peer-reviewed article, doi 10.1007/s10584-005-3148-z",
+      "what_it_provides": "Landing page reachable (200) and metadata confirmed via Crossref: Climatic Change vol. 69 issue 2-3, pages 197-227, April 2005, Springer, authors Rayner S; Lach D; Ingram H. 277 citations per Crossref - by far the most-cited item on this list, and the canonical reference for forecast non-adoption.",
+      "relevance": "The organisational, not technical, explanation for why a working decision-support tool goes unused. Pairs directly with the Dam Safety Act s.41/s.42 criminal-liability finding: for a KSEB engineer, following the published rule curve carries no personal exposure and deviating on a model's advice does.",
+      "http_status": "200",
+      "content_matches_claim": "partly - citation confirmed exactly, except that the issue is 69(2-3), not 69(2). The five named barriers (reliance on built infrastructure, organisational conservatism, scale mismatch, political disincentives, regulatory constraints) are the paper's well-known findings but I did NOT read the full text, which is behind Springer's paywall.",
+      "license": "Subscription (Springer); Crossref lists only the Springer TDM licence",
+      "last_activity": "Published April 2005; 277 citations"
+    },
+    {
+      "name": "Google Flood Forecasting API",
+      "url": "https://developers.google.com/flood-forecasting",
+      "kind": "Product/API documentation page",
+      "what_it_provides": "Fetched and parsed the served HTML. CONFIRMED from the page itself: 'The Flood Forecasting API provides access to real-time riverine flood forecasts for numerous countries, and is available at no charge under the CC BY 4.0 license'; it is the API behind Flood Hub; historical data is offered separately via the Inundation History dataset (1999-2020) and the Google Runoff Reanalysis & Reforecast dataset (GRRR, global river discharge 1980-2023). ACCESS GATE, verbatim: 'To access the Flood Forecasting API, you need to join a waitlist, obtain an API key, and enable the API within a Google Cloud Project.'",
+      "relevance": "The only operational, free, externally-maintained riverine forecast feed that could plausibly supply AquaSync with inflow guidance without building a forecast system. The GRRR reanalysis (1980-2023) is separately a real lead on AquaSync's pre-2020 data gap.",
+      "http_status": "200",
+      "content_matches_claim": "partly - the API is real, free and CC BY 4.0 as described, but NONE of the specific statistics quoted (7-day horizon, 5,000+ verified gauges, ~250,000 virtual gauges, 150+ countries, Mean Embedding Forecast LSTM as of December 2025, all-India coverage with CWC and 1,000+ hourly gauges) appear anywhere on this page. I searched for each one. Those figures may be accurate but they were not sourced from here.",
+      "license": "Data under CC BY 4.0, offered at no charge",
+      "last_activity": "Live documentation",
+      "caveat": "Access is waitlisted, not open. Budget lead time before assuming AquaSync can call this API."
+    }
+  ],
+  "rejected": [
+    {
+      "name": "CLAIM (not the source): CAG Appendices 3.5-3.7 are 'genuine 2018 Idukki and Idamalayar daily operational data' including reservoir level and spills",
+      "url": "https://cag.gov.in/uploads/download_audit_report/2021/Kerala_Au.I_Rep_6_2021-0618cb7f2db0035.98377057.pdf",
+      "reason": "REJECTED AS DESCRIBED - the single most consequential error in the sweep. The appendices are titled 'Sample simulations of Idukki/Idamalayar reservoir using the 1983/2020 rule curve'. I diffed Appendix 3.5 against 3.6 row by row for the same dates: reservoir level and spill columns DIFFER (14-08-2018: level 727.84 vs 726.90 m, spill 0.00 vs 68.63 MCM) because they are counterfactual trajectories under different rule curves. Only the INFLOWS TO RESERVOIR column is identical across both (84.18/165.06/154.96/111.70/92.51 MCM on 14-18 Aug) and is therefore genuine observed forcing; PH discharge matches on the flood days but is scenario-modified elsewhere (zeroed in the 1983-lower-level run, whose simulated level starts at 705.00 m). The source and the 112-row 10-06-2018 to 29-09-2018 range are entirely real and valuable - but ingesting the level/storage/spill columns as observations would silently corrupt any calibration or replay built on them."
+    },
+    {
+      "name": "CLAIM: Vegad & Mishra project days above 90% storage rising 'from ~6 at 1C to 23 at 3C'",
+      "url": "https://www.nature.com/articles/s44304-025-00117-z",
+      "reason": "REJECTED - the numbers are wrong. I read the OA PDF. The paper states 'a threefold increase in the median number of days, from 4.7 +/- 6.7 (median +/- 1 std) days at 1.0 C warming to 14.6 +/- 15.11 days at 3.0 C warming (Fig. 4F)', and these are the projected CHANGE in day count relative to a 1995-2014 reference period, not absolute counts. 6 -> 23 is neither the right pair of values nor a threefold ratio."
+    },
+    {
+      "name": "CLAIM: the 19 Sep 2020 SANDRP post contains 'the IIT Madras team's defence AND Harsha's reply... the only place the full argument appears in one thread'",
+      "url": "https://sandrp.in/2020/09/19/response-of-sudheer-et-al-to-the-comments-by-mr-j-harsha-on-the-article-role-of-dams-on-the-floods-of-aug-2018-in-periyar-river-basin-kerala/",
+      "reason": "REJECTED as described - that page carries ONLY the Sudheer et al. response. Harsha's rejoinder is a separate post published the same day, which I located from its 'Next Post' link and verified 200: https://sandrp.in/2020/09/19/role-of-dams-in-2018-kerala-floods-rejoinder-of-j-harsha-to-the-response-by-sudheer-et-al/ - now folded into the confirmed entry. You need both URLs, not one."
+    },
+    {
+      "name": "Delft-FEWS About page deployment statistics (40+ operational forecasting centres since 2002/2003, 100+ information sources, 50+ simulation modules, HEC/MIKE/HBV/SOBEK)",
+      "url": "https://oss.deltares.nl/web/delft-fews/about",
+      "reason": "REJECTED - I fetched the page (200, 141 KB) and searched the rendered text for 'forty', '100', '50', 'SOBEK', 'HBV', 'MIKE', '2002', '2003', 'forecasting centres' and 'operational'. None occur. What is served at that URL is a news/blog/events landing page. The figures may exist elsewhere on the Deltares site but cannot be attributed to this URL. The FAQ itself (kept in the confirmed list) is fully verified for the licensing statement."
+    },
+    {
+      "name": "CLAIM: Google Flood Forecasting coverage statistics (7-day horizon, 5,000+ verified gauges, ~250,000 virtual gauges, 150+ countries, Mean Embedding Forecast LSTM as of Dec 2025, all-India CWC partnership with 1,000+ hourly gauges)",
+      "url": "https://developers.google.com/flood-forecasting",
+      "reason": "REJECTED as sourced - I fetched and searched the served page for every one of those strings and none appear. The page confirms only that the API provides real-time riverine flood forecasts for numerous countries, free under CC BY 4.0, behind a waitlist, with separate Inundation History (1999-2020) and GRRR (1980-2023) datasets. The statistics are plausible but unsourced here; do not cite them to this URL."
+    },
+    {
+      "name": "CLAIM: SASWE Kerala instance is 'funded by NASA, KSCSTE and CWRDM'",
+      "url": "https://depts.washington.edu/saswe/kerala/",
+      "reason": "REJECTED - not verifiable from the site. I fetched both the main page and about.html and searched for 'NASA', 'KSCSTE', 'CWRDM', 'fund' and 'acknowledg'. None occur. The page attributes development to Sarath Suresh at SASWE Labs, University of Washington, and carries a visible banner '**Note: Data is still being populated'. The funding attribution may come from the RSE paper's acknowledgements rather than the dashboard."
+    },
+    {
+      "name": "CLAIM: the HESS discussion thread comprises '1 referee report, 3 short comments, 5 author responses'",
+      "url": "https://hess.copernicus.org/preprints/hess-2018-480/",
+      "reason": "REJECTED on the referee count - the live thread lists TWO referee comments (RC1 by Sudheer Padikkal, 27 Sep 2018; RC2 'Comments on Mishra and others' by Amit Kumar, 27 Oct 2018), three short comments (SC1 Jeroen van der Valk, SC2 EVT Kumar, SC3 Sudeep Jain) and five author responses (AC1-AC5). The preprint's 'not accepted for further review after discussion' status is separately confirmed verbatim and the source is retained."
+    },
+    {
+      "name": "gao.gov direct PDF asset",
+      "url": "https://www.gao.gov/assets/gao-16-685.pdf",
+      "reason": "REJECTED as a fetch route - returns 403 to curl with a browser user agent, as does the /products/ page. Use the product page URL (kept in the confirmed list) and open it in a browser, or via WebFetch, which succeeded and confirmed the full content."
+    },
+    {
+      "name": "CLAIM: 'Forbis et al. (2025)' with specific figures - more than 400 WCMs, 'would take decades', 'nearly exclusively based on rule curves', FIRO Screening Process steering committee 2021, SPD beta test 2022-2024, Stage A/Stage B",
+      "url": "https://onlinelibrary.wiley.com/doi/10.1111/jfr3.13051",
+      "reason": "PARTIALLY REJECTED - two problems. (1) Attribution: the paper has exactly two authors, Joe Forbis (USACE ERDC-CHL) and Cuong Ly (USACE SPD), so it is 'Forbis & Ly', not 'Forbis et al.'. (2) All the specific figures listed are UNVERIFIED: Wiley returns 403 to curl, to the pdfdirect route and to WebFetch, and no green OA copy exists. The abstract (retrieved via DOAJ) confirms only the decades-old-WCM framing and the existence of the FIRO Screening Process. Do not quote the numbers until the PDF is read in a browser."
+    }
+  ],
+  "verification_notes": [
+    "BIGGEST CORRECTION - the 2018 data gap is only half-closed. CAG Appendices 3.5-3.7 do give 112 daily rows each, 10-06-2018 to 29-09-2018 (confirmed by date-sorted extraction, not string sort), but they are SIMULATION tables. Cross-diffing Appendix 3.5 (1983 curve) against 3.6 (2020 curve) proves it: identical inflow, divergent level and spill. What AquaSync actually gains is a genuine daily 2018 INFLOW series for Idukki and Idamalayar plus observed powerhouse discharge on the flood days - still a real closure of gap 1 - but NOT an observed level or spill record. Observed spills exist only as 5-day aggregates in Tables 3.6/3.7/3.8 (Idukki 467.51 MCM, Idamalayar 340.50 MCM), and daily observed Neeleswaram flow in Table 3.4.",
+    "THE RULE CURVE IS NOT INTERPOLATED, AND THIS MATTERS OPERATIONALLY. CAG Appendix 3.3 gives the 2020 curve at 18 ten-day steps and I verified all 36 values. The KSDMA bulletin of 25 Aug 2026 lists Idukki rule level 2390.09 ft = 728.4994 m, which is exactly the 31 August row - not the linear interpolation between 20 Aug (727.50) and 31 Aug (728.50), which would give 727.955 m. KSEB therefore appears to apply the curve as a step function holding the end-of-period value. An optimiser that linearly interpolates the published curve will silently target a level about 0.5 m below what KSEB is actually holding to in late August.",
+    "THE CENTRAL COMPLICATION SURVIVES SCRUTINY AND IS CORRECTLY STATED. I read Tables 3.6, 3.7 and 3.8 directly. Idukki actual spills 14-18 Aug 467.51 MCM; 1983 curve 558.19; 2020 curve 531.03; only the 1983 curve initialised from the LOWER rule level gives 308.13 MCM. Idamalayar 2020 curve 323.49 vs 340.50 actual (5% better). The 2020 rule curve KSEB actually adopted would have made Idukki worse. Any AquaSync narrative that frames rule-curve compliance as the fix is contradicted by the official audit.",
+    "THE FORECAST-SKILL FLOOR CLAIM IS THE STRONGEST FINDING IN THE SWEEP AND IT IS VERBATIM CORRECT. Current Science 116(5) p.789: 'The probability of detection (POD) of higher rainfall (>25 mm/day) at short range (3-day) or medium range (5-day) even with the ensemble of models is still low at about 20% to 30% only with a large probability of false alarm.' Set against Lake Mendocino's verified CNRFC numbers (24-hr inflow R2 0.84 at day 1 falling to 0.53 at day 5), the gap between the Periyar and the FIRO flagship sites is stark. Citation caveat: Sudheer et al. are citing their own references 23 and 24 here, not reporting an original result.",
+    "DATE AND VERSION DRIFT ON THE LIVE FEED. The KSDMA portal now shows 26/08/2026 while the KSEB PDF at the linked URL still holds the 25/08/2026 table (Last-Modified 25 Aug 12:08 GMT) - the page heading updates ahead of the file. More importantly, KSEB-SITE-13.pdf is overwritten in place and the numeric index rotates, so there is no archive at that URL. Any AquaSync ingestion must scrape the portal for the current href and store its own daily copies; hardcoding the filename will silently go stale or 404.",
+    "FIVE 403s WERE GENUINE BOT BLOCKING, NOT DEAD LINKS, AND ALL FIVE RESOURCES ARE REAL - but note one important asymmetry. ascelibrary (Das et al.), Wiley/agupubs (Delaney, Brodeur, Albano, Forbis & Ly) and gao.gov all block automated agents; every one was confirmed via Crossref, OpenAlex, DOAJ or WebFetch. Delaney, Brodeur, Albano and Forbis & Ly are all open access (CC BY or CC BY-NC) and readable in a browser. Das et al. 2025 is genuinely CLOSED (OpenAlex is_oa = false, no green copy anywhere) - and it is the paper closest to AquaSync's own thesis.",
+    "CITATION COUNTS ARE SOURCE-DEPENDENT AND ALREADY STALE. Delaney et al. 2020: 114 per Crossref but 143 per OpenAlex. Brodeur et al. 2024: 18 per Crossref, 16 per OpenAlex. Forbis & Ly: 6-7. Albano et al.: 0. Rayner et al. 2005: 277 - by an order of magnitude the most-cited item here, which is itself the finding: the paper about why operators ignore forecasts is cited far more than any paper about better forecasts.",
+    "TWO REPOS, VERY DIFFERENT MATURITY - the original framing flattened this. UW-SASWE/RAT is a real project: 26 stars, 6 forks, GPL-3.0, created 2022, pushed 2026-01-13, with the three claimed releases confirmed to the day (v3.0.17 2025-04-11, v3.0.18 2025-08-18, v3.0.19 2025-11-25 'with SWOT Plugin'). zpb4/syn-forecast_stochastic has 1 star, 0 forks, was created 2026-03-19, and contains only LICENSE, README.md and src - MIT-licensed and recently pushed (2026-08-19), but calling it 'the live successor' oversells it. RAT's GPL-3.0 also has licensing consequences if any of it is reused inside AquaSync.",
+    "THE STRONGEST ACTIONABLE FINDING IS THE CHEAPEST TO IMPLEMENT, AND IT IS NOT ABOUT FORECASTS. Koo et al., verified verbatim: 'optimisation methodologies have not been widely applied in real-time operation due to disparities between research assumptions and practical requirements. To address this gap, we include practical objectives, such as minimising the magnitude and frequency of changes in the existing outflow schedule.' Combined with Dam Safety Act s.41/s.42 (verified word for word - one year imprisonment for refusing a direction, two if it causes loss of life, head of department deemed guilty) and Rayner et al., the picture is consistent: an optimiser that proposes large or frequent deviations from the published schedule will not be adopted regardless of how good its foresight is. Adding a deviation-magnitude and deviation-frequency penalty to AquaSync's objective has more adoption value than any accuracy gain.",
+    "AN UNEXPECTED LEAD ON THE PRE-2020 DATA GAP, found while checking a different claim. The Google Flood Forecasting page itself points to the Google Runoff Reanalysis & Reforecast dataset (GRRR), described as global river discharge estimates covering 1980-2023, and an Inundation History dataset covering 1999-2020 - both separate from the waitlisted forecast API and neither in the source list. Given that AquaSync has no genuine pre-2020 Periyar operational data and CAG only supplies Jun-Sep 2018 inflow, a global discharge reanalysis back to 1980 is worth a dedicated look. I have NOT verified GRRR's resolution, Periyar coverage or access terms - flagging it as a lead, not a confirmed source."
+  ],
+  "_dimension_key": "soa-limitations",
+  "_stage": "verify",
+  "_run": "wf_009a6299-c5b"
+}

@@ -1,0 +1,435 @@
+{
+  "executive_summary": [
+    "CONSTANTS BUG, verified twice: d:\\aqua_sync\\backend\\aquasync\\twin\\constants.py sets Idukki mwl=732.43 (identical to FRL) and Idamalayar mwl=169.00. CAG Appendix 3.1 (I extracted it from research/sources/papers/CAG_Kerala_flood_audit.pdf, page index 119) gives Idukki MWL 734.11 m / Idamalayar 171.20 m, and the live KSEB July-2026 workbook independently lists '2408.5 ft' (733.91 m) and 171 m. AquaSync therefore models ZERO surcharge above FRL. Integrating the RAT area-elevation curve over 732.43->734.11 m gives ~90 MCM of storage the optimiser cannot see - comparable to the entire ~90 MCM flood cushion CWC says operators actually had in August 2018.",
+    "SPILLWAY BUG: backend/aquasync/twin/reservoir.py line 206 sets `crest = self.res.red_level` (728.19 m for Idukki). The published Idukki spillway crest is 2373 ft = 723.29 m (KSEB July-2026 workbook 'Spillway Crest Level' column, which I downloaded and parsed; also a KSDMA bulletin column). At FRL the current weir formula returns ~1,400 cumec; with the true crest it returns ~4,475 cumec against the official design discharge of 5,012 cumec (CAG App 3.1). Gate geometry (5 radial gates x 12.19 m) is correct. Every 'we could have released more, earlier' conclusion is currently capped by a wrong constant that understates Idukki's discharge capacity roughly 3x.",
+    "THE RULE LEVEL IS A CURVE, NOT A SCALAR, AND AQUASYNC FROZE IT AT THE 31-AUGUST VALUE. I read all 36 values of CAG Appendix 3.3 (the KSEBL 2020 rule curve, 18 ten-day steps, both dams). AquaSync's rule_level=728.50 (Idukki) and 164.00 (Idamalayar) are exactly the 31-August rows. I then proved the curve is live and applied as a STEP function holding the end-of-period value: the KSEB July-2026 workbook carries rule 2375.33 ft on BOTH 01 and 10 July (=724.00 m = CAG's 'July 10th' row), 2377.95 ft on 20 July (=724.80 m), 2380.58 ft on 31 July (=725.60 m) - an exact match to CAG - and CAG records KSEBL's own reply that the 11-20 August level is 2,386.81 ft (=727.50 m = CAG's 'August 20th' row). This matters because optimizer.py line 229 normalises headroom by (frl - rule_level) and line 485 searches targets from blue_level upward.",
+    "IDAMALAYAR ALERT BANDS ARE WRONG BY 1.0 m AND 0.5 m. Alert levels are a fixed offset below the rule level: Idukki Blue/Orange/Red = rule minus 8.00/2.00/1.00 ft (AquaSync's Idukki offsets are correct); Idamalayar = rule minus 1.50/1.00/0.50 m, which I verified holds at all four sheets I parsed in the July-2026 workbook (rule 161.5 -> 160/160.5/161; rule 162.5 -> 161/161.5/162) and again in the KSDMA 25-08-2026 bulletin (rule 164.00 -> 162.50/163.00/163.50). AquaSync has Idamalayar blue=161.50 (rule-2.50) and orange=162.50 (rule-1.50). Blue fires 1.0 m late, orange 0.5 m late; red is right.",
+    "A GENUINE DAILY OBSERVED 2018 INFLOW SERIES FOR BOTH RESERVOIRS IS ALREADY IN THE REPO, AND I PROVED WHICH COLUMNS ARE REAL. CAG Appendices 3.6 and 3.7 give 112 daily rows each, 10-06-2018 to 29-09-2018. I diffed App 3.5 against App 3.6 across their 92 common dates: the inflow column is identical 92/92, while reservoir level is identical 0/92 and spill only 38/92 - so inflow is observed forcing and level/spill are counterfactual simulation. Cross-validation is excellent: CAG's Idukki 15-17 Aug inflow sums to 431.7 MCM against CWC's independently stated 435 MCM, and CAG's Idamalayar peak day of 100.59 MCM = 1,164 cumec matches CWC's stated 1,164 cumec exactly. Gap #1 is closed for the forcing a reservoir twin actually needs, with zero downloads.",
+    "THE PERFECT-FORESIGHT GAP NOW HAS A TRAINING SET. I broke open the Kerala SLDC historical form: POST to https://sldckerala.com/index.php?id=7 with body date1=YYYY-MM%2FDD-YY&date1_day=&date1_month=&date1_year=&sbtstore=SHOW returns daily OBSERVED inflow (mcm/day), spill, rainfall, level, storage and cumulative inflow for both reservoirs. Confirmed live: 2021-10-20 -> Idukki 730.959 m / spill 9.072 / inflow 29.793; 2020-09-25 -> 1209.408 MCM / 83%; 2021-04-30 -> 524.654 MCM / 36%; 2019-08-08 -> inflow 135.532 MCM/day with 194.2 mm rain. 2018-08-16 returns an empty shell, so the archive genuinely starts 2019-08-08 (~2,575 days to today). It also independently repairs the ENTIRE 2020-09-25 to 2021-04-30 window that is corrupt in the amith-vp feed.",
+    "THE RAT-KERALA IDUKKI AREA-ELEVATION CURVE IS PHYSICALLY BROKEN - DO NOT USE IT FOR STORAGE. I downloaded and integrated it: surface area jumps from 3.005 km2 at 722 m to 43.1 km2 at 723 m (a 40.1 km2 step in one metre), and the MDDL->FRL integral gives 532 MCM against the official live storage of 1,459.49 MCM - 2.7x too small. Areas above ~724 m are plausible (50.015 km2 at 730 m vs Suresh et al.'s 60 km2 at FRL) and are fine for evaporation, rain-on-lake and the surcharge estimate. Prior research advised cross-checking AquaSync's r2=0.9957 level-storage law against this curve; doing so naively would have injected a 2.7x error.",
+    "THE PUBLISHED RULE CURVE WOULD HAVE MADE IDUKKI WORSE, SO 'COMPLY WITH THE RULE CURVE' CANNOT BE THE HEADLINE. CAG Table 3.6/3.7 (read directly): actual Idukki spills 14-18 Aug = 467.51 MCM; the 2020 rule curve gives 531.03 MCM; the 1983 curve started from the upper or actual level gives 558.19 MCM; only a 1983 curve initialised from the LOWER rule level gives 308.13 MCM. Idamalayar's 2020 curve does help marginally (323.49 vs 340.50 actual). CAG also records that KSEBL told the IISc team no rule curve was followed at all during the flood despite possessing the 1983 curve, and that a 'dynamic flood cushion of four feet below FRL (68.87 MCM)' was introduced in August 2018 and still did not avoid 467 MCM of spill.",
+    "ROUTING IS ROUGHLY 2x TOO SLOW AGAINST THE ONLY OFFICIAL ANCHOR. AquaSync's reaches give Idukki->Aluva K = 11 + 8 = 19 h. CWC's December-2018 report states an 8-hour travel time for combined Idukki + Idamalayar dam discharges to Neeleswaram (which sits between AquaSync's Perumbavoor and Aluva control points). Also fatal to a previously proposed calibration route: ARANGALI is on the Chalakudy, not the Periyar - the NWDP file's own Tributary/Local River/District columns say Chalakudy/Chalakudy/THRISSUR - so Neeleeswaram+Arangali is NOT an inflow-outflow pair. The defensible reach is dam outflow -> Neeleeswaram, with Arangali repurposed as the Chalakudy lateral-inflow boundary below it.",
+    "INTEGRATION IS A READ-ONLY PUBLISHING PROBLEM WITH A STATUTORY HOOK AND A NAMED DECISION FORUM - NOT A SCADA PROBLEM. Dam Safety Act 2021 s.35(1)(a) makes an inflow forecasting system a dam owner's statutory duty and s.35(1)(e) requires anticipated inflows/outflows in the public domain; s.41/s.42 attach personal criminal liability (up to 2 years, head of department deemed guilty), which explains operator conservatism better than any technical barrier. The actual decision point is Kerala GO(Rt) No. 453/2021/DMD - a multi-agency committee that convenes when a dam reaches ORANGE alert. Idukki's instrumentation is Encardio's closed RESHMI/Drishti stack under DRIP, and CEA's 2021 guidelines state as a cardinal principle 'hard isolation of their OT Systems from any internet facing IT system'. There is no evidence of any Modbus/IEC-104 endpoint to talk to; do not plan a field-bus integration."
+  ],
+  "integration_paths": [
+    {
+      "target_system": "KSDMA multi-agency dam operations committee (the real decision forum)",
+      "approach": "AquaSync produces a pre-computed options brief, not a control action: 3-5 candidate release schedules with peak level, peak downstream discharge at Aluva, spill volume, forgone generation and time-to-FRL, delivered when a dam crosses orange alert. Mirror the KSDMA bulletin schema exactly (FRL, rule level, blue/orange/red, live storage at FRL, live storage, % storage, current spillway release in cumecs) so the committee reads familiar columns.",
+      "standard_or_protocol": "No protocol - a one-page PDF/HTML brief matching the KSDMA daily bulletin layout. Optionally OGC API - EDR (OGC 19-086r6) later for machine access.",
+      "effort": "Low - days, once the rule-curve and constants fixes land.",
+      "blockers": "Institutional, and larger than technical. The committee decides, the operator executes; AquaSync has no seat. Kerala's rule curves are described as 'prepared for all major dams' but are NOT published: on the KSDMA Dam Management page only Kallarkutty carries a link among 19 KSEB dams and the Idukki-Cheruthoni EAP cell is empty. Obtaining the authoritative current Idukki rule curve is a written request, not a download - the CAG Appendix 3.3 copy is what you have until then.",
+      "regulatory_note": "G.O.(Rt) No. 453/2021/DMD dated 3-6-2021 constitutes the committee and states verbatim that it 'meets when dams reach their orange level of alert or if extreme rainfall events are forecasted'. Verified at https://sdma.kerala.gov.in/dam-management/ (200)."
+    },
+    {
+      "target_system": "KSEB Ltd Dam Safety Organisation - historical bulletin archive",
+      "approach": "Ingest the monthly-statistics workbooks as the authoritative KSEB-origin history: 86 downloadable files, June 2019 (wpdmdl=315) through July 2026 (wpdmdl=6380). Modern sheets carry Rule level, Blue/Orange/Red, Live Storage, Inflow (MCM), Average Inflow (Cumec), Power House Discharge, Spill (MCM) and Current Spillway release - i.e. observed release partitioning AquaSync's power and spill models can be calibrated against.",
+      "standard_or_protocol": "None - WordPress Download Manager IDs serving .xlsx (to Oct 2020) then legacy .xls (Nov 2020 onward).",
+      "effort": "Low - 1-2 days for a loader.",
+      "blockers": "IDs 310-314 (Jan-May 2019) are dead: they 302-redirect to kseboa.in which does not resolve, so the archive starts at June 2019, not January. The format flips to legacy .xls from ID 1178 (Nov 2020) - openpyxl refuses these and that stretch is exactly the corrupt-window months you most want, so budget xlrd or a LibreOffice conversion step. The 2019 workbooks' 'Previous Year Water Level' column yields only 96 unique 2018 dates, of which just three are in August (20th, 30th, 31st) - the flood peak is not there.",
+      "regulatory_note": "Site content is CC BY-SA 2.5 IN. KSEB Ltd is the specified-dam owner under Dam Safety Act 2021 and the counterparty for any formal data agreement."
+    },
+    {
+      "target_system": "Kerala State Load Despatch Centre (SLDC) - daily observed inflow archive",
+      "approach": "Scrape the date-queried System Statistics: Storage table for both reservoirs, daily from 2019-08-08 to present. Yields level, storage, % storage, rainfall (mm), spill, INFLOW (mcm/day) and cumulative inflow - the single best free training set for a Periyar inflow forecast model.",
+      "standard_or_protocol": "None - HTTP POST to a PHP form. Body: date1=YYYY-MM%2FDD-YY&date1_dp=1&date1_day=DD&date1_month=MM&date1_year=YYYY&sbtstore=SHOW. GET does not work; the two-digit year suffix in date1 is required.",
+      "effort": "Low - 2 days including a polite rate-limited crawler and a parsed CSV cache.",
+      "blockers": "Undocumented endpoint with no rate-limit statement or terms - one request per day of history, so crawl slowly and cache. Archive does not reach 2018 (2018-08-16 returns an empty shell; 2019-08-05 empty, 2019-08-08 populated). Critically, the three official Kerala sources DISAGREE on the same date: for 25-08-2026 the KSDMA bulletin gives Idukki 2364.22 ft with bands 2382.09/2388.09/2389.09, while the KSEB dashboard and SLDC give 720.968 m (~2365.38 ft) with bands 2389.78/2395.78/2396.78 - two alert-band sets ~7.7 ft apart. Reconcile explicitly before treating any as a hard constraint.",
+      "regulatory_note": "None specific; SLDC operates under the Electricity Act / CEA framework, so any formal feed request travels through KSEB rather than SLDC directly."
+    },
+    {
+      "target_system": "Central Water Commission - inflow forecasting (the route out of perfect foresight)",
+      "approach": "Request Periyar/Neeleswaram inclusion in CWC's inflow-forecast programme and access to the Advisory Flood Forecast product, then feed its ensemble into AquaSync's policy search in place of the oracle inflow array. CWC's page confirms 'Inflow Forecasts at 128 reservoirs are used by the dam authorities in timely operation of reservoir gates'; AFF runs 20 basin models every three hours with a 7-day horizon on satellite rainfall, rain gauges, IMD GFS and WRF.",
+      "standard_or_protocol": "No open API. AFF is a web product; ingestion would be a negotiated feed or a scrape of a station page.",
+      "effort": "Medium-to-high - this is a letter and a relationship, not a download. Months.",
+      "blockers": "PERIYAR COVERAGE IS UNPROVEN. The AFF landing HTML contains no occurrence of 'Neeleswaram', 'Periyar' or 'Kerala' (stations load via JavaScript), and CWC's own December-2018 report states flatly 'There is no Flood Forecasting network in Kerala till date'. Verify interactively before planning around it. India-WRIS, the other national route, is unreachable: DNS resolves 164.100.85.36 but TCP to :443 times out, so the recovered API contract is documentation, not access.",
+      "regulatory_note": "Dam Safety Act 2021 s.35(1)(a) obliges the dam owner to 'establish well designed hydro-meteorological network and an inflow forecasting system', and s.35(1)(f) obliges assistance to the Authority for 'exchange of real time hydrological and meteorological data'. That is the lever for the request."
+    },
+    {
+      "target_system": "NDSA / State Dam Safety Organisation - statutory reporting",
+      "approach": "Make AquaSync emit the SDSO-facing instrument-reading analysis as a first-class output, so the tool is a compliance deliverable rather than an optional extra. Poll the open NDSA JSON API for newly gazetted regulations rather than re-reading a page: GET /ndsa-backend/web/api/document-config, then POST /ndsa-backend/web/regulation?lang=en with {\"page\":0,\"sort\":\"\",\"search\":\"\"}.",
+      "standard_or_protocol": "Undocumented but open JSON API (no key). Content governed by NDSA regulations under the Dam Safety Act 2021.",
+      "effort": "Medium - low to poll the API, medium to build a report once the form is known.",
+      "blockers": "The regulations that define WHAT to report are scanned images: pypdf extracts zero characters from Reg 8 (minimum instrumentation, s.32(1)), Reg 9 (forwarding analysis of readings to the SDSO, s.32(2)) and Reg 16 (hydro-met station data, s.33(1)). Someone must read or OCR them before AquaSync can claim a compliant cadence or form. Do not quote a reporting interval until that is done. The API itself is undocumented and can change without notice.",
+      "regulatory_note": "Dam Safety Act 2021 ss.32(1), 32(2), 33(1), 34(1), 34(2) - and note Reg 11 (s.34(2), 'location and manner of collection, compliance, process and storage of data') is a data-storage mandate directly relevant to where AquaSync's telemetry layer lives."
+    },
+    {
+      "target_system": "Idukki dam instrumentation and any KSEB OT estate",
+      "approach": "Do NOT attempt a field-bus client. The only realistic routes are (a) a negotiated export or read-only database view from Encardio's Drishti system, or (b) a read-only DMZ historian read over OPC-UA using opcua-asyncio (LGPL-3.0, 1,468 stars, actively pushed). Meanwhile build a SIMULATED IEC 60870-5-104 testbed with Fraunhofer's c104 (GPL-3.0) so the protocol layer is exercised without touching plant.",
+      "standard_or_protocol": "OPC-UA for a historian read; IEC 60870-5-104 (with IEC 62351 security extensions) is the protocol CEA names for RTU/PLC conformance; IEC 61850-7-410 defines hydropower logical nodes if a plant vocabulary is ever needed (libiec61850, GPL-3.0, though the hydro node model lives in the paid IEC standard).",
+      "effort": "High - quarters, and mostly negotiation.",
+      "blockers": "The incumbent stack is closed and vendor-proprietary: Encardio's RESHMI contract under DRIP, geotechnical/geodetic/hydro-met/seismic sensors, data loggers with GSM/GPRS to a central server, Drishti database management. No open protocol socket is evidenced anywhere. Earlier planning material asserted 73 telemetered stations and 50 SCADA substations on ICCP/TASE.2 to SLDC Kalamassery - that is UNSOURCED and could not be confirmed on any KSEB page; treat it as inference, never as fact. Any commercial-licence copyleft (GPL-3.0 on c104/libiec61850) is a real obligation for a KSEB-bound deliverable.",
+      "regulatory_note": "CEA Guidelines on Cyber Security in Power Sector 2021, cardinal principle: 'There is hard isolation of their OT Systems from any internet facing IT system', at most one internet-facing IT system per site under CISO control with data movement only via a whitelisted device. This is the quotable basis for a one-way/read-only architecture. CERT-In directions of 28-04-2022 add 6-hour incident reporting, 180-day rolling logs held within Indian jurisdiction, and NTP sync to NIC or NPL."
+    },
+    {
+      "target_system": "Publishing AquaSync's own model output to partner agencies",
+      "approach": "Serve AquaSync's time series through pygeoapi (MIT, 623 stars, PyPI 0.24.0) as an OGC API - EDR endpoint. EDR's position/radius/area/cube/trajectory queries are shaped precisely for 'give me the series at this point over this window' against model output, which is what a decision-support twin publishes. NDSA's own open JSON endpoints are the local precedent that agencies here do publish machine-readable data.",
+      "standard_or_protocol": "OGC API - Environmental Data Retrieval (OGC 19-086r6). OGC SensorThings (18-088, via FROST-Server, LGPL-3.0 + Java/PostGIS) only if a partner explicitly demands it. WaterML 2 Part 3 / HY_Features (14-111r6) if a catchment/reach vocabulary is needed.",
+      "effort": "Medium - 1-2 weeks for a read-only EDR facade.",
+      "blockers": "India has adopted none of these standards - this is a unilateral design choice, not a compliance requirement, so it buys interoperability rather than approval. pygeoapi requires Python >=3.12, a real constraint if AquaSync is pinned lower. 'OGC HydroDART' from the original planning material does not exist; do not let it creep back in.",
+      "regulatory_note": "Dam Safety Act 2021 s.35(1)(e) requires anticipated inflow/outflow information to be made available to district authorities AND 'in public domain' - a published EDR endpoint is a direct, defensible way to satisfy that."
+    },
+    {
+      "target_system": "CWRDM / UW-SASWE (RAT-Kerala) - the tractable research partner",
+      "approach": "Consume the published per-dam CSVs immediately (officially linked from cwrdm.kerala.gov.in, so sanctioned rather than scraped) for surface area, storage change, evaporation and an independent area-elevation curve. Separately, approach CWRDM as the single most tractable point of contact for in-situ KSEB 2018 inflow: three independent teams state they obtained it, and Suresh et al. say verbatim 'in-situ inflow data obtained from the KSEB for Idamalayaar reservoir' with Table 5 captioned 'Observed inflow from KSEB for the period of May - October 2018'.",
+      "standard_or_protocol": "Plain HTTP CSV at a fixed path pattern: /RAT_Kerala_CWRDM/assets/RAT_results/{product}/{dam}.csv. No auth.",
+      "effort": "Low to consume (hours). Medium to partner (weeks to months).",
+      "blockers": "Plain HTTP on a bare IP with no TLS and no DNS name - it can move without notice - and the page carries a live 'Data is still being populated' banner. RAT inflow is MODELLED VIC output, not observation: published Idukki skill is only r=0.63 (RMSE 217.94 cumec) and its 2018 Idukki peak of 1104.56 cumec on 18 Aug is 2.3x low and 3 days late against CWC's observed 2532 cumec at 22:00 on 15 Aug. The source paper itself says inflow peaks 'are found to be underpredicted... requiring bias correction'. Note the dam slug is idamalayaar with a double-a.",
+      "regulatory_note": "RAT source is GPL-3.0, which has consequences if any of it is reused inside a KSEB-bound AquaSync. Consuming the CSVs carries no such obligation."
+    }
+  ],
+  "prioritised_upgrades": [
+    {
+      "upgrade": "Correct the reservoir constants: Idukki MWL 732.43 -> 734.11 m, Idamalayar 169.00 -> 171.20 m; spillway crest in reservoir.py from red_level to the published 723.29 m (Idukki) / 161.00 m (Idamalayar); Idamalayar blue 161.50 -> 162.50 and orange 162.50 -> 163.00.",
+      "closes_which_gap": "None of the five named gaps - but it invalidates current optimiser output, so nothing else is trustworthy until it lands.",
+      "uses": "CAG Appendix 3.1 in research/sources/papers/CAG_Kerala_flood_audit.pdf (pdf page index 119; I extracted it: Idukki FRL 732.43 / MWL 734.11 / MDDL 694.94 / gross 1996.34 / live 1459.49 / chute spillway 5012 cumec / 5 radial gates 12.19 x 10.36 m / catchment 650.00 km2), cross-checked against the live KSEB workbook https://dams.kseb.in/?wpdmdl=6380 which I downloaded and parsed.",
+      "effort": "0.5 day.",
+      "value": "The twin currently believes Idukki can pass ~1,400 cumec at FRL when it is rated at 5,012, and that it has zero storage above FRL when it has ~90 MCM. Both distortions push the optimiser toward earlier, larger pre-releases than the physics requires - the exact conclusion the project would be attacked on.",
+      "verdict": "do-now - it is a handful of numbers and it changes every result the project has produced."
+    },
+    {
+      "upgrade": "Replace the scalar rule_level with the 18-step CAG 2020 rule curve implemented as a STEP function holding the end-of-period value, and derive blue/orange/red from it by fixed offset (Idukki rule minus 8.00/2.00/1.00 ft; Idamalayar rule minus 1.50/1.00/0.50 m).",
+      "closes_which_gap": "Policy realism - optimizer.py normalises headroom by (frl - rule_level) and searches targets upward from blue_level, so a frozen scalar distorts the entire search space.",
+      "uses": "CAG Appendix 3.3 (all 36 values verified from the local PDF), validated against three sheets I parsed in the KSEB July-2026 workbook (rule 2375.33 ft on both 01 and 10 July = 724.00 m; 2377.95 on 20 July = 724.80; 2380.58 on 31 July = 725.60) and against KSEBL's own reply in CAG that the 11-20 August level is 2,386.81 ft = 727.50 m.",
+      "effort": "1 day.",
+      "value": "AquaSync currently targets the 31-August level all year. Worse, a naive linear interpolation of the published curve would sit ~0.5 m BELOW what KSEB actually holds in late August - so getting the step semantics right matters as much as adding the curve.",
+      "verdict": "do-now - highest ratio of operational realism to lines of code in the whole list."
+    },
+    {
+      "upgrade": "Extract the CAG 2018 daily inflow series for both reservoirs and stand up August 2018 as a second validated case study alongside October 2021.",
+      "closes_which_gap": "Gap #1 (no genuine pre-2020 operational data) - for the forcing, which is what a reservoir twin actually needs.",
+      "uses": "CAG Appendices 3.6 and 3.7 in the local PDF: 112 daily rows each, 10-06-2018 to 29-09-2018. I proved the inflow column is observed by diffing App 3.5 against 3.6 - inflow identical 92/92, level identical 0/92, spill 38/92. Validation targets: CAG Table 3.4 gives observed Neeleswaram daily flow 14-18 Aug (196.13/532.83/793.93/796.44/612.75 MCM) and observed combined dam spills (91.06/192.47/234.53/185.85/104.11 MCM); Table 3.6 gives actual Idukki 5-day spill 467.51 MCM; the CWC Sept-2018 report supplies ~10 hourly level waypoints.",
+      "effort": "2 days - PyMuPDF text extraction. The CAG tables extract cleanly (I did it), unlike the Current Science and NTRS paper tables which come out with shifted columns.",
+      "value": "Turns the flagship from one case study into two, with the second being the event every reviewer and every KSEB engineer will ask about. Cross-validation is already strong: CAG's 15-17 Aug inflow sums to 431.7 MCM against CWC's independent 435 MCM.",
+      "verdict": "do-now - the data is already on disk; this is extraction work, not acquisition."
+    },
+    {
+      "upgrade": "Re-run the existing policy search under degraded and ensemble inflow instead of the oracle, and publish the loss curve as a headline result.",
+      "closes_which_gap": "Gap #3, perfect foresight - the project's stated biggest weakness.",
+      "uses": "SLDC daily observed inflow 2019-08-08 to present as the historical sample; wltaylor/Robust-FIRO (MIT, 194-line MPCProblem.py with the objective cost = (1-w)*sum(pos(Sf-TOCS)) + w*sum(neg(Sf-TOCS)) over an ensemble-by-lead array, ramp bounds on both future steps and the current step) as the formulation to port; zpb4/syn-forecast_stochastic (MIT, pushed 2026-08-19) for deliberate forecast-skill degradation; wltaylor/SSJRB-FIRO-Publishing for the LOOCV harness that proves a policy generalises beyond one event.",
+      "effort": "1-2 weeks.",
+      "value": "Converts the biggest weakness into the most defensible result: 'here is what this policy is worth at the 20-30% POD that is the real Periyar forecast skill, and here is the skill threshold at which it beats the rule curve'. Without this, every performance number AquaSync quotes is an upper bound nobody can attain.",
+      "verdict": "do-now - but port ~40 lines of cvxpy, do not adopt. Robust-FIRO line 4 is a bare unguarded `import mosek` and run() defaults to the commercial MOSEK solver; delete the import and pass CLARABEL explicitly. Its forecast arrays live on Zenodo, not in the repo. SSJRB's train_firo.py raises NameError as committed (line 82 uses `bounds`, defined only inside a commented block at line 63)."
+    },
+    {
+      "upgrade": "Build the SLDC daily archive scraper; use it to repair the corrupt window and as the observed-inflow training and validation set.",
+      "closes_which_gap": "The known 11% corruption (2020-09-25 to 2021-04-30) outright, plus ~12 months of history before the amith-vp feed begins, plus the data substrate for gap #3.",
+      "uses": "https://sldckerala.com/index.php?id=7 by POST - I verified it live at 2019-08-08, 2020-09-25, 2021-04-30 and 2021-10-20, and confirmed 2018-08-16 is empty. It gives an independent cross-check on the October 2021 flagship (Idukki 730.959 m, spill 9.072, inflow 29.793 mcm/day on 2021-10-20) that the GitHub dataset cannot provide.",
+      "effort": "2 days.",
+      "value": "~2,575 days of observed daily inflow, spill, rainfall and level for exactly AquaSync's two reservoirs, from a state authority rather than a community scrape - and it makes the twin's provenance defensible to KSEB.",
+      "verdict": "do-now - highest-value new data source found, and it is free and unauthenticated."
+    },
+    {
+      "upgrade": "Add a deviation-from-published-schedule penalty to the objective function, distinct from the existing ramp-smoothness term.",
+      "closes_which_gap": "Adoption, not a technical gap - and adoption is what the project is ultimately for.",
+      "uses": "Koo, Abraham, Jonoski & Solomatine (2025), arXiv 2407.04506 / J. Hydroinformatics doi 10.2166/hydro.2025.019, verified verbatim: 'optimisation methodologies have not been widely applied in real-time operation due to disparities between research assumptions and practical requirements. To address this gap, we include practical objectives, such as minimising the magnitude and frequency of changes in the existing outflow schedule.'",
+      "effort": "0.5 day - one term in ObjectiveWeights and one in evaluate().",
+      "value": "AquaSync already penalises ramp magnitude via gate_movement, but not deviation from the schedule the operator has already announced. Combined with Dam Safety Act s.41/s.42 personal criminal liability and Rayner et al. 2005 (277 Crossref citations - the paper about why operators ignore forecasts is cited an order of magnitude more than any paper about better forecasts), an optimiser proposing large or frequent departures from the published plan will not be used regardless of how good its foresight is.",
+      "verdict": "do-now - the cheapest adoption gain available anywhere in this research."
+    },
+    {
+      "upgrade": "Recalibrate Muskingum K against the CWC 8-hour published travel time and the CAG observed downstream daily volumes, and reframe the calibration reach as dam-outflow -> Neeleeswaram rather than gauge-to-gauge.",
+      "closes_which_gap": "Gap #2 (uncalibrated K and x) - narrows it substantially; does not close it.",
+      "uses": "CWC December-2018 report sec 8.3.2.2 (verified verbatim: level forecast for Neeleswaram from Idukki and Idamalayar dam discharges 'with a travel time of 8 hours'); CAG Table 3.4 observed Neeleswaram daily flow 14-18 Aug 2018; NWDP CWC hourly stage at NEELEESWARAM, which is 743/744 hours complete for August 2018 and a perfect 744/744 for October 2021; GUARDIAN rating curves (RC.xlsx, 53,652 bytes, verified downloadable) giving Neeleeswaram monsoon cubic-poly coefficients p1=10.6979 p2=198.7671 p3=33.5397 at NSE 0.7654.",
+      "effort": "1 week.",
+      "value": "AquaSync's Idukki->Aluva K of 19 h is roughly 2.4x CWC's 8 h to Neeleeswaram, which shifts every arrival-time statement the twin makes - and arrival time is the operational output people act on.",
+      "verdict": "do-now, with an honest caveat that must appear in the docs: CWC derived the 8 h 'only for 2018 using the outflow hydrograph from calibrated Mike-11 model at Idukki and Idamalayar dams' because hourly project discharge was unavailable. It is a government-published prior, not a gauge calibration. Also dedupe first - NEELEESWARAM has 1,337 duplicate timestamps in the 1991-2020 stage file, 667 of them carrying conflicting values."
+    },
+    {
+      "upgrade": "Add Mullaperiyar as an exogenous upstream boundary so Idukki inflow stops being treated as natural.",
+      "closes_which_gap": "Cascade co-optimisation (partially) - and it is the largest single unmodelled control in the basin.",
+      "uses": "RAT-Kerala inflow/mullaperiyar.csv (verified 200, 100,535 bytes) for a daily series; Suresh et al. 2024 attribute Idukki's poor satellite inflow skill (r=0.63 against Idamalayaar's 0.81) specifically to upstream regulation, with a dedicated section 'Reservoir Inflow to Idukki Reservoir regulated by Upstream storage'; CAG Appendix 3.1 gives Mullaperiyar MDDL 41.45 m, live 299.26 MCM, catchment 602.95 km2, spillway design 3454.65 cumec, 13 gates.",
+      "effort": "1 week.",
+      "value": "A mass-balance twin that calls Idukki inflow 'natural' is structurally wrong: Mullaperiyar intercepts and diverts flow inter-basin to Tamil Nadu before it ever reaches Idukki. This is the physical reason Idukki is the hardest reservoir in Kerala to model, and naming it makes AquaSync's error budget honest.",
+      "verdict": "do-next. Model it as an observed exogenous boundary, NEVER as a decision variable - CAG marks Mullaperiyar's FRL, MWL and capacity as 'matter is sub judice', and any tool that appears to propose Mullaperiyar operations is politically dead on arrival."
+    },
+    {
+      "upgrade": "Add the Lower Periyar and Bhoothathankettu nodes to the reach network from CAG Appendix 3.1.",
+      "closes_which_gap": "Cascade co-optimisation; also improves lateral-inflow area scaling in the routing.",
+      "uses": "CAG Appendix 3.1, which I read directly: Lower Periyar dam (KSEBL) FRL 253.00 / MWL 256.00 / MDDL 237.74 / gross 5.30 MCM / live 4.50 MCM / ogee spillway 11,200 cumec / 5 radial gates 13.5 x 15.65 m / catchment 584.00 km2 / discharge capacity 338.94 cumec. Bhoothathankettu barrage (Irrigation Dept) FRL 34.95 m / spillway 7,079 cumec / catchment 3,048.00 km2 / 3 gates 9.14 x 10.36 m plus 12 gates 12.19 x 9.14 m.",
+      "effort": "3 days.",
+      "value": "Lower Periyar has negligible storage (4.5 MCM) but a real 339-cumec powerhouse diversion that AquaSync currently ignores. Bhoothathankettu's official 3,048 km2 is the catchment area at the exact boundary between AquaSync's periyar_upper and periyar_lower reaches, which lets lateral inflow be area-scaled from a published number instead of guessed. Both are Irrigation/KSEB assets, so naming them correctly also signals institutional literacy.",
+      "verdict": "do-next - cheap, and it removes a genuine structural omission."
+    },
+    {
+      "upgrade": "Force the SCS-CN module with IMD 0.25-degree gridded rainfall instead of gauge rainfall, and write the lambda=0.2 defence into the docs.",
+      "closes_which_gap": "Gap #1 (pre-2020 forcing) plus a live, published methodological attack on exactly AquaSync's method.",
+      "uses": "IMD POST endpoint https://www.imdpune.gov.in/cmpg/Griddata/RF25.php with body RF25=YYYY - I ran it live for 2018: HTTP 200, 25,431,832 bytes, NetCDF classic (magic CDF\\x01), 365 records, 135x129 grid, any year 1901-2025 in one unauthenticated request. For the defence: Sudheer et al.'s published response on SANDRP (19 Sep 2020) argues lambda=0.2 is valid for high flows under wet AMC because 'when CN and P are large, the corresponding C-value is also large, but insensitive to the variation of lambda'; Harsha's rejoinder (a separate URL, same day) supplies the conceded 16.51% change in built-up area 2010-2016.",
+      "effort": "3 days.",
+      "value": "The Kerala gauge rainfall file has effectively NO long record inside the Idukki catchment - filtering to the true headwater box (9.6-10.2N, 76.85-77.35E) leaves only Vandanmedu (n=248) and Chinnar (n=168). BOYCE ESTATE and Vannapuram are Idukki DISTRICT stations on the wrong slope, and the file's River column is garbage (its most common label on Kerala stations is 'Brahmaputra'). IMD grid is the only consistent free path to pre-2020 catchment rainfall.",
+      "verdict": "do-next. State the limitation plainly: 0.25 degree is ~28 km, so a single cell spans much of the Idukki catchment - this is basin-scale forcing, not sub-catchment."
+    },
+    {
+      "upgrade": "REJECT: using the RAT-Kerala Idukki area-elevation curve as a check on, or replacement for, AquaSync's level-storage law.",
+      "closes_which_gap": "Nothing - and prior research recommended it, which is why it needs an explicit reject.",
+      "uses": "http://210.212.226.241:8080/RAT_Kerala_CWRDM/assets/RAT_results/aec/idukki.csv, which I downloaded and integrated. Area jumps 3.005 km2 at 722 m -> 43.1 km2 at 723 m (40.1 km2 in one metre). MDDL-to-FRL integral = 532 MCM against the official 1,459.49; whole-curve-to-FRL = 634 MCM against the official gross 1,996.34.",
+      "effort": "n/a.",
+      "value": "Adopting it would inject a 2.7x storage error into a model currently calibrated to r2=0.9957. Salvage the part that is sound: areas above ~724 m are plausible (50.015 km2 at 730 m, 52.125 at 732) and are legitimately useful for evaporation, rain-on-lake and for estimating the ~90 MCM surcharge between FRL and MWL. Apply a hard floor at 724 m and never integrate below it.",
+      "verdict": "reject as a storage source; do-now as an evaporation-area source with an explicit elevation floor and a comment explaining why."
+    },
+    {
+      "upgrade": "REJECT (for now): 2D inundation modelling.",
+      "closes_which_gap": "Gap #4 - genuinely, but it is the least valuable of the five right now.",
+      "uses": "If and when it proceeds: Deltares/SFINCS (GPL-3.0 source, 83 stars, pushed 2026-08-24) + hydromt_sfincs + pyflwdir (already cloned at research/repos/pyflwdir) for DEM conditioning and HAND, on Copernicus GLO-30. Start from CWC's December-2018 report, which already publishes 2/5/25/50/100-year return-period inundation maps, a '100 Year vs 2018 Inundation Map', 'Flood Vulnerable Areas' and Figure 20 'Hotspots in ALWAYE' - AquaSync's own downstream point.",
+      "effort": "2-4 weeks minimum, plus an unresolved DEM licence decision.",
+      "value": "Real, but it cannot touch the biggest gap: routing and inundation tools cannot fix a forecasting problem. The licence trade is also unpleasant for a KSEB-bound deliverable - FABDEM is CC BY-NC-SA 4.0 (non-commercial, share-alike) and MERIT Hydro is dual CC BY-NC / ODbL, while the licence-clean Copernicus GLO-30 is a DSM whose buildings and vegetation will falsely dam floodplain flow paths around Aluva. SFINCS source is GPL-3.0 but its precompiled Windows exe ships under Deltares Freeware with 'no distribution, no modification'.",
+      "verdict": "later - after gaps #3 and #2. Do not start it because it is the most visually impressive item on the list."
+    }
+  ],
+  "download_manifest": [
+    {
+      "name": "SLDC Kerala daily observed inflow archive (2019-08-08 to present)",
+      "url": "https://sldckerala.com/index.php?id=7",
+      "method": "api",
+      "destination": "research/raw/sldc_kerala_daily/",
+      "size_hint": "~75 MB raw HTML for ~2,575 days; ~2 MB parsed to CSV",
+      "priority": "high"
+    },
+    {
+      "name": "KSEB Dam Safety monthly statistics - download listing (86 live workbook IDs)",
+      "url": "https://dams.kseb.in/?p=329",
+      "method": "curl",
+      "destination": "research/raw/kseb_monthly/listing.html",
+      "size_hint": "210 KB",
+      "priority": "high"
+    },
+    {
+      "name": "KSEB monthly workbook June 2019 (carries the 2018 'Previous Year Water Level' column and the 25.09.2018 status sheet)",
+      "url": "https://dams.kseb.in/?wpdmdl=315",
+      "method": "curl",
+      "destination": "research/raw/kseb_monthly/2019-06.xlsx",
+      "size_hint": "1,511,065 bytes (verified)",
+      "priority": "high"
+    },
+    {
+      "name": "KSEB monthly workbooks Jul-Oct 2019 (wpdmdl 500, 501, 502, 503) - completes the 96 unique 2018 dates",
+      "url": "https://dams.kseb.in/?wpdmdl=500",
+      "method": "curl",
+      "destination": "research/raw/kseb_monthly/2019-07..10.xlsx",
+      "size_hint": "~6 MB total (July 2019 verified at 1,561,406 bytes)",
+      "priority": "high"
+    },
+    {
+      "name": "KSEB monthly workbooks Nov 2020 - Apr 2021 (wpdmdl 1178, 1256, 1320, 1386, 1465, 1520) - the amith-vp corrupt window, legacy .xls",
+      "url": "https://dams.kseb.in/?wpdmdl=1178",
+      "method": "curl",
+      "destination": "research/raw/kseb_monthly/corrupt_window/",
+      "size_hint": "~6 MB total; needs xlrd or LibreOffice, openpyxl will refuse",
+      "priority": "high"
+    },
+    {
+      "name": "KSEB monthly workbook July 2026 - modern schema exemplar with rule level and alert bands",
+      "url": "https://dams.kseb.in/?wpdmdl=6380",
+      "method": "curl",
+      "destination": "research/raw/kseb_monthly/2026-07.xlsx",
+      "size_hint": "252,222 bytes (verified, 33 sheets)",
+      "priority": "high"
+    },
+    {
+      "name": "RAT-Kerala Idukki daily inflow (modelled VIC, 2015-10-24 to 2025-02-22)",
+      "url": "http://210.212.226.241:8080/RAT_Kerala_CWRDM/assets/RAT_results/inflow/idukki.csv",
+      "method": "curl",
+      "destination": "research/raw/rat_kerala/inflow_idukki.csv",
+      "size_hint": "100,264 bytes (verified)",
+      "priority": "high"
+    },
+    {
+      "name": "RAT-Kerala Idamalayar daily inflow (note the double-a slug)",
+      "url": "http://210.212.226.241:8080/RAT_Kerala_CWRDM/assets/RAT_results/inflow/idamalayaar.csv",
+      "method": "curl",
+      "destination": "research/raw/rat_kerala/inflow_idamalayaar.csv",
+      "size_hint": "100,426 bytes (verified)",
+      "priority": "high"
+    },
+    {
+      "name": "RAT-Kerala Mullaperiyar daily inflow - the upstream regulation AquaSync ignores",
+      "url": "http://210.212.226.241:8080/RAT_Kerala_CWRDM/assets/RAT_results/inflow/mullaperiyar.csv",
+      "method": "curl",
+      "destination": "research/raw/rat_kerala/inflow_mullaperiyar.csv",
+      "size_hint": "100,535 bytes (verified)",
+      "priority": "high"
+    },
+    {
+      "name": "RAT-Kerala area-elevation curves, Idukki and Idamalayar (USE ABOVE 724 m ONLY - the Idukki curve has a 40 km2/m discontinuity at 722-723 m)",
+      "url": "http://210.212.226.241:8080/RAT_Kerala_CWRDM/assets/RAT_results/aec/idukki.csv",
+      "method": "curl",
+      "destination": "research/raw/rat_kerala/aec_idukki.csv",
+      "size_hint": "7,228 bytes; Idamalayar twin 6,283 bytes (both verified)",
+      "priority": "medium"
+    },
+    {
+      "name": "RAT-Kerala observation-based products for Idukki: TMS-OS surface area, storage change, evaporation, outflow",
+      "url": "http://210.212.226.241:8080/RAT_Kerala_CWRDM/assets/RAT_results/sarea_tmsos/idukki.csv",
+      "method": "curl",
+      "destination": "research/raw/rat_kerala/",
+      "size_hint": "sarea 11,747 B, dels 18,004 B, evaporation 73,752 B, outflow 17,502 B (all verified)",
+      "priority": "medium"
+    },
+    {
+      "name": "IMD 0.25-degree daily gridded rainfall NetCDF, years 2018-2021",
+      "url": "https://www.imdpune.gov.in/cmpg/Griddata/RF25.php",
+      "method": "api",
+      "destination": "research/raw/imd_rf25/",
+      "size_hint": "~25 MB per year (2018 verified at 25,431,832 bytes); ~100 MB for four years. POST body: RF25=YYYY",
+      "priority": "high"
+    },
+    {
+      "name": "GUARDIAN rating curves for 210 CWC gauges incl. NEELEESWARAM, ARANGALI, VANDIPERIYAR",
+      "url": "https://ndownloader.figshare.com/files/49150798",
+      "method": "curl",
+      "destination": "research/sources/datasets/guardian_rating_curves.xlsx",
+      "size_hint": "53,652 bytes (verified)",
+      "priority": "high"
+    },
+    {
+      "name": "NWDP CWC hourly river water level, basin 031 (West flowing rivers Tadri-Kanyakumari), 1991-2020 - contains Aug 2018 Neeleeswaram stage at 743/744 hours",
+      "url": "https://nwdp.nwic.gov.in/dataset/d951a09c-6cf8-470e-be77-e80116f13d34/resource/c94d9352-442c-4e99-ade4-537eebc251f4/download/rwl_manual_hr_cwc_031_1991_2020.csv",
+      "method": "curl",
+      "destination": "research/sources/datasets/cwc_hourly_wl_031_1991_2020.csv",
+      "size_hint": "259,673,038 bytes. NOTE: the existing local cwc_kerala_hourly_water_level.csv is 150,579,920 bytes and matches neither official resource - verify it covers Aug 2018 before assuming it is complete. Supports HTTP Range.",
+      "priority": "high"
+    },
+    {
+      "name": "NWDP CWC hourly river water level, basin 031, 2021-2025 - contains the Oct 2021 flagship window at 744/744 hours",
+      "url": "https://nwdp.nwic.gov.in/dataset/d951a09c-6cf8-470e-be77-e80116f13d34/resource/a9f5d910-e360-42e0-a45c-637310b009c4/download/rwl_manual_hr_cwc_031_2021_2025.csv",
+      "method": "curl",
+      "destination": "research/sources/datasets/cwc_hourly_wl_031_2021_2025.csv",
+      "size_hint": "233,971,888 bytes",
+      "priority": "medium"
+    },
+    {
+      "name": "NWDP CWC hourly river water level, basin 031, 2026-2030 (current/ongoing file - not in any prior sweep)",
+      "url": "https://nwdp.nwic.gov.in/dataset/d951a09c-6cf8-470e-be77-e80116f13d34/resource/7c9f934f-9643-41e5-bfb4-2807cacc5573/download/rwl_manual_hr_cwc_031_2026_2030.csv",
+      "method": "curl",
+      "destination": "research/sources/datasets/cwc_hourly_wl_031_2026_2030.csv",
+      "size_hint": "18,836,582 bytes (verified by HEAD)",
+      "priority": "low"
+    },
+    {
+      "name": "wltaylor/Robust-FIRO - cvxpy ensemble MPC for reservoir flood control (MIT)",
+      "url": "https://github.com/wltaylor/Robust-FIRO",
+      "method": "git-shallow-clone",
+      "destination": "research/repos/Robust-FIRO",
+      "size_hint": "~50 MB (includes perfect_forecast.nc 48.5 MB). 1 star, pushed 2025-03-18 - paper code, not a library.",
+      "priority": "high"
+    },
+    {
+      "name": "iRONStoolbox/iRONS - op_piecewiselin_1res rule-curve policy parameterisation (MIT)",
+      "url": "https://github.com/iRONStoolbox/iRONStoolbox",
+      "method": "git-shallow-clone",
+      "destination": "research/repos/iRONS",
+      "size_hint": "~40 MB. DEFAULT BRANCH IS 'master', not 'main' - raw URLs built on main will 404.",
+      "priority": "high"
+    },
+    {
+      "name": "zpb4/syn-forecast_stochastic - synthetic forecast generation with deliberate skill degradation (MIT)",
+      "url": "https://github.com/zpb4/syn-forecast_stochastic",
+      "method": "git-shallow-clone",
+      "destination": "research/repos/syn-forecast_stochastic",
+      "size_hint": "small; but it is a MIXED R + Python stack (R: future, DEoptim, twosamples, ncdf4). Budget an R toolchain.",
+      "priority": "medium"
+    },
+    {
+      "name": "wltaylor/SSJRB-FIRO-Publishing - risk-threshold policy training and the LOOCV generalisation harness (MIT)",
+      "url": "https://github.com/wltaylor/SSJRB-FIRO-Publishing",
+      "method": "git-shallow-clone",
+      "destination": "research/repos/SSJRB-FIRO",
+      "size_hint": "small. train_firo.py raises NameError as committed (line 82 uses `bounds`, defined only in a commented block at line 63) - one-line fix.",
+      "priority": "medium"
+    },
+    {
+      "name": "CWC weekly reservoir level & storage bulletins, 2018 (45 of 52 Thursdays exist; the two flood weeks 08-09 and 08-16 are absent)",
+      "url": "https://cwc.gov.in/en/reservoir-level-storage-bulletin",
+      "method": "curl",
+      "destination": "research/raw/cwc_weekly_bulletins/2018/",
+      "size_hint": "~25 MB for 45 PDFs (the 02.08.2018 issue verified at 539,052 bytes). Scrape the paginated listing for hrefs; filenames are not predictable.",
+      "priority": "medium"
+    },
+    {
+      "name": "Dam Safety Act 2021 (Act 41 of 2021) full gazette text",
+      "url": "https://wrd.maharashtra.gov.in/Site/Upload/Pdf/DSA_2021_act.pdf?MenuID=1474",
+      "method": "curl",
+      "destination": "research/sources/legal/dam_safety_act_2021.pdf",
+      "size_hint": "459,259 bytes (verified). Maharashtra WRD mirror - for formal citation prefer indiacode.nic.in.",
+      "priority": "medium"
+    },
+    {
+      "name": "CEA Guidelines on Cyber Security in Power Sector 2021 (issuing-authority copy)",
+      "url": "https://cea.nic.in/wp-content/uploads/notification/2021/10/Guidelines_on_Cyber_Security_in_Power_Sector_2021.pdf",
+      "method": "curl",
+      "destination": "research/sources/legal/cea_cyber_security_2021.pdf",
+      "size_hint": "567,765 bytes (verified). Source of the 'hard isolation of OT from any internet facing IT system' cardinal principle.",
+      "priority": "medium"
+    },
+    {
+      "name": "CERT-In Directions under s.70B(6) IT Act, 28 April 2022 (6-hour reporting, 180-day in-country logs, NIC/NPL NTP)",
+      "url": "https://www.cert-in.org.in/PDF/CERT-In_Directions_70B_28.04.2022.pdf",
+      "method": "curl",
+      "destination": "research/sources/legal/certin_directions_2022.pdf",
+      "size_hint": "434,961 bytes (verified)",
+      "priority": "low"
+    },
+    {
+      "name": "NDSA regulations index (open JSON API - poll for newly gazetted regulations)",
+      "url": "https://ndsa.gov.in/ndsa-backend/web/api/document-config",
+      "method": "api",
+      "destination": "research/raw/ndsa/regulations.json",
+      "size_hint": "<1 MB. Then POST /ndsa-backend/web/regulation?lang=en with {\"page\":0,\"sort\":\"\",\"search\":\"\"} for all 20 regulations across 2 pages.",
+      "priority": "low"
+    },
+    {
+      "name": "KSDMA daily KSEB + Irrigation dam bulletins (rolling scrape)",
+      "url": "https://sdma.kerala.gov.in/dam-water-level/",
+      "method": "api",
+      "destination": "research/raw/ksdma_bulletins/",
+      "size_hint": "~65 KB/day. MUST scrape the current href - the filename rotates and is overwritten in place. I found three KSEB-SITE-N.pdf hrefs live on the page today including a stale 2025/11 one, so select the newest, never hardcode.",
+      "priority": "low"
+    },
+    {
+      "name": "Deltares/SFINCS + hydromt_sfincs (only if 2D proceeds)",
+      "url": "https://github.com/Deltares/SFINCS",
+      "method": "git-shallow-clone",
+      "destination": "research/repos/SFINCS",
+      "size_hint": "moderate. GPL-3.0 source; the precompiled Windows exe is Deltares Freeware, 'no distribution, no modification'.",
+      "priority": "low"
+    },
+    {
+      "name": "CWRDM - request in-situ KSEB 2018 Idukki/Idamalayar inflow and the official Idukki rule curve",
+      "url": "https://cwrdm.kerala.gov.in/reservoir-assessment-tool-kerala-rat-30",
+      "method": "manual-registration",
+      "destination": "research/sources/correspondence/",
+      "size_hint": "n/a - a human must write. CWRDM co-developed RAT-Kerala with UW SASWE under NASA grant 80NSSC22K0918 and is the most tractable single point of contact; three independent teams state they obtained KSEB in-situ 2018 data.",
+      "priority": "high"
+    },
+    {
+      "name": "Das et al. (2025) J. Hydrologic Engineering 30(2) - the closest published prior art to AquaSync's thesis",
+      "url": "https://ascelibrary.org/doi/10.1061/JHYEFF.HEENG-6276",
+      "method": "manual-registration",
+      "destination": "research/sources/papers/Das_2025_FIRO_Kerala_2018.pdf",
+      "size_hint": "n/a - genuinely closed access (OpenAlex is_oa=false, no green copy). Needs institutional access or an author request. AquaSync cannot state how it differs from the nearest existing work until someone reads it.",
+      "priority": "medium"
+    },
+    {
+      "name": "ISRO Bhoonidhi (NRSC) - register and inspect the catalogue before assuming CartoDEM is available",
+      "url": "https://bhoonidhi.nrsc.gov.in/bhoonidhi/registration.html",
+      "method": "manual-registration",
+      "destination": "research/sources/dem/",
+      "size_hint": "unknown. NOTHING on the registration page substantiates CartoDEM availability, resolution or price. Copernicus GLO-30 is one anonymous S3 command away, so treat this as an optional upgrade, not a dependency.",
+      "priority": "low"
+    }
+  ],
+  "honest_challenges": [
+    "THE LITERATURE DOES NOT AGREE ON WHETHER DAM OPERATION WORSENED THE 2018 FLOOD, AND BOTH CAMPS ARE CREDENTIALED. CWC's own September-2018 study concludes the dams attenuated the peak (Idukki 2532 -> 1500 cumec, 'an attenuation of about 41%', FRL touched 01:00 on 17 August) and states explicitly that even a 75%-filled reservoir could not have mitigated the event. Sudheer et al. (Current Science, IIT Madras) agree the dams helped: a virgin no-dam simulation peaks at 11,990 cumec at Neeleswaram against the observed ~8,800, and only 16-21% peak attenuation was ever achievable by advance emptying. Against them stands CAG/IISc's official performance audit, which finds that following EITHER published rule curve would have produced MORE Idukki spill (531.03 MCM under the 2020 curve, 558.19 under the 1983 curve from the actual level, versus 467.51 actual) - and which records KSEBL telling the IISc team that no rule curve was followed at all. AquaSync must present this as a live controversy, not a settled result.",
+    "THE MOST-QUOTED 'RESERVOIRS MADE IT WORSE' STUDY WAS REJECTED, AND ITS HEADLINE NUMBER CONTRADICTS THE PEER-REVIEWED ONE BY 3.5x. Mishra et al.'s HESS preprint (hess-2018-480) carries the status line 'The manuscript was not accepted for further review after discussion.' It reports upstream rainfall return periods of more than 500 years; the peer-reviewed Current Science paper reports 145 years for the Periyar basin. Do not put the 500-year figure in any AquaSync-facing material. The preprint's genuinely useful content is its data trail - seven Kerala reservoirs' storage from India-WRIS for 2007-2018, with Idukki at 92.5% of FRL on 8 August 2018, which independently agrees with the CWC bulletin's 92% for 01-08-2018.",
+    "FIRO TOOK ROUGHLY A DECADE OF SHADOW OPERATION TO CHANGE A MANUAL THAT HAD BEEN TOUCHED TWICE IN 66 YEARS. CW3E's steering committee formed in 2014. The Lake Mendocino Final Viability Assessment (December 2020) only RECOMMENDED a five-year major deviation plus a water control manual update - at that point FIRO ran through deviations, not through the manual. A NEPA Environmental Assessment carried it from WY2021. The revised manual was signed on 22 October 2025 and authorises exactly the same 11,650 acre-feet the deviation had already allowed. Scripps' own words: it 'redefines the operating rules around flood control schedules for the first time in the dam's 66-year history' (original 1959, updated 1986, minor revisions 2003). AquaSync should plan for advisory shadow operation measured in years and should say so up front rather than implying deployment.",
+    "THE FORECAST SKILL FIRO ASSUMES DOES NOT EXIST IN THIS BASIN. Sudheer et al. (Current Science 116(5) p.789, verified verbatim): 'The probability of detection (POD) of higher rainfall (>25 mm/day) at short range (3-day) or medium range (5-day) even with the ensemble of models is still low at about 20% to 30% only with a large probability of false alarm.' Lake Mendocino's verified CNRFC numbers are 24-hr inflow R2 of 0.84/0.80/0.73/0.66/0.53 at days 1-5. Mishra et al. concluded operations need skilful extreme-rainfall forecasts at 4-7 day lead. CWC's own December-2018 report says flatly 'There is no Flood Forecasting network in Kerala till date', and I could not confirm from CWC's AFF page that the Periyar or Neeleswaram is covered at all. One honesty note on the citation: Sudheer et al. are quoting their own references 23-24 here, not reporting an original result.",
+    "EVEN A PERFECT OPTIMISER HAS A SMALL CEILING HERE, AND THE BOUND COMES FROM THE PRO-DAM SIDE. Sudheer et al. put achievable peak attenuation from advance emptying at 16-21%, and find that below 50% storage downstream flows become insensitive to reservoir state at all. Bank-full is about 3,400 cumec upstream and 4,200 at Neeleswaram against an 8,800 cumec event. CWC computes that of the ~8,800 cumec at Neeleswaram, about 7,300 came from the free catchment DOWNSTREAM of the dams against roughly 1,500 cumec of Idukki release. CAG Table 3.4 puts the two dams' combined contribution to Neeleswaram flow at 46.43% on 14 August falling to 29.54% on the 16th and 16.99% by the 18th. A twin that optimises the dams is optimising a shrinking minority of the flood, and the honest framing is marginal improvement plus better warning, not flood prevention.",
+    "THE OFFICIAL RECORD CONTRADICTS ITSELF ON THE QUANTITIES AQUASYNC WOULD VALIDATE AGAINST. CAG Table 3.4 reports observed Neeleswaram flow of 793.93 MCM on 16-08-2018, which is a 9,189 cumec daily mean - and that EXCEEDS the 8,800 cumec instantaneous peak the CWC report attributes to the same day. A daily mean cannot exceed the instantaneous peak, so at least one official figure is wrong, or the 7AM-7AM accounting window and the rating curves differ materially between IISc and CWC. Separately, CWC's September-2018 report gives the Periyar area to Neeleswaram as 4,033 km2 in the text, 4,035 in the rainfall table and 4,076 in the catchment table; its December-2018 report gives the Neeleswaram intervening free catchment as 2,329 km2 and then 3,042 km2 two sentences later, for the same unit hydrograph. Never quote these to a precision the sources do not support.",
+    "THE FLOOD PEAK WAS NEVER GAUGED AT THE SITE AQUASYNC ROUTES TO. NWDP's CWC daily discharge for NEELEESWARAM is missing 2018-08-16 through 2018-08-22 (and 24-27): the last pre-gap reading is 6,166.426 m3/s on 15 August and the next is 924.282 on 23 August. The all-time public daily maximum for that gauge is 6,323.5474 on 2013-08-05 - BELOW the 8,800 cumec attributed to 16 August 2018. So the headline 8,800 figure is report-derived, not gauge-derived, and its 14:00/15:00 timing is read off Figure 3 rather than stated in the text. VANDIPERIYAR did record all 31 days of August 2018, but it sits upstream of Mullaperiyar's inter-basin diversion, Idukki and Idamalayar, so it cannot serve as an unregulated upstream partner for Neeleeswaram. Note also a coordinate conflict between two of the source datasets: GUARDIAN places VANDIPERIYAR at (9.1525, 77.1525) in Tamil Nadu while NWDP places it at (9.57333, 77.09056) in Kerala, ~47 km apart; Neeleeswaram and Arangali agree exactly, isolating Vandiperiyar as the bad record. Use the NWDP coordinates.",
+    "AQUASYNC STILL WILL NOT HAVE GAUGE-CALIBRATED ROUTING AFTER THIS WORK. The best anchor available is CWC's 8-hour travel time - and CWC states it was derived 'only for 2018 using the outflow hydrograph from calibrated Mike-11 model at Idukki and Idamalayar dams' precisely because 'hourly discharge from these project authorities were not available'. It is modelled outflow, one event, one basin. Compounding this, CWC records that Idukki has spilled on only three occasions in its entire history - 1988, 1992 and 2018 - so there are effectively three events in the whole record on which a dam-release routing calibration could ever be based. Gap #2 is narrowed to a defensible government prior; anyone claiming it is closed is overstating.",
+    "THE METHOD AQUASYNC USES IS UNDER PUBLISHED ATTACK BY A SERVING CWC DIRECTOR, AND THE JOURNAL REFUSED TO PRINT THE REBUTTAL. J. Harsha (Director, CWC Chennai) argues that SCS-CN with lambda=0.2 came from USDA watershed data 'developed based on limited set of watershed data without peer-review', was never developed for the Periyar, and that using 2010 land cover for a 2018 event 'assumed stationarity of runoff processes in PRB'. Current Science kept the rebuttal for six to seven months and then refused it without peer review, so the exchange lives on SANDRP across three separate posts. AquaSync uses exactly SCS-CN with an antecedent-moisture shift, so it inherits the critique wholesale. Carry the defence explicitly (Sudheer et al.'s published argument that C is insensitive to lambda when CN and P are large, which is the high-flow wet-AMC case AquaSync models) and carry the concession too - the original authors granted 16.51% change in built-up area between 2010 and 2016, and CAG documents Kerala built-up area growing 450% from 60 to 330 km2 between 1985 and 2015 while water bodies fell 17%.",
+    "THE NEAREST PUBLISHED PRIOR ART TO AQUASYNC'S THESIS IS PAYWALLED, AND AQUASYNC CANNOT CURRENTLY SAY HOW IT DIFFERS. Das et al. (2025), 'Forecast-Informed Reservoir Operations within a Satellite-Based Framework for Mountainous and High-Precipitation Regions: Case of the 2018 Kerala Floods', Journal of Hydrologic Engineering 30(2), doi 10.1061/JHYEFF.HEENG-6276 - same UW/SASWE group that published the RSE paper, same basin, same event, same core idea. OpenAlex reports is_oa=false and there is no green copy anywhere; ASCE blocks automated access entirely. Any novelty claim AquaSync makes before someone reads this paper is unsupported. Related caution on the satellite route it uses: Suresh et al. report average cloud cover above 40% over Kerala's dams for 2017-2019 and 'over 80%' during the monsoon, concluding such monitoring is 'not possible without the use of cloud-piercing SAR imagery' - which is exactly the season AquaSync cares about."
+  ],
+  "_dimension_key": "synthesis",
+  "_stage": "synthesis",
+  "_run": "wf_009a6299-c5b"
+}
