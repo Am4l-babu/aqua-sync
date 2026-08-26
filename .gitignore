@@ -29,3 +29,9 @@ Thumbs.db
 # Secrets
 .env
 *.local
+
+# Third-party research snapshots: large, re-fetchable with scripts/acquire.py.
+# The manifest, index and findings ARE committed so the research is reproducible.
+research/repos/
+research/sources/datasets/*
+!research/sources/datasets/.gitkeep

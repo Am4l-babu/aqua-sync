@@ -1,0 +1,69 @@
+{
+  "dimensions": [
+    {
+      "dimension": "historical-data",
+      "confirmed_sources": [
+        {
+          "name": "India-WRIS",
+          "url": "https://indiawris.gov.in",
+          "kind": "api",
+          "what_it_provides": "Reservoir levels",
+          "relevance": "high - only route to pre-2020",
+          "http_status": "200",
+          "content_matches_claim": "yes",
+          "license": "GovOpenData",
+          "last_activity": "2026-01-01",
+          "stars": "-",
+          "caveat": "registration needed"
+        }
+      ],
+      "rejected": [
+        {
+          "name": "Fake portal",
+          "url": "https://example.invalid",
+          "reason": "DNS does not resolve"
+        }
+      ],
+      "verification_notes": [
+        "One claimed dataset overstated its coverage."
+      ]
+    }
+  ],
+  "synthesis": {
+    "executive_summary": [
+      "2018 data is obtainable only via India-WRIS or digitised paper figures."
+    ],
+    "integration_paths": [
+      {
+        "target_system": "KSEB SCADA",
+        "approach": "Read-only OPC-UA",
+        "standard_or_protocol": "OPC-UA / Modbus TCP",
+        "effort": "2-3 weeks",
+        "blockers": "Institutional access",
+        "regulatory_note": "Dam Safety Act 2021"
+      }
+    ],
+    "prioritised_upgrades": [
+      {
+        "upgrade": "Forecast ensemble",
+        "closes_which_gap": "perfect foresight",
+        "uses": "Open-Meteo ensemble API",
+        "effort": "1 week",
+        "value": "Converts upper bound into a real result",
+        "verdict": "do-now - biggest weakness"
+      },
+      {
+        "upgrade": "WebXR overlay",
+        "closes_which_gap": "none",
+        "uses": "-",
+        "effort": "2 weeks",
+        "value": "spectacle only",
+        "verdict": "reject - no analytical value"
+      }
+    ],
+    "download_manifest": [],
+    "honest_challenges": [
+      "Peer-reviewed opinion is genuinely divided on how much dam operation worsened the 2018 floods."
+    ]
+  }
+}

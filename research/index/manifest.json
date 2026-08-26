@@ -1,0 +1,145 @@
+{
+  "download_manifest": [
+    {
+      "name": "Kerala-Dam-Water-Levels",
+      "url": "https://github.com/amith-vp/Kerala-Dam-Water-Levels",
+      "method": "git-shallow-clone",
+      "destination": "research/repos/Kerala-Dam-Water-Levels",
+      "kind": "dataset",
+      "priority": "high",
+      "size_hint": "~110 MB",
+      "note": "The KSEB bulletin feed AquaSync already uses. 18 KSEB dams + irrigation. Verified: covers 2020-08 to 2026-08, NOT 2018."
+    },
+    {
+      "name": "opendatakerala-lsg-boundaries",
+      "url": "https://github.com/opendatakerala/lsg-kerala-data",
+      "method": "git-shallow-clone",
+      "destination": "research/repos/lsg-kerala-data",
+      "kind": "dataset",
+      "priority": "high",
+      "size_hint": "~17 MB",
+      "note": "Kerala ward/panchayat boundaries as GeoJSON. Needed for downstream exposure mapping."
+    },
+    {
+      "name": "rtc-tools",
+      "url": "https://github.com/rtc-tools/rtc-tools",
+      "method": "git-shallow-clone",
+      "destination": "research/repos/rtc-tools",
+      "kind": "repo",
+      "priority": "high",
+      "size_hint": "~8 MB",
+      "note": "Deltares reservoir optimisation framework. LGPL-3.0, active."
+    },
+    {
+      "name": "NOAA-t-route",
+      "url": "https://github.com/NOAA-OWP/t-route",
+      "method": "git-shallow-clone",
+      "destination": "research/repos/t-route",
+      "kind": "repo",
+      "priority": "high",
+      "size_hint": "~90 MB",
+      "note": "Operational Muskingum-Cunge routing used in the US National Water Model."
+    },
+    {
+      "name": "google-flood-forecasting",
+      "url": "https://github.com/google-research/flood-forecasting",
+      "method": "git-shallow-clone",
+      "destination": "research/repos/google-flood-forecasting",
+      "kind": "repo",
+      "priority": "high",
+      "size_hint": "~120 MB",
+      "note": "Google's open-sourced hydrology framework behind Flood Hub."
+    },
+    {
+      "name": "neuralhydrology",
+      "url": "https://github.com/neuralhydrology/neuralhydrology",
+      "method": "git-shallow-clone",
+      "destination": "research/repos/neuralhydrology",
+      "kind": "repo",
+      "priority": "high",
+      "size_hint": "~12 MB",
+      "note": "LSTM rainfall-runoff, the reference implementation. Directly relevant to the forecast-error gap."
+    },
+    {
+      "name": "dMC-Juniata-hydroDL2",
+      "url": "https://github.com/mhpi/dMC-Juniata-hydroDL2",
+      "method": "git-shallow-clone",
+      "destination": "research/repos/dMC-Juniata",
+      "kind": "repo",
+      "priority": "medium",
+      "size_hint": "<1 MB",
+      "note": "Differentiable Muskingum-Cunge. Small; directly relevant to routing calibration."
+    },
+    {
+      "name": "pywr",
+      "url": "https://github.com/pywr/pywr",
+      "method": "git-shallow-clone",
+      "destination": "research/repos/pywr",
+      "kind": "repo",
+      "priority": "medium",
+      "size_hint": "~25 MB",
+      "note": "Water resource network allocation model. GPL-3.0."
+    },
+    {
+      "name": "AI4Water",
+      "url": "https://github.com/AtrCheema/AI4Water",
+      "method": "git-shallow-clone",
+      "destination": "research/repos/AI4Water",
+      "kind": "repo",
+      "priority": "medium",
+      "size_hint": "~80 MB",
+      "note": "ML framework for hydrological time series. MIT."
+    },
+    {
+      "name": "pastas",
+      "url": "https://github.com/pastas/pastas",
+      "method": "git-shallow-clone",
+      "destination": "research/repos/pastas",
+      "kind": "repo",
+      "priority": "low",
+      "size_hint": "~170 MB",
+      "note": "Hydrological time-series analysis. Large; low direct relevance."
+    },
+    {
+      "name": "Sentinel1-Flood-Finder",
+      "url": "https://github.com/cordmaur/Sentinel1-Flood-Finder",
+      "method": "git-shallow-clone",
+      "destination": "research/repos/Sentinel1-Flood-Finder",
+      "kind": "repo",
+      "priority": "medium",
+      "size_hint": "~39 MB",
+      "note": "SAR flood extent mapping. Validates extent, never timing (6-12 day revisit)."
+    },
+    {
+      "name": "pyflwdir",
+      "url": "https://github.com/Deltares/pyflwdir",
+      "method": "git-shallow-clone",
+      "destination": "research/repos/pyflwdir",
+      "kind": "repo",
+      "priority": "medium",
+      "size_hint": "~45 MB",
+      "note": "Deltares flow-direction / river-network derivation from a DEM. MIT."
+    },
+    {
+      "name": "LFPtools",
+      "url": "https://github.com/jsosa/LFPtools",
+      "method": "git-shallow-clone",
+      "destination": "research/repos/LFPtools",
+      "kind": "repo",
+      "priority": "low",
+      "size_hint": "~21 MB",
+      "note": "LISFLOOD-FP preprocessing. Last push 2021."
+    },
+    {
+      "name": "idukki-live-bulletin",
+      "url": "https://raw.githubusercontent.com/amith-vp/Kerala-Dam-Water-Levels/main/live.json",
+      "method": "curl",
+      "destination": "research/sources/datasets/kerala_dams_live.json",
+      "kind": "dataset",
+      "priority": "high",
+      "size_hint": "<1 MB",
+      "note": "Today's bulletin snapshot for all dams."
+    }
+  ],
+  "source": "seed - verified by hand via GitHub API"
+}

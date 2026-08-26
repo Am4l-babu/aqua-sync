@@ -1,0 +1,65 @@
+{
+  "Kerala-Dam-Water-Levels": {
+    "status": "already-present",
+    "bytes": 16097185
+  },
+  "opendatakerala-lsg-boundaries": {
+    "status": "already-present",
+    "bytes": 31684366
+  },
+  "rtc-tools": {
+    "status": "already-present",
+    "bytes": 6852442
+  },
+  "NOAA-t-route": {
+    "status": "already-present",
+    "bytes": 85650005
+  },
+  "google-flood-forecasting": {
+    "status": "already-present",
+    "bytes": 146911418
+  },
+  "neuralhydrology": {
+    "status": "already-present",
+    "bytes": 24060784
+  },
+  "dMC-Juniata-hydroDL2": {
+    "status": "ok",
+    "bytes": 163475,
+    "files": 54
+  },
+  "pywr": {
+    "status": "ok",
+    "bytes": 4559209,
+    "files": 290
+  },
+  "AI4Water": {
+    "status": "ok",
+    "bytes": 27628561,
+    "files": 332
+  },
+  "pastas": {
+    "status": "ok",
+    "bytes": 171957606,
+    "files": 420
+  },
+  "Sentinel1-Flood-Finder": {
+    "status": "ok",
+    "bytes": 44969144,
+    "files": 25
+  },
+  "pyflwdir": {
+    "status": "ok",
+    "bytes": 2475235,
+    "files": 89
+  },
+  "LFPtools": {
+    "status": "ok",
+    "bytes": 25207084,
+    "files": 47
+  },
+  "idukki-live-bulletin": {
+    "status": "already-present",
+    "bytes": 17302
+  }
+}
