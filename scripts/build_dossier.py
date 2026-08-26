@@ -807,8 +807,11 @@ def section_pitch() -> list:
 def build() -> int:
     facts = load_facts()
 
+    # invariant=1 strips the embedded creation timestamp, so an unchanged
+    # analysis produces a byte-identical PDF. Without it the file differs on
+    # every build and git cannot tell a real change from a rebuild.
     doc = BaseDocTemplate(
-        str(OUT), pagesize=A4,
+        str(OUT), pagesize=A4, invariant=1,
         leftMargin=MARGIN, rightMargin=MARGIN,
         topMargin=MARGIN, bottomMargin=MARGIN + 4 * mm,
         title="AquaSync - Digital Twin for Dam-River Flood Optimisation",
