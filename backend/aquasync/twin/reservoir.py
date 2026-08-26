@@ -14,7 +14,7 @@ from dataclasses import dataclass, replace
 
 import numpy as np
 
-from .constants import Reservoir, SECONDS_PER_HOUR
+from .constants import SECONDS_PER_HOUR, Reservoir
 
 
 @dataclass

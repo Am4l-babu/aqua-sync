@@ -12,7 +12,6 @@ the analysis. Run the analyses first:
 from __future__ import annotations
 
 import json
-import sys
 from pathlib import Path
 
 from reportlab.lib import colors

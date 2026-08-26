@@ -21,7 +21,6 @@ from dataclasses import dataclass
 
 import numpy as np
 
-
 # Curve numbers for AMC-II (average wetness), from the SCS/NRCS handbook.
 # The Idukki and Idamalayar catchments are steep, forested Western Ghats
 # terrain on mostly hydrologic soil group C.
@@ -118,7 +117,7 @@ class UnitHydrograph:
         return q
 
     @staticmethod
-    def from_catchment(area_km2: float, main_channel_km: float, slope: float) -> "UnitHydrograph":
+    def from_catchment(area_km2: float, main_channel_km: float, slope: float) -> UnitHydrograph:
         """Estimate time to peak from catchment geometry (SCS lag equation).
 
         lag = 0.6 * Tc, with Tc from the Kirpich formula. Steep Western Ghats

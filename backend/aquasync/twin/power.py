@@ -24,7 +24,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from .constants import G, RHO_WATER, Reservoir
+from .constants import RHO_WATER, G, Reservoir
 
 
 @dataclass
@@ -97,7 +97,9 @@ class HydropowerModel:
 
     # -- decision support ---------------------------------------------------
 
-    def spill_opportunity_cost(self, spill_cumecs, level, hour_of_day, dt_hours: float = 1.0):
+    def spill_opportunity_cost(
+        self, spill_cumecs, level, hour_of_day, dt_hours: float = 1.0
+    ):
         """Rupees of generation forgone by spilling instead of turbining.
 
         Only the part of the spill that the turbines could actually have
@@ -110,7 +112,9 @@ class HydropowerModel:
         usable = np.minimum(spill, self.res.turbine_rated_flow)
         return self.revenue_inr(usable, level, hour_of_day, dt_hours)
 
-    def best_generation_hours(self, horizon_hours: int, start_hour_of_day: float = 0.0) -> np.ndarray:
+    def best_generation_hours(
+        self, horizon_hours: int, start_hour_of_day: float = 0.0
+    ) -> np.ndarray:
         """Hours in the horizon ranked by tariff, best first.
 
         Used by the golden-window search: if flood risk permits both, release

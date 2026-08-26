@@ -8,7 +8,7 @@ live storage is million cubic metres (Mm3); flows are cumecs (m3/s).
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 # --- Physical constants -----------------------------------------------------
 

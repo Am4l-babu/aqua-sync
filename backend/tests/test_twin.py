@@ -32,7 +32,6 @@ from aquasync.twin.optimizer import (
     ReleaseOptimizer,
 )
 
-
 # --------------------------------------------------------------------------
 # level - storage curve
 # --------------------------------------------------------------------------
@@ -41,11 +40,14 @@ class TestLevelStorageCurve:
     def test_round_trip(self):
         c = LevelStorageCurve(IDUKKI)
         for level in (700.0, 715.0, 728.5, 732.43):
-            assert c.level_from_storage(c.storage_from_level(level)) == pytest.approx(level, abs=1e-6)
+            back = c.level_from_storage(c.storage_from_level(level))
+            assert back == pytest.approx(level, abs=1e-6)
 
     def test_anchors_at_frl(self):
         c = LevelStorageCurve(IDUKKI)
-        assert c.storage_from_level(IDUKKI.frl) == pytest.approx(IDUKKI.live_storage_at_frl, rel=1e-9)
+        assert c.storage_from_level(IDUKKI.frl) == pytest.approx(
+            IDUKKI.live_storage_at_frl, rel=1e-9
+        )
 
     def test_dead_level_is_zero_live_storage(self):
         c = LevelStorageCurve(IDUKKI)
@@ -347,7 +349,9 @@ class TestOptimizer:
         a, pa = self._setup()[0].search_policies(self._setup()[1], inflow)
         b, pb = self._setup()[0].search_policies(self._setup()[1], inflow)
         assert a.total_cost == pytest.approx(b.total_cost)
-        assert (pa.target_level, pa.start_hour, pa.max_rate) == (pb.target_level, pb.start_hour, pb.max_rate)
+        assert (pa.target_level, pa.start_hour, pa.max_rate) == (
+            pb.target_level, pb.start_hour, pb.max_rate
+        )
 
     def test_optimised_beats_the_baseline(self):
         opt, state = self._setup(level=729.5)
