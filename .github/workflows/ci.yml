@@ -10,9 +10,9 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
           cache: pip
@@ -39,9 +39,12 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
-      - run: pip install ruff
+      # Pinned deliberately. An unpinned linter means CI breaks whenever the
+      # tool ships a new default rule - which is exactly what happened when
+      # ruff 0.16 enabled ISC004. Bump this on purpose, not by surprise.
+      - run: pip install ruff==0.16.4
       - run: ruff check backend/ scripts/
