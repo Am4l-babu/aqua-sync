@@ -1,13 +1,25 @@
 {
   "flagship_scenario": "periyar_oct_2021",
   "storm_date": "2021-10-16",
-  "breakeven_lead_days": 0,
-  "freeboard_at_zero_lead_m": 2.7203105837114663,
-  "cost_at_zero_lead_cr": 5.081832764475071,
+  "freeboard_gained_m_range": [
+    2.72,
+    3.3
+  ],
+  "revenue_delta_cr_range": [
+    4.4,
+    9.6
+  ],
+  "spill_fraction_at_0_days": 0.61,
+  "spill_fraction_at_30_days": 0.396,
+  "freeboard_at_zero_lead_m": 2.72,
+  "revenue_at_zero_lead_cr": 5.1,
+  "finding": "Over this episode a policy-based release schedule delivers about 3 m more flood cushion than what actually happened, while generating marginally MORE revenue - it shifts the same volume of generation into higher-tariff hours. The assumed safety-versus-power trade-off is largely an artefact of hoarding reservoir level rather than scheduling releases. What lead time changes is not the cushion but the waste: 61 percent of released water is spilled at zero lead, 40 percent at 30 days.",
   "caveats": [
     "Daily bulletin data interpolated to hourly; sub-daily peaks are smoothed.",
+    "Replay validation error is 0.30 m MAE / 0.57 m max against observed Idukki level, so roughly 0.5 m of the ~3 m freeboard figure sits inside model error. Quote it as 'about 3 m', never to two decimals.",
     "Muskingum K and x for the Periyar reaches are geometry estimates, not gauge-calibrated. Downstream discharge figures are indicative.",
     "Tariff values are indicative KSEB time-of-day bands, not a current KSERC order.",
-    "Energy-neutral rows cap mean turbine discharge at the observed mean, so the optimiser cannot book revenue the grid would not have taken. Quote these, not the unconstrained rows."
+    "The energy-neutral cap is a mean over each horizon, and horizons differ by lead time, so revenue is not perfectly comparable across rows. Spill fraction is the comparable column.",
+    "Unconstrained rows let the optimiser sell unlimited extra generation and overstate the benefit. Quote the energy-neutral rows."
   ]
 }

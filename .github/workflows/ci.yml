@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main, development]
+  pull_request:
+    branches: [development, main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+
+      - name: Test
+        working-directory: backend
+        run: python -m pytest tests/ -q
+
+      # The twin core must stay importable without any web framework
+      # installed. If this breaks, a web dependency has leaked into
+      # aquasync/twin, and the simulation core has stopped being testable
+      # in isolation.
+      - name: Check the simulation core has no web dependencies
+        working-directory: backend
+        run: |
+          pip uninstall -y fastapi uvicorn pydantic starlette
+          python -c "import aquasync.twin; print('twin core imports cleanly')"
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install ruff
+      - run: ruff check backend/ scripts/
