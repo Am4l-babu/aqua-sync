@@ -22,7 +22,6 @@ from dataclasses import dataclass
 
 import numpy as np
 
-
 # Dominant harmonic constituents for the Kochi / Cochin port station.
 # Amplitudes in metres, periods in hours, phases in degrees.
 # Cochin is microtidal and mixed semi-diurnal: spring range is only about

@@ -42,7 +42,6 @@ from .optimizer import (
     ObjectiveWeights,
     OperationalLimits,
     ReleaseOptimizer,
-    ScheduleEvaluation,
     summarise_improvement,
 )
 from .reservoir import LevelStorageCurve, ReservoirState

@@ -56,11 +56,11 @@ class ObjectiveWeights:
     gate_movement: float = 0.05
 
     @staticmethod
-    def monsoon_peak() -> "ObjectiveWeights":
+    def monsoon_peak() -> ObjectiveWeights:
         return ObjectiveWeights(flood=1.0, dam_safety=3.0, revenue=0.05, gate_movement=0.05)
 
     @staticmethod
-    def dry_season() -> "ObjectiveWeights":
+    def dry_season() -> ObjectiveWeights:
         return ObjectiveWeights(flood=0.4, dam_safety=1.0, revenue=1.0, gate_movement=0.1)
 
 
@@ -295,7 +295,8 @@ class ReleaseOptimizer:
         for t in range(n):
             level = state.level
             # Baseline generation follows demand, not hydrology.
-            turbine = self.res.turbine_rated_flow * (0.55 if 6 <= (t + start_hour_of_day) % 24 < 22 else 0.30)
+            daytime = 6 <= (t + start_hour_of_day) % 24 < 22
+            turbine = self.res.turbine_rated_flow * (0.55 if daytime else 0.30)
 
             # Reactive spill: only once past the alert bands.
             if level >= self.res.red_level:
@@ -319,10 +320,12 @@ class ReleaseOptimizer:
 
     def _random_schedule(self, n: int, n_blocks: int, max_release: float) -> np.ndarray:
         """A piecewise-constant schedule, which is how gates actually move."""
-        edges = np.sort(self.rng.choice(np.arange(1, n), size=min(n_blocks - 1, n - 1), replace=False))
+        edges = np.sort(
+            self.rng.choice(np.arange(1, n), size=min(n_blocks - 1, n - 1), replace=False)
+        )
         bounds = np.concatenate([[0], edges, [n]])
         out = np.zeros(n)
-        for a, b in zip(bounds[:-1], bounds[1:]):
+        for a, b in zip(bounds[:-1], bounds[1:], strict=True):
             out[a:b] = self.rng.uniform(0.0, max_release)
         return out
 
@@ -402,7 +405,7 @@ class ReleaseOptimizer:
         self,
         initial: ReservoirState,
         inflow: np.ndarray,
-        policy: "DrawdownPolicy",
+        policy: DrawdownPolicy,
     ) -> np.ndarray:
         """Turn a drawdown policy into an hourly release series.
 
@@ -469,7 +472,7 @@ class ReleaseOptimizer:
         n_targets: int = 14,
         n_starts: int = 12,
         n_rates: int = 8,
-    ) -> tuple[ScheduleEvaluation, "DrawdownPolicy"]:
+    ) -> tuple[ScheduleEvaluation, DrawdownPolicy]:
         """Exhaustive grid search over drawdown policies.
 
         The grid is small enough to enumerate completely, which means the
