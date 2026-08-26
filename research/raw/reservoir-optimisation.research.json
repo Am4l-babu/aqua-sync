@@ -489,5 +489,6 @@
     "Several authoritative pages block automated verification and should not be cited as links: hec.usace.army.mil (HEC-ResSim) returns curl status 000 - connection refused to non-browser clients; escholarship.org, ascelibrary.org, sciencedirect.com, agupubs.onlinelibrary.wiley.com, iwaponline.com, mdpi.com and zenodo.org all return 403 to curl. Cite the DOI or a publisher-independent copy instead. Note doi.org itself returns 403 for ASCE (10.1061/...), INFORMS (10.1287/...) and MDPI (10.3390/...) prefixes while Elsevier DOIs (10.1016/...) resolve 200 - so a 403 on doi.org is not evidence the DOI is wrong."
   ],
   "_dimension_key": "reservoir-optimisation",
-  "_stage": "research"
+  "_stage": "research",
+  "_run": "wf_009a6299-c5b"
 }

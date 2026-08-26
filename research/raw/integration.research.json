@@ -484,5 +484,6 @@
     "THE KSEB LIVE DASHBOARD HAS NO USEFUL HISTORY, AND ITS OWN DATE FORMAT IS WRONG. kseb.in/dashboard/view/waterlevel accepts ?date= but ONLY in ISO YYYY-MM-DD; the DD-MM-YYYY value its own <input type=date> renders (26-08-2026) silently returns an empty table, which looks like 'no data for that day' rather than a format error. Verified data exists for 2026-08-01 through 2026-08-26 and for nothing on or before 2026-07-01. Separately, https://www.keralafloodwatch.in/ (200) claims to aggregate IMD+CWC+KSDMA+KSEB+Google Flood Hub+Sentinel-1+NASA GPM across 44 rivers and 81 dams with '100% Official Source Attribution' - but it is not on a gov.in domain, I found no About/ownership page, and it advertises no API. Treat it as an UNVERIFIED third-party aggregator, not an official KSDMA feed, and do not cite it as a source of record."
   ],
   "_dimension_key": "integration",
-  "_stage": "research"
+  "_stage": "research",
+  "_run": "wf_009a6299-c5b"
 }

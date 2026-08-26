@@ -508,5 +508,6 @@
     "Zenodo consistently returns 403 to curl from this IP ('Access to this resource has been restricted due to unusual traffic'), including record and API endpoints for GHI, LISFLOOD-FP and the delta-MC2 global dataset. These are NOT dead links - all resolve normally via browser/WebFetch. Any status-checking script should treat zenodo.org 403 as 'reachable, throttled' rather than broken. Likewise agupubs.onlinelibrary.wiley.com, mdpi.com, sciencedirect.com and tandfonline.com all return 403 to curl as publisher bot guards."
   ],
   "_dimension_key": "hydro-modeling",
-  "_stage": "research"
+  "_stage": "research",
+  "_run": "wf_009a6299-c5b"
 }
