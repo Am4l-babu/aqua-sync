@@ -1,0 +1,59 @@
+{
+  "oct2021": {
+    "level_16_oct": 728.81,
+    "peak_inflow": 879.16,
+    "rule_level": 728.5,
+    "peak_level": 730.99
+  },
+  "cascade": {
+    "idukki": {
+      "spill_20_oct": 83.85,
+      "rule": 728.5
+    },
+    "idamalayar": {
+      "spill_20_oct": 128.13,
+      "rule": 164.0
+    }
+  },
+  "calibration": {
+    "beta": 1.348416481846436,
+    "r2": 0.9957289490738642,
+    "mae": 17.008864611632823,
+    "n": 1836
+  },
+  "lead_time": {
+    "freeboard_mean": 3.156618193013742,
+    "spill_0": 0.6103161203288293,
+    "spill_30": 0.3961575343837617,
+    "revenue_min": 4.369577540213037,
+    "revenue_max": 9.578353482404497,
+    "target_level": 728.4330769230769
+  },
+  "counterfactual": {
+    "peak_downstream_baseline": 219.46922411875698,
+    "peak_downstream_optimised": 826.8587844573422,
+    "peak_reduction_pct": -276.75386504757523,
+    "peak_level_baseline": 731.5437413513017,
+    "peak_level_optimised": 728.4594784299688,
+    "baseline_breached_frl": false,
+    "optimised_breached_frl": false,
+    "baseline_exceeded_danger": false,
+    "optimised_exceeded_danger": false,
+    "revenue_baseline_inr": 1181720681.4981668,
+    "revenue_optimised_inr": 1629362440.6256058,
+    "revenue_delta_inr": 447641759.127439,
+    "flood_cost_baseline": 0.0,
+    "flood_cost_optimised": 0.0,
+    "any_bankfull_exceedance": false,
+    "min_freeboard_baseline_m": 0.8862586486982309,
+    "min_freeboard_optimised_m": 3.97052157003111,
+    "freeboard_gained_m": 3.084262921332879,
+    "hours_simulated": 481,
+    "observed_peak_level": 730.99,
+    "replay_level_mae_m": 0.3032169370145853,
+    "replay_level_max_err_m": 0.5712659840000924,
+    "replay_final_err_m": 0.5174899358685252,
+    "frl": 732.43,
+    "rule_level": 728.5
+  }
+}
