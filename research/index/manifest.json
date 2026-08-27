@@ -379,6 +379,36 @@
       "destination": "research/sources/dem/",
       "size_hint": "unknown. NOTHING on the registration page substantiates CartoDEM availability, resolution or price. Copernicus GLO-30 is one anonymous S3 command away, so treat this as an optional upgrade, not a dependency.",
       "priority": "low"
+    },
+    {
+      "name": "Durai 2015 Mausam - EPS QPF verification over India",
+      "url": "https://mausamjournal.imd.gov.in/index.php/MAUSAM/article/download/557/483/1884",
+      "method": "curl",
+      "destination": "research/sources/papers/Durai_2015_Mausam_EPS_QPF_verification_India.pdf",
+      "kind": "paper",
+      "priority": "high",
+      "size_hint": "~776 KB",
+      "note": "THE forecast-skill numbers: day-3 ensemble-mean rainfall RMSE is 25-30 mm/day along the west coast vs 10-15 mm/day elsewhere, in all four of ECMWF/UKMO/NCEP/JMA. This is the number that bounds what AquaSync can claim."
+    },
+    {
+      "name": "GEFS Oct-2021 ensemble index (proof of ensemble members for the hindcast)",
+      "url": "https://noaa-gefs-pds.s3.amazonaws.com/gefs.20211015/00/atmos/pgrb2sp25/gep01.t00z.pgrb2s.0p25.f024.idx",
+      "method": "curl",
+      "destination": "research/sources/datasets/gefs_20211015_gep01_f024.idx",
+      "kind": "dataset",
+      "priority": "high",
+      "size_hint": "~10 KB",
+      "note": "GRIB index sidecar proving 30-member APCP is retrievable by byte range for the October 2021 case study. Record 16 is APCP:surface 18-24h acc, ENS=+1."
+    },
+    {
+      "name": "GRRR reforecast zarr metadata (Google Runoff Reanalysis and Reforecast)",
+      "url": "https://storage.googleapis.com/flood-forecasting/hydrologic_predictions/model_id_8583a5c2_v0/reforecast/streamflow.zarr/.zmetadata",
+      "method": "curl",
+      "destination": "research/sources/datasets/grrr_reforecast_zmetadata.json",
+      "kind": "dataset",
+      "priority": "high",
+      "size_hint": "small",
+      "note": "Anonymously readable. 1,031,646 gauges x 2,738 issue times x 8 lead days, 2016-01-01 to 2023-06-30. Virtual gauge hybas_4121152880 sits 0.61 km from Idukki dam."
     }
   ],
   "source": "seed (hand-verified) + deep-research synthesis"

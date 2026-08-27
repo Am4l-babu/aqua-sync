@@ -35,21 +35,99 @@ it means a slipped week costs polish, not the demo.
 
 Ordered by value per hour. The first item is worth more than the rest combined.
 
-### 🔴 1 · Forecast-error study
+### 🔴 1 · Forecast-error study — now fully specified
 
-The optimiser currently sees the true inflow series when choosing a policy.
-Real forecasts are wrong, and rainfall forecasts over the Western Ghats are
-wrong in specific, biased ways. **Every benefit figure in the dossier is
-therefore an upper bound.**
+The optimiser sees the **true** inflow series when choosing a policy. Every
+benefit figure in the dossier is therefore an upper bound.
 
-The work: drive the policy search from perturbed inflow forecasts with
-realistic error growth (say ±20% at 24 h widening to ±60% at 120 h), run an
-ensemble, and report how much of the ~3 m cushion survives.
+This was the biggest open question in the project. The research sweep found
+the data that closes it, and verified it by actually fetching bytes rather
+than reading documentation.
 
-Why it matters more than anything else: the first domain-literate person to
-look at this will ask "what happens when the forecast is wrong?" Having the
-answer converts the project from a promising demo into a credible result.
-Not having it makes every other number suspect.
+**The source: NOAA GEFS operational archive on AWS** — `s3://noaa-gefs-pds`,
+free, no credentials, no registration.
+
+```
+gefs.20211015/00/atmos/pgrb2sp25/gep01..gep30 .t00z.pgrb2s.0p25.f000..f240
+```
+
+30 perturbed members plus control, 0.25°, 4 cycles/day, out to 240 h, with an
+archive reaching back to 2017 — so it covers the October 2021 case study. The
+`.idx` sidecar names `APCP:surface:18-24 hour acc fcst:ENS=+1` at a byte
+offset, and a Range GET of that slice returns HTTP 206 with GRIB magic bytes.
+About 270 kB per member per lead hour, so a whole 30-member October 2021
+hindcast is a few hundred MB of range reads, not terabytes.
+
+GEFSv12 has been operational since September 2020, so October 2021 runs the
+**same model generation as today** — skill measured on the hindcast transfers
+to present-day operation. That is a genuinely strong argument for the case
+study.
+
+**The method:**
+
+1. For each 00z issue date across the event, range-fetch APCP for `gep01`–`gep30`
+2. Bias-correct against IMD gridded rainfall or the SLDC daily rainfall column
+3. Push each member through the existing SCS-CN + Muskingum chain → 30 inflow
+   trajectories
+4. Run the existing exhaustive policy search per member; pick by a **declared**
+   rule (expected value, CVaR, or minimax regret — the choice changes the
+   answer, so state it)
+5. Score the chosen policy against observed inflow from the Kerala SLDC form,
+   which serves arbitrary historical dates via
+   `POST sldckerala.com/index.php?id=7` with `date1_day/date1_month/date1_year`
+   (numeric month; posting "October" silently returns nothing)
+
+**The deliverable is one honest number**: the fraction of the perfect-foresight
+benefit that survives, reported separately at 24 / 72 / 120 h, because the
+literature says those are very different regimes.
+
+#### A trap that would have silently faked this
+
+Open-Meteo's Historical Forecast API returns hourly precipitation for October
+2021 and *looks* like a hindcast. It is not. The lead-time variable
+`precipitation_previous_day3` is **100% null** for 2021-10-15 (0 of 24 hours)
+while the identical request for 2024-07-15 returns 24 of 24. The lead-time
+archive begins in early 2024; for 2021 that endpoint serves what is
+effectively an analysis — near-perfect foresight. Building the
+"forecast-driven" comparison on it would reproduce the perfect-foresight
+result *while appearing to have fixed it*.
+
+#### Free bonus: a second, independent route
+
+Google's **GRRR** (Runoff Reanalysis & Reforecast) sits in an anonymously
+readable GCS bucket, no key and no waitlist:
+`gs://flood-forecasting/hydrologic_predictions/model_id_8583a5c2_v0/`.
+Its reforecast is [1,031,646 gauges × 2,738 issue times × 8 lead days],
+2016-01-01 to 2023-06-30 — so it spans October 2021. Virtual gauge
+`hybas_4121152880` sits **0.61 km from Idukki dam**, and its reanalysis
+reproduces the August 2018 flood (peak 239.65 m³/s on 16 Aug, against its own
+2/5/10-year thresholds of 173.2 / 214.9 / 242.2).
+
+Running both matters: GEFS gives error-bearing **rainfall** through AquaSync's
+own model; GRRR gives error-bearing **discharge** from a global ML model. The
+gap between them separates *"the rainfall forecast was wrong"* from *"my
+rainfall-runoff model was wrong"* — two error sources the project currently
+cannot tell apart.
+
+Caveat to state: GRRR is a **reforecast**, a modern model re-run over past
+dates, so it flatters the result relative to what an operator actually had.
+GEFS operational is the stricter test.
+
+#### The ceiling this work will run into
+
+Two published numbers bound what any forecast-driven system can deliver here:
+
+- **Durai et al. (2015), Mausam 66(3)**: day-3 ensemble-mean rainfall RMSE is
+  10–15 mm/day over most of India but **25–30 mm/day along the west coast** —
+  in all four of ECMWF, UKMO, NCEP and JMA. The Western Ghats are measurably
+  the worst place in India to forecast rain.
+- **Sudheer et al. (2019)**: even pre-emptively emptying Periyar reservoirs to
+  25–50% capacity bought only **16–21% peak attenuation** at Neeleeswaram.
+
+So the target framing is not "X% benefit" but: *"X% under perfect foresight,
+Y% with the 30-member ensemble that was actually available, decaying from 24 h
+to 120 h as follows."* That turns the project's biggest methodological
+weakness into its most credible result.
 
 ### 🔴 2 · Cascade co-optimisation
 
@@ -61,14 +139,33 @@ superpose is the single most valuable modelling addition.
 The routing layer is already a DAG (`RiverNetwork`), so the work is extending
 the policy search across nodes rather than rebuilding anything.
 
-### 🟠 3 · Routing calibration against gauges
+### 🟠 3 · Routing calibration against gauges — data now in the repo
 
-Muskingum K and x currently come from reach geometry, not from gauge pairs.
-Downstream discharge figures are consequently indicative, not measured, and
-that limits what can honestly be claimed about Aluva.
+K and x are no longer pure geometry: they are anchored to CWC's published
+8-hour Idukki→Neeleeswaram travel time. But that is one number from a MIKE-11
+model run "only for 2018", not a gauge-pair calibration.
 
-Needs CWC gauge records at Neeleeswaram and Aluva. `MuskingumReach.calibrate`
-already implements the fit; it just needs data.
+The data to do it properly is now on disk:
+
+- `research/sources/datasets/cwc_kerala_daily_discharge_2001_2025.csv` —
+  **NEELEESWARAM, 8,478 daily readings 2001–2025**, plus VANDIPERIYAR and
+  ARANGALI
+- `…_1950_2000.csv` — Neeleeswaram back to 1971, giving 19,362 daily values
+  across 54 years
+
+`MuskingumReach.calibrate` already implements the fit.
+
+**The catch, and it is a real one:** Neeleeswaram is missing 2018-08-16 to
+08-22 *and* 08-24 to 08-27 — 13 of 31 August days. The last pre-gap reading is
+6,166 m³/s on 15 August; the next is 924 on 23 August. **The 2018 flood peak
+was never gauged at the point the twin routes to.** Calibrate on ordinary
+monsoon events, then state plainly that the extreme is extrapolation.
+
+CAMELS-IND v2.2 (`10.5281/zenodo.14999580`) carries the same Neeleeswaram
+gauge as catchment 15021 with matched IMD forcings 1980–2020, and
+NeuralHydrology already ships `datasetzoo/camelsind.py`. Use v2.2, not the
+v2.1 DOI the paper cites — the v2.2 changelog specifically corrects the gauge
+id mapping for basin code 15, which is this basin.
 
 ### 🟠 4 · V1 hardware rig
 
@@ -111,6 +208,9 @@ Not rejected — deferred, with the reason recorded so it is not re-argued.
 | **Thermal seepage / hydrophone leak detection** | Dam *structural* health is a different problem from dam *operation*. Conflating them weakens both stories |
 | **Blockchain release ledger** | A SHA-256 hash chain gives the tamper-evidence needed at a fraction of the complexity. Already in the firmware design |
 | **WebXR / AR overlay** | Pure spectacle. Considered only if everything else is finished and rehearsed |
+| **PINN / learned hydraulic surrogates** | Verified reject. Surrogates pay when the physics model is the bottleneck — hours per run. AquaSync's forward model is a power law plus SCS-CN plus Muskingum, effectively instantaneous, which is the only reason the exhaustive policy search is tractable. PINN accuracy for shallow-water problems is still below conventional solvers. Revisit only if 2D inundation is added |
+| **Eclipse Ditto / Azure Digital Twins / NVIDIA Omniverse** | Verified reject, all three. Healthy products aimed at problems this project does not have: device-shadow sync across IoT fleets, a DTDL graph over many-noded assets, GPU physics-ML at CFD scale. AquaSync is two reservoirs and one river. "Digital twin" in the title describes what the model *does*, not a mandate to buy a product with the phrase in its marketing |
+| **Google Flood Forecasting API for the hindcast** | Verified reject *for historical work*. India is a supported country and the feed is genuinely useful for live operation, but `queryGaugeForecasts` imposes a hard floor: "Start time cannot be earlier than 2023-10-01". October 2021 is permanently unreachable. Access also needs waitlist approval Google warns "might take several months". Use GRRR instead |
 | **Malayalam NLP social sentinel** | Interesting validation signal, but it confirms a flood after it starts — the twin exists to act before |
 | **Dam-breach mode** | Different hazard class, different regulatory context. Post-expo |
 
