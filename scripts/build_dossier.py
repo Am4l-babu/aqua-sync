@@ -45,6 +45,7 @@ BLUE = colors.HexColor("#1f6feb")
 RED = colors.HexColor("#d1242f")
 GREEN = colors.HexColor("#1a7f37")
 AMBER = colors.HexColor("#bf8700")
+VIOLET = colors.HexColor("#6f42c1")
 RULE = colors.HexColor("#dde3ea")
 BG = colors.HexColor("#f6f8fa")
 
@@ -434,15 +435,31 @@ def section_results(f: dict) -> list:
         para(
             f"One further result is worth stating because nobody set it: given only the physics "
             f"and the objective, the optimiser converged on a target level of "
-            f"<b>{lead.get('target_level', 728.43):.2f} m</b> at nearly every lead time tested. KSEB's "
-            f"own published rule level for Idukki is <b>728.50 m</b>. The optimiser independently "
-            f"rediscovered the operating rule that already exists, to within 7 cm."),
+            f"<b>{lead.get('target_level', 728.43):.2f} m</b> at nearly every lead time tested — "
+            f"within 7 cm of the <b>728.50 m</b> that KSEB's own 2020 rule curve prescribes for "
+            f"31 August."),
         callout(
-            "Which means the recommendation is not “change the rule”.",
-            "The rule curve is already correct. What is missing is a system that acts on it "
-            "against a forecast, early enough that acting is cheap. That is a considerably "
-            "easier thing to ask a utility to adopt than a new operating philosophy.",
-            accent=BLUE, tint="#eef4fd"),
+            "But “just follow the rule curve” is NOT the recommendation, and the audit record "
+            "says so.",
+            "It is tempting to read the previous paragraph as vindication of the published rule "
+            "curve. The CAG performance audit of Kerala's flood preparedness rules that out. "
+            "Reading its Tables 3.6 and 3.7 directly: actual Idukki spills over 14–18 August 2018 "
+            "totalled <b>467.51 MCM</b>, while the 2020 rule curve would have required "
+            "<b>531.03 MCM</b> across the same window.<br/><br/>"
+            "On the worst days of the worst flood in a century, mechanical compliance with the "
+            "published curve would have put <i>more</i> water into the Periyar, not less. The "
+            "agreement at 728.50 m is a coincidence of date — 31 August is the curve's most "
+            "permissive step — not a validation of it.<br/><br/>"
+            "What the result actually supports is narrower and more defensible: <b>a "
+            "forecast-driven target, recomputed as conditions change, lands near sensible "
+            "operating levels without being told what they are.</b> The value is in the "
+            "recomputation, not in the number.",
+            accent=RED, tint="#fdeef0"),
+        para(
+            "This correction came from the project's own research sweep rather than from a "
+            "reviewer, which is the outcome to aim for. The full evidence, including the "
+            "positions that contradict this project's thesis, is in the companion "
+            "<i>Deep Research Report</i>."),
     ]
 
 
@@ -678,6 +695,44 @@ def section_limits(f: dict) -> list:
               "would have advised, publish the comparison"]],
             widths=[42 * mm, 62 * mm, CONTENT_W - 104 * mm]),
         Spacer(1, 8),
+        para("9.1 · Evidence against this project's thesis", "h2"),
+        para(
+            "A deep-research sweep run against this project found five positions that "
+            "complicate or contradict its argument. They belong here rather than in a footnote, "
+            "because the first domain-literate reviewer will find them anyway."),
+        data_table(
+            ["Challenge", "What it means for AquaSync"],
+            [["<b>The literature does not agree that dams worsened the 2018 flood.</b> CWC's own "
+              "September-2018 study concludes the reservoirs <i>attenuated</i> the peak — Idukki "
+              "2,532 → 1,500 cumec, about 41%.",
+              "The framing “dam mismanagement caused the flood” is contested by the agency that "
+              "owns the data. State the conflict; do not assert one side."],
+             ["<b>The most-quoted “reservoirs made it worse” study was rejected.</b> Mishra et "
+              "al.'s HESS preprint carries “not accepted for further review”, and its headline "
+              "number differs from the peer-reviewed figure by about 3.5×.",
+              "Do not cite it. Its absence from the argument is a strength."],
+             ["<b>The forecast skill this approach assumes may not exist in this basin.</b> "
+              "Sudheer et al. report that probability of detection for rainfall above 25 mm/day "
+              "at 3–5 day range is poor <i>even with ensembles</i>.",
+              "This is the deepest problem in the project. It is not solved by better "
+              "optimisation, and it bounds what any forecast-driven system can deliver here."],
+             ["<b>Even a perfect optimiser has a modest ceiling.</b> The same authors put "
+              "achievable peak attenuation from advance emptying at <b>16–21%</b>, and find "
+              "downstream flows become insensitive to reservoir state below 50% storage.",
+              "A useful sanity bound. Any claim materially above it needs extraordinary evidence."],
+             ["<b>FIRO took about a decade of shadow operation</b> to change one water control "
+              "manual that had been revised twice in 66 years.",
+              "The adoption timeline in this document is optimistic. Shadow mode is not a phase; "
+              "it is most of the work."]],
+            widths=[74 * mm, CONTENT_W - 74 * mm]),
+        Spacer(1, 8),
+        callout(
+            "The honest summary of all five.",
+            "AquaSync is a decision-support tool whose upper bound is set by monsoon forecast "
+            "skill over the Western Ghats, operating in a domain where the causal claim it rests "
+            "on is genuinely disputed. That is a smaller claim than the one this document opened "
+            "with, and it is the one the evidence supports.",
+            accent=VIOLET, tint="#f4f0fb"),
         callout(
             "The system is advisory, permanently.",
             "AquaSync never operates a gate. If an automated system opens a spillway and "
@@ -762,10 +817,14 @@ def section_pitch() -> list:
             "revenue, not less, because the same water goes through the turbines at "
             "better hours instead of over the spillway. The safety-versus-power conflict "
             "everyone assumes is mostly an artefact of acting late.<br/><br/>"
-            "And the operating level the optimiser chose? 728.43 metres. KSEB's own published "
-            "rule level is 728.50. We did not invent a better rule. The rule is already right. "
-            "What is missing is a system that acts on it while acting is still cheap — and "
-            "that is what this is.”", S["callout"])]], colWidths=[CONTENT_W],
+            "And the operating level the optimiser chose? 728.43 metres — within seven "
+            "centimetres of what KSEB's own rule curve prescribes for that date, without ever "
+            "being told it. I want to be careful here, because the CAG audit shows that "
+            "mechanically following that curve through August 2018 would actually have released "
+            "<i>more</i> water, not less. So the point is not that the rule is right. The point "
+            "is that a system recomputing the target against a live forecast arrives somewhere "
+            "sensible on its own — and keeps arriving there as conditions change, which a fixed "
+            "curve cannot do.”", S["callout"])]], colWidths=[CONTENT_W],
             style=TableStyle([
                 ("BACKGROUND", (0, 0), (-1, -1), BG),
                 ("LINEBEFORE", (0, 0), (0, -1), 2.4, BLUE),
