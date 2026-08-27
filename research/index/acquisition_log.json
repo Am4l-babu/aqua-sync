@@ -23,43 +23,82 @@
     "status": "already-present",
     "bytes": 24060784
   },
-  "dMC-Juniata-hydroDL2": {
-    "status": "ok",
-    "bytes": 163475,
-    "files": 54
-  },
-  "pywr": {
-    "status": "ok",
-    "bytes": 4559209,
-    "files": 290
-  },
-  "AI4Water": {
-    "status": "ok",
-    "bytes": 27628561,
-    "files": 332
-  },
-  "pastas": {
-    "status": "ok",
-    "bytes": 171957606,
-    "files": 420
-  },
-  "Sentinel1-Flood-Finder": {
-    "status": "ok",
-    "bytes": 44969144,
-    "files": 25
-  },
-  "pyflwdir": {
-    "status": "ok",
-    "bytes": 2475235,
-    "files": 89
-  },
-  "LFPtools": {
-    "status": "ok",
-    "bytes": 25207084,
-    "files": 47
-  },
   "idukki-live-bulletin": {
     "status": "already-present",
     "bytes": 17302
+  },
+  "SLDC Kerala daily observed inflow archive (2019-08-08 to present)": {
+    "status": "failed",
+    "error": "JSONDecodeError: Expecting value: line 1 column 1 (char 0)"
+  },
+  "KSEB Dam Safety monthly statistics - download listing (86 live workbook IDs)": {
+    "status": "already-present",
+    "bytes": 209937
+  },
+  "KSEB monthly workbook June 2019 (carries the 2018 'Previous Year Water Level' column and the 25.09.2018 status sheet)": {
+    "status": "already-present",
+    "bytes": 1511065
+  },
+  "KSEB monthly workbooks Jul-Oct 2019 (wpdmdl 500, 501, 502, 503) - completes the 96 unique 2018 dates": {
+    "status": "already-present",
+    "bytes": 1561406
+  },
+  "KSEB monthly workbooks Nov 2020 - Apr 2021 (wpdmdl 1178, 1256, 1320, 1386, 1465, 1520) - the amith-vp corrupt window, legacy .xls": {
+    "status": "already-present",
+    "bytes": 1175552
+  },
+  "KSEB monthly workbook July 2026 - modern schema exemplar with rule level and alert bands": {
+    "status": "already-present",
+    "bytes": 252222
+  },
+  "RAT-Kerala Idukki daily inflow (modelled VIC, 2015-10-24 to 2025-02-22)": {
+    "status": "already-present",
+    "bytes": 100264
+  },
+  "RAT-Kerala Idamalayar daily inflow (note the double-a slug)": {
+    "status": "already-present",
+    "bytes": 100426
+  },
+  "RAT-Kerala Mullaperiyar daily inflow - the upstream regulation AquaSync ignores": {
+    "status": "already-present",
+    "bytes": 100535
+  },
+  "IMD 0.25-degree daily gridded rainfall NetCDF, years 2018-2021": {
+    "status": "failed",
+    "error": "JSONDecodeError: Expecting value: line 1 column 1 (char 0)"
+  },
+  "GUARDIAN rating curves for 210 CWC gauges incl. NEELEESWARAM, ARANGALI, VANDIPERIYAR": {
+    "status": "already-present",
+    "bytes": 53652
+  },
+  "NWDP CWC hourly river water level, basin 031 (West flowing rivers Tadri-Kanyakumari), 1991-2020 - contains Aug 2018 Neeleeswaram stage at 743/744 hours": {
+    "status": "already-present",
+    "bytes": 259673038
+  },
+  "wltaylor/Robust-FIRO - cvxpy ensemble MPC for reservoir flood control (MIT)": {
+    "status": "already-present",
+    "bytes": 143794732
+  },
+  "iRONStoolbox/iRONS - op_piecewiselin_1res rule-curve policy parameterisation (MIT)": {
+    "status": "skipped-too-large",
+    "bytes": 187071706,
+    "error": "compressed tarball is 178.4 MB, over the 150 MB cap"
+  },
+  "CWRDM - request in-situ KSEB 2018 Idukki/Idamalayar inflow and the official Idukki rule curve": {
+    "status": "manual-registration"
+  },
+  "Durai 2015 Mausam - EPS QPF verification over India": {
+    "status": "already-present",
+    "bytes": 775531
+  },
+  "GEFS Oct-2021 ensemble index (proof of ensemble members for the hindcast)": {
+    "status": "ok",
+    "bytes": 2316,
+    "content_type": "binary/octet-stream"
+  },
+  "GRRR reforecast zarr metadata (Google Runoff Reanalysis and Reforecast)": {
+    "status": "ok",
+    "bytes": 2900,
+    "content_type": "application/octet-stream"
   }
 }
