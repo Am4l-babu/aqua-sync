@@ -54,6 +54,7 @@ import json
 import sys
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import replace as dc_replace
 from pathlib import Path
 
 import eccodes
@@ -287,12 +288,22 @@ def main() -> int:
         return 1
 
     issue_dt = pd.Timestamp(f"{args.issue_date} {args.hh}:00:00")
-    scenario = SCENARIOS["periyar_oct_2021"]
+    window_end = issue_dt + pd.Timedelta(hours=args.horizon_h)
+
+    # Truncate the scenario to [scenario.start, issue + horizon] so BOTH the
+    # perfect-foresight baseline and the forecast-driven runs are scored
+    # over the identical window. Using the untruncated default scenario end
+    # (2021-10-28) here would silently need rainfall for days the GEFS fetch
+    # never covered - the first version of this script zero-padded that gap,
+    # which fabricated an 8-day near-zero-inflow tail against an observed
+    # 130-240 cumecs and biased every policy ranking that used it.
+    base_scenario = SCENARIOS["periyar_oct_2021"]
+    scenario = dc_replace(base_scenario, end=str(window_end))
     series = load_scenario_series(scenario, cache_dir=args.cache_dir, hourly=True)
 
     lead_hours_before_storm = (pd.Timestamp("2021-10-16 18:00") - issue_dt).total_seconds() / 3600.0
     print(f"issue: {issue_dt} UTC  ({lead_hours_before_storm:.0f} h before the 17 Oct storm peak)")
-    print(f"horizon: {args.horizon_h} h -> {issue_dt + pd.Timedelta(hours=args.horizon_h)}")
+    print(f"horizon: {args.horizon_h} h -> window [{scenario.start}, {window_end}]")
 
     member_rain = fetch_all_members(args.issue_date, args.hh, args.horizon_h, args.workers)
 

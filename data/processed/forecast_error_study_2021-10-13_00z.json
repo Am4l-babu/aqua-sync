@@ -12,59 +12,59 @@
     "caveat": "area is sourced (CAG Appendix 3.1); channel length and slope are order-of-magnitude estimates, not calibrated to Idukki"
   },
   "perfect_foresight": {
-    "freeboard_gained_m": 3.102,
-    "peak_level_m": 728.442
+    "freeboard_gained_m": 3.111,
+    "peak_level_m": 728.382
   },
   "observed": {
-    "peak_level_m": 731.544,
-    "revenue_cr": 118.2
+    "peak_level_m": 731.493,
+    "revenue_cr": 52.4
   },
   "decision_rule_expected_value": {
-    "chosen_member": "gep01",
-    "peak_level_m": 730.7298730997122,
-    "freeboard_gained_m": 0.813868251589497,
-    "retention_of_perfect_foresight_pct": 26.235058555762492,
-    "revenue_delta_cr": 10.648019345451164
+    "chosen_member": "gep27",
+    "peak_level_m": 730.4626163189753,
+    "freeboard_gained_m": 1.0304486064882212,
+    "retention_of_perfect_foresight_pct": 33.125781825816915,
+    "revenue_delta_cr": 1.417547460255593
   },
   "decision_rule_minimax_regret": {
     "chosen_member": "gep13",
-    "peak_level_m": 729.20032193358,
-    "freeboard_gained_m": 2.3434194177217478,
-    "retention_of_perfect_foresight_pct": 75.54016946178945,
-    "revenue_delta_cr": 10.017550235288
+    "peak_level_m": 729.1905545727218,
+    "freeboard_gained_m": 2.302510352741706,
+    "retention_of_perfect_foresight_pct": 74.01868964289618,
+    "revenue_delta_cr": 2.1263609857771337
   },
   "ensemble_spread": {
     "freeboard_gain_if_policy_matched_verifying_member_m": [
-      3.009,
-      3.009,
-      3.009,
-      3.009,
-      3.009,
-      3.009,
-      3.009,
-      3.009,
-      3.009,
-      3.009,
-      3.009,
-      3.159,
-      3.0,
-      2.99,
-      3.009,
-      3.009,
-      3.006,
-      3.001,
-      3.009,
-      3.009,
-      3.009,
-      3.009,
-      3.009,
-      3.009,
-      3.009,
-      3.009,
-      2.974,
-      3.009,
-      3.006,
-      3.009
+      2.709,
+      2.709,
+      2.709,
+      2.709,
+      2.709,
+      2.709,
+      2.709,
+      2.709,
+      2.709,
+      2.709,
+      2.709,
+      3.111,
+      2.952,
+      2.981,
+      2.708,
+      2.709,
+      2.706,
+      2.7,
+      2.709,
+      2.709,
+      2.709,
+      2.709,
+      2.709,
+      2.709,
+      2.709,
+      2.709,
+      2.791,
+      2.709,
+      2.706,
+      2.709
     ]
   }
 }

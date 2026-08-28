@@ -182,7 +182,7 @@ Reproduce: `python scripts/lead_time_study.py`.
 
 Ordered by how much they undercut current claims.
 
-### 🟢 Perfect foresight - first result in, 28 Aug 2026
+### 🟢 Perfect foresight - two lead times in, 28 Aug 2026
 
 The optimiser in §3 sees the **true** inflow series when choosing a policy.
 Every benefit figure above is an upper bound until this is closed.
@@ -192,37 +192,66 @@ NOAA GEFS ensemble issued before the 17 October 2021 storm, bias-correct
 against IMD RF25 gridded rainfall (a single multiplicative factor - see
 caveat below), push each member through the SCS-CN + unit-hydrograph chain
 to get 30 candidate inflow trajectories, search a `DrawdownPolicy` per
-member, score the full 30x30 candidate-vs-member cross-matrix, and commit
-to ONE policy under a declared rule. Verify that policy against what
-actually happened.
+member, score the full 30x30 candidate-vs-member cross-matrix over the
+*same* window as the perfect-foresight baseline, and commit to ONE policy
+under a declared rule. Verify that policy against what actually happened.
 
-**Result, issued 2021-10-13 00z (90 h before the storm peak):**
+**Results:**
 
-| | Freeboard gained | % of perfect foresight |
-|---|---|---|
-| Perfect foresight (§3 baseline) | 3.10 m | 100% |
-| Forecast-driven, **expected-value** rule | 0.81 m | **26%** |
-| Forecast-driven, **minimax-regret** rule | 2.34 m | **76%** |
+| Lead time | Decision rule | Freeboard gained | % of perfect foresight |
+|---|---|---|---|
+| 24 h (issued 15 Oct 18z) | perfect foresight | 3.11 m | 100% |
+| 24 h | expected-value | 0.81 m | **26%** |
+| 24 h | minimax-regret | 1.03 m | **33%** |
+| 90 h (issued 13 Oct 00z) | perfect foresight | 3.11 m | 100% |
+| 90 h | expected-value | 1.03 m | **33%** |
+| 90 h | minimax-regret | 2.30 m | **74%** |
 
-**This is the headline finding, and it was not obvious going in: the
-decision rule matters more than the forecast skill does.** Committing to
-the ensemble member that looks best on average (expected value) picks a
-policy tuned to a light-rain story; when the actual storm arrives, that
-policy has already released too little too late. Committing to the policy
-that performs best against its *worst* member (minimax regret) sacrifices
-some upside in the average case but survives the real event far better -
-almost 3x the retained benefit. **Report "76% at 90 h, if hedged"
-alongside "26% at 90 h, naively" - stating only one number here would be
-easy to cherry-pick and wrong either way.**
+**Two findings:**
 
-**Honest caveats, most serious first:**
+1. **The decision rule matters more than the forecast skill does.**
+   Committing to the ensemble member that looks best on average picks a
+   policy tuned to a light-rain story; when the actual storm arrives, that
+   policy has already released too little too late. Committing to the
+   policy that performs best against its *worst* member sacrifices some
+   upside in the average case but survives the real event far better at
+   both lead times tested.
+2. **The minimax advantage grows with lead time.** The gap between the two
+   rules is 7 points at 24 h (26 vs 33%) and 41 points at 90 h (33 vs 74%).
+   This is mechanistically sensible rather than a fluke: more lead time
+   means more spread in how the ensemble members disagree about the
+   storm's evolution, so there is more to gain from hedging against the
+   worst case instead of betting on the average one. Close to the event
+   the members converge and the rule matters less; far from it, the rule
+   is most of what separates a good outcome from a bad one. **Report the
+   pair at each lead time - "26/33% at 24 h, 33/74% at 90 h" - never a
+   single number, since which one you'd quote depends entirely on which
+   rule you assume the operator uses.**
+
+**A bug was caught and fixed between the first and second pass, and it is
+worth narrating rather than quietly overwriting the earlier numbers.** The
+first version of the script fetched GEFS rainfall only out to the forecast
+horizon, but let the optimiser's evaluation window run to the scenario's
+full default end (2021-10-28) regardless - so every hour past the fetched
+horizon was silently zero-padded. Real observed inflow in that gap is
+130-240 cumecs, not near-zero (checked directly against the KSEB bulletin),
+so the padding fabricated over a week of fictitious near-drought and
+distorted every policy ranking that used it. The fix truncates the
+evaluation window to exactly `[scenario start, issue time + horizon]` for
+*both* the forecast-driven and perfect-foresight runs, so no hour in either
+comparison is fabricated. The qualitative finding (minimax beats
+expected-value, more so at longer lead) survived the fix unchanged; the
+exact percentages moved by 5-8 points. The numbers in the table above are
+post-fix.
+
+**Other honest caveats, most serious first:**
 
 1. **The bias correction is large and single-event.** GEFS's ensemble-mean
-   rainfall for this storm was roughly a third of IMD's observed total
-   (correction factor 3.18x). That is not a small nudge - it is rescaling
-   one sample, not a trained correction, and it should not be assumed to
-   generalise to the next event. A proper fix needs the correction fit
-   across many storms, which is future work.
+   rainfall for this storm needed a correction factor of 3.18x at 90 h lead
+   and 1.68x at 24 h. Neither is a small nudge - both rescale one sample,
+   not a trained correction, and neither should be assumed to generalise to
+   the next event. A proper fix needs the correction fit across many
+   storms, which is future work.
 2. **Catchment geometry for the unit hydrograph is estimated, not
    calibrated** (35 km channel, 3.6% slope - order-of-magnitude for a
    compact Western Ghats headwater catchment, not fitted to Idukki). This
@@ -233,13 +262,15 @@ easy to cherry-pick and wrong either way.**
    geometry) - a flashy sub-3h rise is smoothed into the 3-hourly bucket it
    falls in. This affects peak *timing* more than peak *volume*, since SCS-CN
    mass balance is conserved regardless of the disaggregation.
-4. **One issue time so far.** ROADMAP.md asks for 24 / 72 / 120 h reported
+4. **Two issue times so far.** ROADMAP.md asks for 24 / 72 / 120 h reported
    separately, because the literature says skill decays very differently
-   across that range. 90 h is one point on that curve - see ROADMAP.md
-   item 1 for the running set of lead times as more are added.
+   across that range. 24 h and 90 h (close to the 72 h bucket) are covered;
+   120 h is the next run - see ROADMAP.md item 1.
 
 Reproduce: `python scripts/forecast_error_study.py --issue-date 2021-10-13
---hh 00 --horizon-h 168`. Result: `data/processed/forecast_error_study_2021-10-13_00z.json`.
+--hh 00 --horizon-h 168` (90 h) or `--issue-date 2021-10-15 --hh 18
+--horizon-h 102` (24 h). Results: `data/processed/forecast_error_study_2021-10-13_00z.json`
+and `..._2021-10-15_18z.json`.
 
 ### 🔴 River routing
 
