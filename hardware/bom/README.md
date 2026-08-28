@@ -1,5 +1,10 @@
 # Bill of materials
 
+Also available as [`bom.html`](bom.html) — a shoppable version with a live
+vendor search link and a computed (not retyped) total on every tier. It is
+a hand-maintained companion to the tables below, not generated from them —
+if you edit a price here, update it there too.
+
 Four build tiers. **V1 is the only one required** for a working expo
 demonstration; V2–V4 are optional depth, and every one of them is a way to
 lose. Read [Choosing a tier](#choosing-a-tier) before ordering anything.
