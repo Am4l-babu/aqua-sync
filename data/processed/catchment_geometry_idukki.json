@@ -1,0 +1,17 @@
+{
+  "idukki_topographic_catchment_km2": 1131.0,
+  "mullaperiyar_topographic_catchment_km2": 560.7,
+  "idukki_net_contributing_catchment_km2": 570.3,
+  "cag_sourced_catchment_km2": 650.0,
+  "net_vs_cag_diff_pct": -12.3,
+  "main_channel_km": 66.3,
+  "headwater_point_lonlat": [
+    77.0893,
+    9.4724
+  ],
+  "headwater_elevation_m": 1220.0,
+  "dam_pool_elevation_m": 646.0,
+  "channel_slope": 0.0087,
+  "dem_source": "AWS Terrarium (elevation-tiles-prod), zoom 12, ~30-38 m native, resampled to 30 m in UTM 43N",
+  "method": "pysheds D8 flow accumulation; catchment from Idukki dam pour point minus catchment from Mullaperiyar dam pour point (upstream trans-basin diversion to the Vaigai basin, Tamil Nadu, via tunnel - invisible to a DEM, which sees only topography, not the tunnel)"
+}

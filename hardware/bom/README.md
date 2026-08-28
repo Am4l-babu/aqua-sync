@@ -208,3 +208,44 @@ Concretely:
 
 Order V1 first and start building while V2 ships. Indian vendor delivery is
 3–5 days; do not sequence the build so that a ₹90 part blocks a demo.
+
+---
+
+## Reference: a real deployed design, not a tier to buy
+
+Found 28 August 2026 while checking ICFOSS's (Kerala's state FOSS body)
+GitLab for prior art. This is not another BOM tier — it is a **working,
+MIT-licensed, non-contact water-level station** that has actually been
+built and documented, worth reading before extending V1 toward a real
+field deployment rather than a tabletop demo.
+
+**[`icfoss/OpenIoT/c1_dev_lorawan_automatic_level_monitoring_station`](https://gitlab.com/icfoss/OpenIoT/c1_dev_lorawan_automatic_level_monitoring_station)**
+
+| | This project's V1 | ICFOSS's design |
+|---|---|---|
+| Level sensor | JSN-SR04T ultrasonic, 25–450 cm | Vega Puls C11 radar, 8 m range, non-contact |
+| Telemetry | Wi-Fi (ESP32) | LoRaWAN (C1-Dev board, Murata CMWX1ZZABZ-091) |
+| Power | Mains adapter | 100 W solar + 50 Ah Li-ion, MPPT charge controller |
+| Payload | Level + temperature | Level, 16-reading history, rate of change, solar/battery voltage and current |
+| Range | Tabletop, tethered | Field-deployable, kilometres via LoRaWAN |
+
+The two designs are solving different problems on purpose — V1 above is
+built to be cheap, buildable in a week, and demonstrate the *twin*, not the
+*sensor network*. But this is exactly the kind of hardware `docs/validation.md`
+and `ROADMAP.md` name as the fix for the biggest data-layer gap in the
+project: real reservoirs report on a **daily** bulletin, and the routing
+calibration attempt (`scripts/routing_calibration.py`) failed specifically
+because daily data cannot resolve an 8-hour travel time (see
+`docs/validation.md` §"River routing"). A radar level station reporting
+every few minutes over LoRaWAN, at either Idukki or a downstream point like
+Neeleeswaram, is a plausible real answer to that gap - not a V1 expo
+prop, but worth a look if this project ever moves toward an actual
+utility pilot rather than a demonstration rig.
+
+ICFOSS's OpenIoT group has several related designs worth the same kind of
+look if that direction is pursued: `Water_Quality_Monitoring_Device` and
+`Aquasentinals` (same STM32 + LoRaWAN + ChirpStack + Grafana telemetry
+stack, different sensors - pH/dissolved oxygen/temperature), and
+`flood-monitoring-technopark` (a deployed reference for the alerting and
+dashboard side - LoRaWAN sensors on the Thettiyar canal at Technopark,
+React/Node/MongoDB, threshold-based SMS/email alerts).

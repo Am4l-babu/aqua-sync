@@ -90,18 +90,26 @@ MEMBERS = [f"gep{n:02d}" for n in range(1, 31)]
 IDUKKI_LATS = [9.5, 9.75, 10.0]
 IDUKKI_LONS = [76.75, 77.0, 77.25]
 
-# Idukki catchment geometry for the unit hydrograph. Only the area (650 km2,
-# CAG Appendix 3.1) is a sourced constant - main_channel_km and slope are
-# NOT calibrated to Idukki specifically; they are order-of-magnitude
-# estimates for a compact, steep Western Ghats headwater catchment (ridge
-# ~2000 m down to the reservoir at 732 m over ~35 km). This is a genuine
-# limitation, not a hidden one: routing calibration against the CWC
-# Neeleeswaram gauge (ROADMAP.md item 3) is the fix, and it has not been
-# done for the UPSTREAM catchment response (only the DOWNSTREAM reach is
-# CWC-anchored, at 8h Idukki-to-Neeleeswaram).
+# Idukki catchment geometry for the unit hydrograph. area_km2 stays at the
+# CAG-sourced 650.0 (Appendix 3.1); main_channel_km and slope were an
+# order-of-magnitude guess (35 km, 3.6%) until scripts/catchment_geometry.py
+# replaced them with an actual watershed delineation off a public 30 m DEM:
+# 66.3 km and 0.87%, net of the Mullaperiyar Dam's upstream trans-basin
+# diversion (its own delineated catchment, 560.7 km2, subtracted from the
+# naive Idukki figure - a DEM cannot see the diversion tunnel to the Vaigai
+# basin, Tamil Nadu, only topography). That net area (570.3 km2) landing
+# within 12% of the CAG figure, using nothing but elevation data and two
+# dam coordinates, is what makes these channel numbers trustworthy enough
+# to use. Full method and numbers: data/processed/catchment_geometry_idukki.json.
+#
+# This ~2x longer, ~4x gentler channel implies a materially longer
+# catchment concentration time via Kirpich (~6.8 h vs the old guess's
+# ~2.7 h) than the 24/90/120h forecast-error results already published in
+# ROADMAP.md and docs/validation.md were run with - those predate this fix
+# and have not been re-run against it.
 CATCHMENT_AREA_KM2 = 650.0
-CATCHMENT_MAIN_CHANNEL_KM = 35.0
-CATCHMENT_SLOPE = 0.036
+CATCHMENT_MAIN_CHANNEL_KM = 66.3
+CATCHMENT_SLOPE = 0.0087
 
 CACHE_ROOT = ROOT / "research" / "raw" / "gefs_hindcast"
 IMD_NC = ROOT / "research" / "raw" / "imd_rf25" / "ind2021_rfp25.nc"
@@ -383,7 +391,8 @@ def main() -> int:
             "area_km2": CATCHMENT_AREA_KM2, "main_channel_km": CATCHMENT_MAIN_CHANNEL_KM,
             "slope": CATCHMENT_SLOPE,
             "caveat": "area is sourced (CAG Appendix 3.1); channel length and slope are "
-                      "order-of-magnitude estimates, not calibrated to Idukki",
+                      "from scripts/catchment_geometry.py's DEM watershed delineation, "
+                      "net of the Mullaperiyar diversion (see that script's docstring)",
         },
         "perfect_foresight": {
             "freeboard_gained_m": round(perfect_freeboard_gain, 3),

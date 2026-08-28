@@ -265,16 +265,30 @@ third data point, not the bug.
    above). Every factor rescales one storm, not a trained correction, and
    none should be assumed to generalise. A proper fix needs the correction
    fit across many storms, which is future work.
-2. **Catchment geometry for the unit hydrograph is estimated, not
-   calibrated** (35 km channel, 3.6% slope - order-of-magnitude for a
-   compact Western Ghats headwater catchment, not fitted to Idukki). This
-   is the same gap as the routing calibration item below, one level
-   upstream.
-3. **GEFS's native 3-hourly resolution cannot resolve Idukki's own
-   concentration time** (Kirpich estimate ~2.7 h from the same unmeasured
-   geometry) - a flashy sub-3h rise is smoothed into the 3-hourly bucket it
-   falls in. This affects peak *timing* more than peak *volume*, since SCS-CN
-   mass balance is conserved regardless of the disaggregation.
+2. **Catchment geometry for the unit hydrograph - updated 28 Aug 2026,
+   after these three runs.** It was an order-of-magnitude guess (35 km
+   channel, 3.6% slope) when the table above was produced.
+   `scripts/catchment_geometry.py` has since replaced it with an actual
+   watershed delineation off a public 30 m DEM: 66.3 km, 0.87% slope, net
+   of the Mullaperiyar Dam's upstream diversion to the Vaigai basin (Tamil
+   Nadu) - a tunnel a DEM cannot see, found and corrected for by
+   delineating Mullaperiyar's own catchment and subtracting it. The
+   corrected net area (570.3 km2) landing within 12% of the CAG-sourced
+   650.0 km2 is what makes the channel numbers trustworthy. **The 24/90/120h
+   results in the table above predate this fix and were run against the
+   old geometry - they have not been re-run.** Given the channel is ~2x
+   longer and ~4x gentler than assumed, the catchment's concentration time
+   is materially longer than these results assumed (next point) - the
+   direction of the likely effect is a smoother, later-arriving inflow
+   pulse, but the actual retention numbers have not been recomputed.
+3. **GEFS's native 3-hourly resolution turns out to resolve Idukki's
+   concentration time fine, once the geometry above is corrected** - this
+   reverses what this caveat said when it was written. Kirpich's estimate
+   was ~2.7 h from the old guessed geometry, which a 3-hourly product
+   genuinely cannot resolve; with the DEM-derived geometry it is ~6.8 h to
+   peak (~18 h base time), comfortably spanning several GEFS steps. The
+   disaggregation concern this caveat originally raised is now minor for
+   volume and much less serious for timing than stated in the runs above.
 4. **One storm.** All three lead times replay the same October 2021 event.
    Everything in findings 1 and 2 above is a property of this one storm's
    ensemble, not yet shown to generalise to another.

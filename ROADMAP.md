@@ -82,9 +82,14 @@ on the record.**
    sampled at three lead times - flagged as real future work rather than
    claimed as already answered.
 
-Full method and other caveats (catchment geometry for the unit hydrograph
-is estimated, not calibrated) in `docs/validation.md` §4 "Perfect
-foresight".
+Full method and other caveats in `docs/validation.md` §4 "Perfect
+foresight". **Update, 28 Aug 2026:** the catchment geometry these three
+runs used (35 km channel, 3.6% slope) was an order-of-magnitude guess;
+`scripts/catchment_geometry.py` has since replaced it with a real DEM
+watershed delineation (66.3 km, 0.87%, net of the Mullaperiyar diversion -
+see that script). The three lead-time results above predate the fix and
+have not been re-run against it; see `docs/validation.md` for what a
+~2x longer, ~4x gentler channel likely changes.
 
 **A bug was caught and fixed between the first and second pass at the 24 h
 and 90 h leads**, worth stating rather than quietly overwriting: the first
