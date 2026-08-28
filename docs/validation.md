@@ -182,7 +182,7 @@ Reproduce: `python scripts/lead_time_study.py`.
 
 Ordered by how much they undercut current claims.
 
-### 🟢 Perfect foresight - two lead times in, 28 Aug 2026
+### 🟢 Perfect foresight - all three lead times in, 28 Aug 2026
 
 The optimiser in §3 sees the **true** inflow series when choosing a policy.
 Every benefit figure above is an upper bound until this is closed.
@@ -196,7 +196,7 @@ member, score the full 30x30 candidate-vs-member cross-matrix over the
 *same* window as the perfect-foresight baseline, and commit to ONE policy
 under a declared rule. Verify that policy against what actually happened.
 
-**Results:**
+**Results, the full 24 / 90 / 120 h set ROADMAP.md asked for:**
 
 | Lead time | Decision rule | Freeboard gained | % of perfect foresight |
 |---|---|---|---|
@@ -206,52 +206,65 @@ under a declared rule. Verify that policy against what actually happened.
 | 90 h (issued 13 Oct 00z) | perfect foresight | 3.11 m | 100% |
 | 90 h | expected-value | 1.03 m | **33%** |
 | 90 h | minimax-regret | 2.30 m | **74%** |
+| 120 h (issued 11 Oct 18z) | perfect foresight | 3.11 m | 100% |
+| 120 h | expected-value | 1.03 m | **33%** |
+| 120 h | minimax-regret | 1.07 m | **34%** |
 
-**Two findings:**
+**One finding survives all three points. A second one was written after two
+points, looked mechanistically sensible, and had to be retracted when the
+third arrived - keeping that retraction visible is more useful than
+deleting it.**
 
-1. **The decision rule matters more than the forecast skill does.**
-   Committing to the ensemble member that looks best on average picks a
-   policy tuned to a light-rain story; when the actual storm arrives, that
-   policy has already released too little too late. Committing to the
-   policy that performs best against its *worst* member sacrifices some
-   upside in the average case but survives the real event far better at
-   both lead times tested.
-2. **The minimax advantage grows with lead time.** The gap between the two
-   rules is 7 points at 24 h (26 vs 33%) and 41 points at 90 h (33 vs 74%).
-   This is mechanistically sensible rather than a fluke: more lead time
-   means more spread in how the ensemble members disagree about the
-   storm's evolution, so there is more to gain from hedging against the
-   worst case instead of betting on the average one. Close to the event
-   the members converge and the rule matters less; far from it, the rule
-   is most of what separates a good outcome from a bad one. **Report the
-   pair at each lead time - "26/33% at 24 h, 33/74% at 90 h" - never a
-   single number, since which one you'd quote depends entirely on which
-   rule you assume the operator uses.**
+1. **Survives: minimax-regret never underperforms expected-value, and at
+   90 h it did dramatically better (74% vs 33%).** Committing to whichever
+   ensemble member looks best on average picks a policy tuned to a
+   light-rain story that under-releases when the real storm hits;
+   committing to the policy that survives its own worst member is a safe
+   default across all three lead times - it costs nothing when the gap is
+   small (120 h: 33 vs 34%) and pays off hugely when it is large (90 h).
+2. **Retracted: "the minimax advantage grows with lead time."** After 24 h
+   (7-point gap) and 90 h (41-point gap) this looked like a real trend -
+   more lead time, more ensemble spread, more to gain from hedging. The
+   120 h run breaks it outright: the gap collapses back to 1 point (33 vs
+   34%), statistically indistinguishable from 24 h's. **Three points from
+   one storm do not make a decay curve.** The most likely confound is the
+   bias-correction factor itself, which swings between runs for reasons
+   that have nothing to do with lead time (1.68x at 24 h, 3.18x at 90 h,
+   2.64x at 120 h, from a single-event multiplicative correction) - that
+   swing alone can change which ensemble member the optimiser treats as
+   the worst case, and with it whether the minimax pick happens to be
+   strong or unremarkable. A genuine skill-decay curve needs many storms
+   averaged together, not one storm sampled at three lead times; that is
+   real future work, not something these three runs already answer. This
+   is the same discipline the methodological note in §3 already insists
+   on: a trend measured with too small a sample is not a finding, it is
+   sample noise wearing a trend's clothes.
 
-**A bug was caught and fixed between the first and second pass, and it is
-worth narrating rather than quietly overwriting the earlier numbers.** The
-first version of the script fetched GEFS rainfall only out to the forecast
-horizon, but let the optimiser's evaluation window run to the scenario's
-full default end (2021-10-28) regardless - so every hour past the fetched
-horizon was silently zero-padded. Real observed inflow in that gap is
-130-240 cumecs, not near-zero (checked directly against the KSEB bulletin),
-so the padding fabricated over a week of fictitious near-drought and
-distorted every policy ranking that used it. The fix truncates the
-evaluation window to exactly `[scenario start, issue time + horizon]` for
-*both* the forecast-driven and perfect-foresight runs, so no hour in either
-comparison is fabricated. The qualitative finding (minimax beats
-expected-value, more so at longer lead) survived the fix unchanged; the
-exact percentages moved by 5-8 points. The numbers in the table above are
-post-fix.
+**A bug was caught and fixed between the first and second pass at the 24 h
+and 90 h leads, and it is worth narrating rather than quietly overwriting
+the earlier numbers.** The first version of the script fetched GEFS
+rainfall only out to the forecast horizon, but let the optimiser's
+evaluation window run to the scenario's full default end (2021-10-28)
+regardless - so every hour past the fetched horizon was silently
+zero-padded. Real observed inflow in that gap is 130-240 cumecs, not
+near-zero (checked directly against the KSEB bulletin), so the padding
+fabricated over a week of fictitious near-drought and distorted every
+policy ranking that used it. The fix truncates the evaluation window to
+exactly `[scenario start, issue time + horizon]` for every run, so no hour
+in any comparison is fabricated; 120 h was only ever run post-fix. The
+qualitative finding that survives (minimax never underperforms
+expected-value) held before and after the fix; the specific claim that did
+not survive (growing advantage) was retracted for an unrelated reason - a
+third data point, not the bug.
 
 **Other honest caveats, most serious first:**
 
-1. **The bias correction is large and single-event.** GEFS's ensemble-mean
-   rainfall for this storm needed a correction factor of 3.18x at 90 h lead
-   and 1.68x at 24 h. Neither is a small nudge - both rescale one sample,
-   not a trained correction, and neither should be assumed to generalise to
-   the next event. A proper fix needs the correction fit across many
-   storms, which is future work.
+1. **The bias correction is large and single-event, and its run-to-run
+   variability (1.68x / 3.18x / 2.64x) is itself the leading suspect for
+   why the minimax gap does not follow a clean trend** (see finding 2
+   above). Every factor rescales one storm, not a trained correction, and
+   none should be assumed to generalise. A proper fix needs the correction
+   fit across many storms, which is future work.
 2. **Catchment geometry for the unit hydrograph is estimated, not
    calibrated** (35 km channel, 3.6% slope - order-of-magnitude for a
    compact Western Ghats headwater catchment, not fitted to Idukki). This
@@ -262,15 +275,14 @@ post-fix.
    geometry) - a flashy sub-3h rise is smoothed into the 3-hourly bucket it
    falls in. This affects peak *timing* more than peak *volume*, since SCS-CN
    mass balance is conserved regardless of the disaggregation.
-4. **Two issue times so far.** ROADMAP.md asks for 24 / 72 / 120 h reported
-   separately, because the literature says skill decays very differently
-   across that range. 24 h and 90 h (close to the 72 h bucket) are covered;
-   120 h is the next run - see ROADMAP.md item 1.
+4. **One storm.** All three lead times replay the same October 2021 event.
+   Everything in findings 1 and 2 above is a property of this one storm's
+   ensemble, not yet shown to generalise to another.
 
-Reproduce: `python scripts/forecast_error_study.py --issue-date 2021-10-13
---hh 00 --horizon-h 168` (90 h) or `--issue-date 2021-10-15 --hh 18
---horizon-h 102` (24 h). Results: `data/processed/forecast_error_study_2021-10-13_00z.json`
-and `..._2021-10-15_18z.json`.
+Reproduce: `python scripts/forecast_error_study.py --issue-date 2021-10-15
+--hh 18 --horizon-h 102` (24 h), `--issue-date 2021-10-13 --hh 00
+--horizon-h 168` (90 h), or `--issue-date 2021-10-11 --hh 18 --horizon-h
+198` (120 h). Results: `data/processed/forecast_error_study_2021-10-1{5_18,3_00,1_18}z.json`.
 
 ### 🔴 River routing
 

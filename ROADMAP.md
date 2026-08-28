@@ -35,14 +35,14 @@ it means a slipped week costs polish, not the demo.
 
 Ordered by value per hour. The first item is worth more than the rest combined.
 
-### 🟢 1 · Forecast-error study — two lead times in, 28 Aug 2026
+### 🟢 1 · Forecast-error study — all three lead times in, 28 Aug 2026
 
 The optimiser sees the **true** inflow series when choosing a policy. Every
 benefit figure in the dossier is therefore an upper bound.
 
 This was the biggest open question in the project. The research sweep found
-the data that closes it, and it has now been run at two lead times
-(`scripts/forecast_error_study.py`):
+the data that closes it, and it has now been run at the full 24 / 90 / 120 h
+set (`scripts/forecast_error_study.py`):
 
 | Lead time | Decision rule | Freeboard gained | % of perfect foresight |
 |---|---|---|---|
@@ -52,42 +52,50 @@ the data that closes it, and it has now been run at two lead times
 | 90 h (issued 13 Oct 00z) | perfect foresight | 3.11 m | 100% |
 | 90 h | expected-value | 1.03 m | **33%** |
 | 90 h | minimax-regret | 2.30 m | **74%** |
+| 120 h (issued 11 Oct 18z) | perfect foresight | 3.11 m | 100% |
+| 120 h | expected-value | 1.03 m | **33%** |
+| 120 h | minimax-regret | 1.07 m | **34%** |
 
-**Two findings, and the second is the more interesting one:**
+**One finding survives all three points; a second one had to be retracted
+when the third point arrived, and that retraction is itself worth keeping
+on the record.**
 
-1. **The decision rule matters more than the forecast skill does.**
-   Committing to whichever GEFS member looks best on average picks a policy
-   tuned to a light-rain story that under-releases when the real storm
-   hits; committing to the policy that survives its own worst member best
-   retains far more benefit at both lead times.
-2. **The minimax advantage grows with lead time, and that is mechanistically
-   sensible rather than a coincidence to explain away.** At 24 h the gap
-   between the two rules is 7 points (26% vs 33%); at 90 h it is 41 points
-   (33% vs 74%). More lead time means more ensemble spread in how the storm
-   could unfold, which means more to gain from hedging against the worst
-   case rather than betting on the average one. Near the event, the members
-   agree with each other regardless of which rule you use; far from it,
-   the choice of rule is most of what separates a good outcome from a bad
-   one.
+1. **Minimax-regret never does worse than expected-value, and at 90 h it
+   did dramatically better (74% vs 33%).** Hedging against your worst
+   ensemble member instead of betting on the average one is a safe default
+   - it never costs you the naive result and sometimes triples it.
+2. **What did NOT survive: "the minimax advantage grows with lead time."**
+   That claim was written after the 24 h and 90 h runs (7-point gap
+   growing to 41 points) and looked like a mechanistically sensible trend
+   - more lead time, more ensemble spread, more to gain from hedging. The
+   120 h run breaks it: the gap collapses back to 1 point (33% vs 34%),
+   barely different from 24 h's naive result. **Three points from one
+   storm do not make a decay curve**, and forcing a monotonic story onto
+   them would have been the same mistake the lead-time study's methodology
+   note already warns about (see §3's "search luck" note) - a coincidence
+   in a small, noisy sample dressed up as a trend. The likely confound: the
+   bias correction is a single-event multiplicative factor and it swings a
+   lot between runs (1.68x at 24 h, 3.18x at 90 h, 2.64x at 120 h) - that
+   alone can move which member the optimiser treats as the worst case, and
+   with it whether the minimax pick happens to be strong or unremarkable.
+   A genuine skill-decay curve needs many storms averaged, not one storm
+   sampled at three lead times - flagged as real future work rather than
+   claimed as already answered.
 
-Full method, result and caveats (the bias correction is a single-event
-factor - 3.18x at 90 h lead, 1.68x at 24 h, and both are single-storm
-corrections, not trained ones; catchment geometry for the unit hydrograph
+Full method and other caveats (catchment geometry for the unit hydrograph
 is estimated, not calibrated) in `docs/validation.md` §4 "Perfect
-foresight". 120 h is the next run - same script, `--issue-date`/
-`--horizon-h` flags.
+foresight".
 
-**A bug was caught and fixed between the first and second pass at each lead
-time**, worth stating rather than quietly overwriting: the first version of
-the script only fetched GEFS rainfall out to the forecast horizon but let
-the optimiser's evaluation window run to the scenario's full default end
-(2021-10-28), zero-padding the ungoverned days. Real observed inflow there
-is 130-240 cumecs, not near-zero, so the padding fabricated a low-inflow
-tail that skewed every policy ranking that used it. The fix truncates the
-evaluation window to exactly `[scenario start, issue + horizon]` for both
-the forecast-driven and perfect-foresight runs. The qualitative finding
-(minimax beats expected-value, and by more at longer lead) survived the
-fix; the exact percentages moved by roughly 5-8 points depending on the run.
+**A bug was caught and fixed between the first and second pass at the 24 h
+and 90 h leads**, worth stating rather than quietly overwriting: the first
+version of the script only fetched GEFS rainfall out to the forecast
+horizon but let the optimiser's evaluation window run to the scenario's
+full default end (2021-10-28), zero-padding the ungoverned days. Real
+observed inflow there is 130-240 cumecs, not near-zero, so the padding
+fabricated a low-inflow tail that skewed every policy ranking that used
+it. The fix truncates the evaluation window to exactly `[scenario start,
+issue + horizon]` for every run, including 120 h, which was only ever run
+post-fix.
 
 The rest of this section is the original method spec, kept for
 reproducibility.
