@@ -182,19 +182,64 @@ Reproduce: `python scripts/lead_time_study.py`.
 
 Ordered by how much they undercut current claims.
 
-### 🔴 Perfect foresight
+### 🟢 Perfect foresight - first result in, 28 Aug 2026
 
-The optimiser sees the **true** inflow series when choosing a policy. Real
-forecasts are wrong, and Western Ghats rainfall forecasts are wrong in
-specific, biased ways.
+The optimiser in §3 sees the **true** inflow series when choosing a policy.
+Every benefit figure above is an upper bound until this is closed.
 
-**Every benefit figure above is therefore an upper bound.** Nothing in this
-document should be presented as an achievable operational result until the
-forecast-error study is done.
+**Method:** `python scripts/forecast_error_study.py`. Fetch the 30-member
+NOAA GEFS ensemble issued before the 17 October 2021 storm, bias-correct
+against IMD RF25 gridded rainfall (a single multiplicative factor - see
+caveat below), push each member through the SCS-CN + unit-hydrograph chain
+to get 30 candidate inflow trajectories, search a `DrawdownPolicy` per
+member, score the full 30x30 candidate-vs-member cross-matrix, and commit
+to ONE policy under a declared rule. Verify that policy against what
+actually happened.
 
-Planned: drive the policy search from perturbed forecasts with realistic error
-growth (±20% at 24 h widening to ±60% at 120 h), run an ensemble, and report
-how much of the ~3 m survives.
+**Result, issued 2021-10-13 00z (90 h before the storm peak):**
+
+| | Freeboard gained | % of perfect foresight |
+|---|---|---|
+| Perfect foresight (§3 baseline) | 3.10 m | 100% |
+| Forecast-driven, **expected-value** rule | 0.81 m | **26%** |
+| Forecast-driven, **minimax-regret** rule | 2.34 m | **76%** |
+
+**This is the headline finding, and it was not obvious going in: the
+decision rule matters more than the forecast skill does.** Committing to
+the ensemble member that looks best on average (expected value) picks a
+policy tuned to a light-rain story; when the actual storm arrives, that
+policy has already released too little too late. Committing to the policy
+that performs best against its *worst* member (minimax regret) sacrifices
+some upside in the average case but survives the real event far better -
+almost 3x the retained benefit. **Report "76% at 90 h, if hedged"
+alongside "26% at 90 h, naively" - stating only one number here would be
+easy to cherry-pick and wrong either way.**
+
+**Honest caveats, most serious first:**
+
+1. **The bias correction is large and single-event.** GEFS's ensemble-mean
+   rainfall for this storm was roughly a third of IMD's observed total
+   (correction factor 3.18x). That is not a small nudge - it is rescaling
+   one sample, not a trained correction, and it should not be assumed to
+   generalise to the next event. A proper fix needs the correction fit
+   across many storms, which is future work.
+2. **Catchment geometry for the unit hydrograph is estimated, not
+   calibrated** (35 km channel, 3.6% slope - order-of-magnitude for a
+   compact Western Ghats headwater catchment, not fitted to Idukki). This
+   is the same gap as the routing calibration item below, one level
+   upstream.
+3. **GEFS's native 3-hourly resolution cannot resolve Idukki's own
+   concentration time** (Kirpich estimate ~2.7 h from the same unmeasured
+   geometry) - a flashy sub-3h rise is smoothed into the 3-hourly bucket it
+   falls in. This affects peak *timing* more than peak *volume*, since SCS-CN
+   mass balance is conserved regardless of the disaggregation.
+4. **One issue time so far.** ROADMAP.md asks for 24 / 72 / 120 h reported
+   separately, because the literature says skill decays very differently
+   across that range. 90 h is one point on that curve - see ROADMAP.md
+   item 1 for the running set of lead times as more are added.
+
+Reproduce: `python scripts/forecast_error_study.py --issue-date 2021-10-13
+--hh 00 --horizon-h 168`. Result: `data/processed/forecast_error_study_2021-10-13_00z.json`.
 
 ### 🔴 River routing
 

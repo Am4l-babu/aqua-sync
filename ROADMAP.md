@@ -35,14 +35,33 @@ it means a slipped week costs polish, not the demo.
 
 Ordered by value per hour. The first item is worth more than the rest combined.
 
-### 🔴 1 · Forecast-error study — now fully specified
+### 🟢 1 · Forecast-error study — first result in, 28 Aug 2026
 
 The optimiser sees the **true** inflow series when choosing a policy. Every
 benefit figure in the dossier is therefore an upper bound.
 
 This was the biggest open question in the project. The research sweep found
-the data that closes it, and verified it by actually fetching bytes rather
-than reading documentation.
+the data that closes it, and it has now been run once
+(`scripts/forecast_error_study.py`), with a real, load-bearing finding:
+
+| Lead time | Decision rule | Freeboard gained | % of perfect foresight |
+|---|---|---|---|
+| 90 h (issued 13 Oct 00z) | perfect foresight | 3.10 m | 100% |
+| 90 h | expected-value | 0.81 m | **26%** |
+| 90 h | minimax-regret | 2.34 m | **76%** |
+
+**The decision rule matters more than the forecast skill does.** Committing
+to whichever GEFS member looks best on average picks a policy tuned to a
+light-rain story that then under-releases when the real storm hits.
+Committing to the policy that survives its own worst member best gets
+almost 3x the retained benefit. State both numbers, not one — full method,
+result and caveats (the bias correction is a single-event 3.18x factor;
+catchment geometry for the unit hydrograph is estimated, not calibrated) in
+`docs/validation.md` §4 "Perfect foresight". 24 h and 120 h buckets are the
+next run — same script, `--issue-date`/`--horizon-h` flags.
+
+The rest of this section is the original method spec, kept for
+reproducibility.
 
 **The source: NOAA GEFS operational archive on AWS** — `s3://noaa-gefs-pds`,
 free, no credentials, no registration.

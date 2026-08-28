@@ -1,0 +1,70 @@
+{
+  "issue_date": "2021-10-13",
+  "hh": "00",
+  "horizon_h": 168,
+  "lead_hours_before_storm_peak": 90.0,
+  "bias_factor": 3.1844,
+  "antecedent_5day_mm": 103.1,
+  "catchment_geometry": {
+    "area_km2": 650.0,
+    "main_channel_km": 35.0,
+    "slope": 0.036,
+    "caveat": "area is sourced (CAG Appendix 3.1); channel length and slope are order-of-magnitude estimates, not calibrated to Idukki"
+  },
+  "perfect_foresight": {
+    "freeboard_gained_m": 3.102,
+    "peak_level_m": 728.442
+  },
+  "observed": {
+    "peak_level_m": 731.544,
+    "revenue_cr": 118.2
+  },
+  "decision_rule_expected_value": {
+    "chosen_member": "gep01",
+    "peak_level_m": 730.7298730997122,
+    "freeboard_gained_m": 0.813868251589497,
+    "retention_of_perfect_foresight_pct": 26.235058555762492,
+    "revenue_delta_cr": 10.648019345451164
+  },
+  "decision_rule_minimax_regret": {
+    "chosen_member": "gep13",
+    "peak_level_m": 729.20032193358,
+    "freeboard_gained_m": 2.3434194177217478,
+    "retention_of_perfect_foresight_pct": 75.54016946178945,
+    "revenue_delta_cr": 10.017550235288
+  },
+  "ensemble_spread": {
+    "freeboard_gain_if_policy_matched_verifying_member_m": [
+      3.009,
+      3.009,
+      3.009,
+      3.009,
+      3.009,
+      3.009,
+      3.009,
+      3.009,
+      3.009,
+      3.009,
+      3.009,
+      3.159,
+      3.0,
+      2.99,
+      3.009,
+      3.009,
+      3.006,
+      3.001,
+      3.009,
+      3.009,
+      3.009,
+      3.009,
+      3.009,
+      3.009,
+      3.009,
+      3.009,
+      2.974,
+      3.009,
+      3.006,
+      3.009
+    ]
+  }
+}
