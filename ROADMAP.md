@@ -230,33 +230,48 @@ superpose is the single most valuable modelling addition.
 The routing layer is already a DAG (`RiverNetwork`), so the work is extending
 the policy search across nodes rather than rebuilding anything.
 
-### 🟠 3 · Routing calibration against gauges — data now in the repo
+### 🟠 3 · Routing calibration against gauges — attempted, blocked by data resolution, 28 Aug 2026
 
 K and x are no longer pure geometry: they are anchored to CWC's published
 8-hour Idukki→Neeleeswaram travel time. But that is one number from a MIKE-11
 model run "only for 2018", not a gauge-pair calibration.
 
-The data to do it properly is now on disk:
+**Run:** `python scripts/routing_calibration.py`, combined Idukki +
+Idamalayar daily release (KSEB bulletin, 2020-08-13 onward) against CWC's
+Neeleeswaram daily discharge (`cwc_kerala_daily_discharge_2001_2025.csv`,
+1,967-day overlap). `MuskingumReach.calibrate` — implemented, previously
+only unit-tested against synthetic data — ran against real gauge data for
+the first time.
 
-- `research/sources/datasets/cwc_kerala_daily_discharge_2001_2025.csv` —
-  **NEELEESWARAM, 8,478 daily readings 2001–2025**, plus VANDIPERIYAR and
-  ARANGALI
-- `…_1950_2000.csv` — Neeleeswaram back to 1971, giving 19,362 daily values
-  across 54 years
+**Result: the fit failed cleanly, and the failure is itself the finding.**
+K = 263 h, x = 0.50 (the search grid's edge, not an interior optimum),
+r² = 0.005. **The CWC 8-hour anchor is unchanged — nothing in
+`constants.py` was touched.** Daily data (dt = 24 h) is ~3x coarser than
+the 8-hour signal it would need to resolve; by the time a day's release
+shows up in that day's Neeleeswaram reading, the flood wave has already
+fully transited the reach, leaving no timing signal for a day-to-day fit
+to find. Converting Neeleeswaram to hourly via the GUARDIAN rating curves
+already on disk would not fix this — the bottleneck is the *release*
+record (KSEB is daily-only), not the gauge record. `docs/data-sources.md`
+already named the actual fix before this attempt: the **CWC 15-minute
+telemetry feed**, "the single highest-value upgrade to the data layer."
+This result is independent, quantified confirmation of that claim
+(r² = 0.005), not a new open question.
 
-`MuskingumReach.calibrate` already implements the fit.
+Full method and reasoning in `docs/validation.md` §4 "River routing".
 
-**The catch, and it is a real one:** Neeleeswaram is missing 2018-08-16 to
-08-22 *and* 08-24 to 08-27 — 13 of 31 August days. The last pre-gap reading is
-6,166 m³/s on 15 August; the next is 924 on 23 August. **The 2018 flood peak
-was never gauged at the point the twin routes to.** Calibrate on ordinary
-monsoon events, then state plainly that the extreme is extrapolation.
+**The 2018 gauge gap is now moot for this specific attempt** (the KSEB
+release record starts 2020-08-13, after the 2018 flood, so 2018 was never
+in the calibration window regardless of the Neeleeswaram gap at
+2018-08-16 to 08-27) but remains true and worth keeping on record: the 2018
+flood peak was never gauged at Neeleeswaram at all, so any future
+2018-specific work is extrapolation, not interpolation.
 
-CAMELS-IND v2.2 (`10.5281/zenodo.14999580`) carries the same Neeleeswaram
-gauge as catchment 15021 with matched IMD forcings 1980–2020, and
-NeuralHydrology already ships `datasetzoo/camelsind.py`. Use v2.2, not the
-v2.1 DOI the paper cites — the v2.2 changelog specifically corrects the gauge
-id mapping for basin code 15, which is this basin.
+CAMELS-IND v2.2 (`10.5281/zenodo.14999580`) and its matched IMD rainfall
+forcing were considered as an alternative route, and are not — CAMELS-IND
+solves a rainfall-runoff calibration problem (ROADMAP item on the
+rainfall–runoff chain, `docs/validation.md` §4 "Rainfall–runoff"), not
+this routing problem, since it does not carry dam release records either.
 
 ### 🟠 4 · V1 hardware rig
 

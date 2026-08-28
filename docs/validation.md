@@ -284,16 +284,56 @@ Reproduce: `python scripts/forecast_error_study.py --issue-date 2021-10-15
 --horizon-h 168` (90 h), or `--issue-date 2021-10-11 --hh 18 --horizon-h
 198` (120 h). Results: `data/processed/forecast_error_study_2021-10-1{5_18,3_00,1_18}z.json`.
 
-### 🔴 River routing
+### 🔴 River routing - calibration attempted and blocked, 28 Aug 2026
 
-Muskingum K and x come from reach geometry and an assumed flood-wave
-celerity — **not from gauge data.** `MuskingumReach.calibrate()` implements
-the fit and is unit-tested against synthetic data, but has never been run
-against a real gauge pair.
+Muskingum K and x for periyar_upper + periyar_lower are anchored to CWC's
+published 8-hour Idukki-to-Neeleeswaram travel time (December 2018
+report) - not pure geometry, but also not a gauge-pair fit: CWC derived it
+from a MIKE-11 model run "only for 2018."
 
-Consequence: **downstream discharge figures are indicative, not measured.** Do
-not quote a predicted discharge at Aluva as though it were validated. Needs
-CWC gauge records at Neeleeswaram and Aluva.
+**`python scripts/routing_calibration.py` was run against real data for
+the first time** - combined Idukki + Idamalayar daily release (KSEB
+bulletin, 2020-08-13 onward) as inflow, CWC's Neeleeswaram daily discharge
+record (2001-2025) as outflow, `MuskingumReach.calibrate()` (implemented,
+previously only unit-tested against synthetic data) doing the fit over the
+1,967-day overlap.
+
+**Result: the fit failed, and it failed for a diagnosable, useful reason.**
+K = 263 h, x = 0.50 (the edge of the allowed range, not an interior
+optimum), r² = 0.005 - essentially no signal. **The CWC anchor is
+unchanged; this negative result does not replace it, and nothing in
+`constants.py` was touched.**
+
+Why it failed: the fit needs a timestep resolving the quantity it is
+trying to measure, and daily data (dt = 24 h) is roughly 3x coarser than
+the 8-hour travel time itself. By the time a day's combined release shows
+up in that day's Neeleeswaram reading, the flood wave has already fully
+transited the reach - there is no timing signal left in daily-vs-daily
+data for a Muskingum fit to find. This is not a bug or a tuning choice
+(the interpolation of the 217 missing Neeleeswaram days, the averaging of
+140 duplicate-date readings, and the `x` search grid were all checked and
+are not the cause) - it is a genuine resolution mismatch between the data
+available and the parameter being estimated.
+
+**This also rules out the tempting workaround.** GUARDIAN rating curves
+(`research/sources/datasets/guardian_rating_curves.xlsx`) could convert
+the CWC hourly water-level record at Neeleeswaram into hourly discharge,
+raising the *outflow* side to a resolution well below 8 hours. It would
+not help: KSEB's own bulletin is daily, so the *inflow* side would still
+be linear interpolation of a daily reading, carrying no genuine sub-day
+variation to correlate against. The bottleneck is the release record, not
+the gauge record, and `docs/data-sources.md` already names the fix: **the
+CWC 15-minute telemetry feed, "the single highest-value upgrade to the
+data layer."** This calibration attempt is independent confirmation of
+that claim, with a number attached (r² = 0.005) rather than just an
+assertion.
+
+Consequence, unchanged from before this attempt: **downstream discharge
+figures are indicative, not measured.** Do not quote a predicted discharge
+at Aluva as though it were validated.
+
+Reproduce: `python scripts/routing_calibration.py`. Result:
+`data/processed/routing_calibration_neeleeswaram.json`.
 
 ### 🟠 Rainfall–runoff
 

@@ -1,0 +1,17 @@
+{
+  "window": [
+    "2020-08-13",
+    "2025-12-31"
+  ],
+  "n_days": 1967,
+  "neeleeswaram_missing_days": 217,
+  "neeleeswaram_longest_gap_days": 28,
+  "fitted_k_hours": 263.31,
+  "fitted_x": 0.5,
+  "r_squared": 0.005,
+  "cwc_anchor_k_hours": 8.0,
+  "cwc_anchor_x_upper": 0.25,
+  "cwc_anchor_x_lower": 0.2,
+  "dt_hours": 24.0,
+  "caveat": "daily resolution cannot precisely resolve an ~8h travel time (dt=24h is ~3x coarser than the quantity being measured); this fit is an order-of-magnitude and attenuation-shape check, not an hour-level replacement for the CWC anchor"
+}
