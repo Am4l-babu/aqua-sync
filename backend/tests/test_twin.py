@@ -22,6 +22,7 @@ from aquasync.twin import (
     MuskingumReach,
     ReservoirModel,
     ReservoirState,
+    RiverNetwork,
     TidePredictor,
     UnitHydrograph,
     scs_effective_rainfall,
@@ -246,6 +247,73 @@ class TestMuskingum:
         k, x, r2 = MuskingumReach.calibrate(inflow, outflow, dt_hours=1.0)
         assert r2 > 0.98
         assert k == pytest.approx(6.0, rel=0.15)
+
+
+class TestRiverNetwork:
+    """RiverNetwork had zero test coverage until scripts/cascade_coordination.py
+    used it for the first time - these lock in the behaviour that script
+    depends on: mass conservation through a chain, and correct summing at a
+    confluence where a routed upstream series meets a second raw source.
+    """
+
+    def _idukki_idamalayar_network(self) -> RiverNetwork:
+        return RiverNetwork(
+            reaches={"periyar_upper": REACHES["periyar_upper"],
+                     "periyar_lower": REACHES["periyar_lower"]},
+            topology={"periyar_upper": ["idukki"],
+                      "periyar_lower": ["periyar_upper", "idamalayar"]},
+            dt_hours=1.0,
+        )
+
+    def test_conserves_volume_through_a_chain(self):
+        net = self._idukki_idamalayar_network()
+        n = 72
+        idukki = np.zeros(n)
+        idukki[10:20] = 500.0
+        idamalayar = np.zeros(n)
+        idamalayar[10:20] = 300.0
+        result = net.route_all({"idukki": idukki, "idamalayar": idamalayar})
+        assert result["periyar_lower"].sum() == pytest.approx(
+            idukki.sum() + idamalayar.sum(), rel=0.01,
+        )
+
+    def test_confluence_sums_routed_and_raw_sources(self):
+        """periyar_lower must reflect BOTH Idukki's routed arrival and
+        Idamalayar's direct entry, not just one of them."""
+        net = self._idukki_idamalayar_network()
+        n = 72
+        idukki = np.zeros(n)
+        idukki[10:20] = 500.0
+        zero = np.zeros(n)
+
+        idukki_only = net.route_all({"idukki": idukki, "idamalayar": zero})
+        idamalayar = np.zeros(n)
+        idamalayar[10:20] = 300.0
+        both = net.route_all({"idukki": idukki, "idamalayar": idamalayar})
+
+        # Idamalayar enters periyar_lower directly (no periyar_upper lag),
+        # so adding it can only raise the combined series, never lower it.
+        assert np.all(both["periyar_lower"] >= idukki_only["periyar_lower"] - 1e-6)
+        assert both["periyar_lower"].sum() > idukki_only["periyar_lower"].sum()
+
+    def test_upstream_reach_lags_the_confluence_less_than_downstream(self):
+        """Idukki's contribution passes through periyar_upper AND
+        periyar_lower; its peak should arrive later at periyar_lower than
+        at periyar_upper alone."""
+        net = self._idukki_idamalayar_network()
+        n = 72
+        idukki = np.zeros(n)
+        idukki[10:15] = 800.0
+        zero = np.zeros(n)
+        result = net.route_all({"idukki": idukki, "idamalayar": zero})
+        assert int(np.argmax(result["periyar_lower"])) > int(np.argmax(result["periyar_upper"]))
+
+    def test_rejects_a_cycle(self):
+        net = RiverNetwork(
+            reaches={}, topology={"a": ["b"], "b": ["a"]}, dt_hours=1.0,
+        )
+        with pytest.raises(ValueError, match="cycle"):
+            net.route_all({})
 
 
 # --------------------------------------------------------------------------

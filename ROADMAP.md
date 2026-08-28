@@ -220,15 +220,68 @@ Y% with the 30-member ensemble that was actually available, decaying from 24 h
 to 120 h as follows."* That turns the project's biggest methodological
 weakness into its most credible result.
 
-### 🔴 2 · Cascade co-optimisation
+### 🟢 2 · Cascade co-optimisation — first result in, and it is a warning, 28 Aug 2026
 
-Idukki and Idamalayar are currently optimised independently. The whole
-evidence base (Figure 2) is that they failed *jointly* — same river, same
-day. Scheduling them together so their release pulses deliberately do not
-superpose is the single most valuable modelling addition.
+Idukki and Idamalayar are currently optimised independently everywhere else
+in this project. The whole evidence base (Figure 2) is that they failed
+*jointly* — same river, same day. Scheduling them together so their release
+pulses deliberately do not superpose looked like it should be the single
+most valuable modelling addition.
 
-The routing layer is already a DAG (`RiverNetwork`), so the work is extending
-the policy search across nodes rather than rebuilding anything.
+**Run:** `python scripts/cascade_coordination.py`. `RiverNetwork` — a DAG
+router already implemented and exported, but never used outside its own
+module, not even in a test — routes Idukki's release through periyar_upper
+then periyar_lower and Idamalayar's release directly into periyar_lower at
+the confluence, over the October 2021 window (481 hourly steps, both dams).
+
+| Scenario | Joint peak at periyar_lower |
+|---|---|
+| Observed (what actually happened) | 403 cumecs |
+| Each dam optimises alone (existing single-dam tooling, unchanged) | **911 cumecs — 126% worse than observed** |
+| Coordinated (timing search over both dams' `start_hour`) | 828 cumecs — 9% better than naive, still 105% worse than observed |
+
+**This is not the finding the section header used to promise, and saying
+so plainly is more useful than reframing it as one.** Two things:
+
+1. **Independently optimising each dam is not neutral — it can actively
+   make the shared downstream peak worse than doing nothing coordinated at
+   all.** Idukki's own optimum releases up to 828 cumecs (the ceiling of
+   its rate grid) because, evaluated against periyar_lower's 1,100-cumec
+   bankfull threshold *alone*, that looks completely safe. It is not safe
+   once Idamalayar's simultaneous 314 cumecs is added at the same
+   confluence — a combination neither dam's own objective function can see,
+   because each one scores itself as if the shared reach belonged to it
+   alone. Generalising single-reservoir optimisation to two coupled
+   reservoirs without giving each one visibility into the other is not a
+   simplification that degrades gracefully; it degrades to something worse
+   than the historical, uncoordinated baseline.
+2. **Retiming alone does not fix it.** The coordination search swept both
+   dams' `start_hour` — the most direct reading of "make the pulses not
+   superpose" — and recovered only 9% of the gap it opened (911 to 828),
+   nowhere close to the observed 403. That means the fix this section's
+   name implies (schedule them together) is not primarily a timing
+   problem once each dam is already independently optimised for its own
+   safety at maximum rate; it is an objective-function problem. The real
+   next step is not a bigger timing search but a genuinely joint
+   objective — each dam's policy search scored against the actual combined
+   downstream discharge, not its own reach evaluated in isolation. That is
+   a bigger redesign than this script attempts and is the correctly-scoped
+   next piece of work, not something to also cram in here.
+
+**Caveat that matters for reading the cumec figures above:** these are the
+two dams' combined contribution only. `RiverNetwork.route_all` supports a
+`lateral_inflows` parameter for the ungauged catchment between the dams and
+Aluva, and it was not populated — no tributary or local-runoff series exists
+in this project's data holdings. **Do not compare these numbers to
+periyar_lower's bankfull/danger thresholds as if they represented total
+river discharge; they do not**, which is also why even the "naive" 911-cumec
+figure sits below bankfull (1,100) despite representing what the evidence
+says was a real near-miss at Aluva. The relative comparison between the
+three scenarios is valid; the absolute cumec values are not a flood-risk
+verdict on their own.
+
+Method, full numbers and the independent-policy parameters in
+`data/processed/cascade_coordination.json`.
 
 ### 🟠 3 · Routing calibration against gauges — attempted, blocked by data resolution, 28 Aug 2026
 
