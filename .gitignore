@@ -40,3 +40,7 @@ research/sources/datasets/*
 # records exactly what was fetched and from where, so the set is reproducible.
 research/sources/papers/*
 !research/sources/papers/.gitkeep
+# IMD gridded rainfall NetCDF grids: ~100 MB for four years, binary, and
+# re-fetched in seconds by scripts/acquire.py (acquire_imd_rf25). Same
+# reasoning as research/sources/datasets/ above - keep it out of git history.
+research/raw/imd_rf25/

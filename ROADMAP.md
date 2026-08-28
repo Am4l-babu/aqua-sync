@@ -75,7 +75,17 @@ study.
 5. Score the chosen policy against observed inflow from the Kerala SLDC form,
    which serves arbitrary historical dates via
    `POST sldckerala.com/index.php?id=7` with `date1_day/date1_month/date1_year`
-   (numeric month; posting "October" silently returns nothing)
+   plus `sbtstore=SHOW` (numeric month; posting "October," or omitting
+   `sbtstore`, silently returns today's data instead of an error)
+
+   **Verified 28 Aug 2026** (`scripts/acquire.py`, `acquire_sldc_storage`):
+   October 2021 returns all 31 days cleanly, 331 dam-day rows including
+   IDUKKI and IDAMALAYAR — this works for the flagship case study. August
+   2018 returns **zero** days — every date in that window comes back with
+   no data table, confirming the manifest's own note that the archive
+   starts 2019-08-08. The August 2018 CAG comparison (§ item 3 below) must
+   therefore be scored against IMD gridded rainfall or the CWC discharge
+   series, never SLDC.
 
 **The deliverable is one honest number**: the fraction of the perfect-foresight
 benefit that survives, reported separately at 24 / 72 / 120 h, because the
@@ -113,16 +123,41 @@ Caveat to state: GRRR is a **reforecast**, a modern model re-run over past
 dates, so it flatters the result relative to what an operator actually had.
 GEFS operational is the stricter test.
 
+**Second caveat, verified 28 Aug 2026:** the "8 lead days" run from **0 to 7**,
+and lead 0 is not a forecast — Google's own documentation gives the identity
+`Reanalysis[T] == Reforecast[T+1, lead=0]`. Lead 0 is the reanalysis value,
+driven by observed CPC/IMERG rainfall for the day that has just ended. A
+benefit-retention curve that starts at lead 0 will show a suspiciously strong
+first point that is really perfect-foresight discharge in disguise — the
+exact leak this whole exercise exists to remove. **Score from lead 1 upward.**
+Separately, GRRR's reforecast is driven by "HRES and GraphCast weather
+forecasts issued until time T" — GraphCast did not exist in 2021, so the
+reforecast is a legitimately causal 2023-generation model re-run over 2021,
+not a contemporary one. Treat it as an optimistic bound, with GEFS as the
+stricter test, as already stated above.
+
 #### The ceiling this work will run into
 
 Two published numbers bound what any forecast-driven system can deliver here:
 
 - **Durai et al. (2015), Mausam 66(3)**: day-3 ensemble-mean rainfall RMSE is
   10–15 mm/day over most of India but **25–30 mm/day along the west coast** —
-  in all four of ECMWF, UKMO, NCEP and JMA. The Western Ghats are measurably
-  the worst place in India to forecast rain.
+  in all four of ECMWF, UKMO, NCEP and JMA. **Correction, 28 Aug 2026**: this
+  is an absolute error, not a skill ranking — the same paper gives an
+  observed seasonal mean of ~15 mm/day over the Konkan coast, so RMSE is
+  largest exactly where rainfall is largest. Durai's own skill metric says
+  the opposite: anomaly correlation is *highest* on the west coast of any
+  region measured, in all four EPS. The honest claim is that absolute
+  forecast error here is roughly double the all-India figure because the
+  rainfall itself is roughly double — not that the Western Ghats are
+  uniquely hard to forecast. (Nitha et al. 2025, Atmosphere 16(4) 372, is
+  consistent with this once read in full — CSI 0.49–0.57, ECMWF FAR 0.41 at
+  day 1–3 over Kerala — but it only measures day 1–3, JJAS only, so it
+  cannot speak to the 3–7 day window this project needs, or to October.)
 - **Sudheer et al. (2019)**: even pre-emptively emptying Periyar reservoirs to
-  25–50% capacity bought only **16–21% peak attenuation** at Neeleeswaram.
+  25–50% capacity bought only **16–21% peak attenuation** at Neeleeswaram,
+  against an **observed** peak of 8,800 m³/s (9,965 m³/s in the same source
+  is the HEC-HMS *modelled* peak — do not quote it as observed).
 
 So the target framing is not "X% benefit" but: *"X% under perfect foresight,
 Y% with the 30-member ensemble that was actually available, decaying from 24 h

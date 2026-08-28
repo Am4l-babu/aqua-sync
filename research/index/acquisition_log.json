@@ -28,8 +28,9 @@
     "bytes": 17302
   },
   "SLDC Kerala daily observed inflow archive (2019-08-08 to present)": {
-    "status": "failed",
-    "error": "JSONDecodeError: Expecting value: line 1 column 1 (char 0)"
+    "status": "partial",
+    "bytes": 31345,
+    "detail": "331 dam-day rows over 31/62 days across 2 window(s); 31 day(s) failed"
   },
   "KSEB Dam Safety monthly statistics - download listing (86 live workbook IDs)": {
     "status": "already-present",
@@ -64,8 +65,9 @@
     "bytes": 100535
   },
   "IMD 0.25-degree daily gridded rainfall NetCDF, years 2018-2021": {
-    "status": "failed",
-    "error": "JSONDecodeError: Expecting value: line 1 column 1 (char 0)"
+    "status": "ok",
+    "bytes": 101796996,
+    "detail": "4/4 year(s): [2018, 2019, 2020, 2021]"
   },
   "GUARDIAN rating curves for 210 CWC gauges incl. NEELEESWARAM, ARANGALI, VANDIPERIYAR": {
     "status": "already-present",
@@ -100,5 +102,15 @@
     "status": "ok",
     "bytes": 2900,
     "content_type": "application/octet-stream"
+  },
+  "RAT-Kerala area-elevation curves, Idukki and Idamalayar (USE ABOVE 724 m ONLY - the Idukki curve has a 40 km2/m discontinuity at 722-723 m)": {
+    "status": "ok",
+    "bytes": 13511,
+    "detail": "idukki.csv 7228B + idamalayaar.csv 6283B (double-a slug), both match manifest size_hint exactly"
+  },
+  "NWDP CWC hourly river water level, basin 031, 2021-2025 - contains the Oct 2021 flagship window at 744/744 hours": {
+    "status": "ok",
+    "bytes": 233971888,
+    "detail": "matches manifest size_hint exactly (233,971,888 bytes)"
   }
 }

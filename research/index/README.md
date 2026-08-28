@@ -3,9 +3,9 @@
 Everything the deep-research sweep found, acquired and verified.
 Regenerate with `python scripts/acquire.py --index-only`.
 
-**21 acquired** (687.2 MB) · **1 need manual registration** · **3 unavailable**
+**24 acquired** (1007.4 MB) · **1 need manual registration** · **1 unavailable**
 
-Last run: 2026-08-27 18:55 UTC
+Last run: 2026-08-28 13:43 UTC
 
 ---
 
@@ -17,6 +17,7 @@ Last run: 2026-08-27 18:55 UTC
 | GEFS Oct-2021 ensemble index (proof of ensemble members for the hindcast) | dataset | `research/sources/datasets/gefs_20211015_gep01_f024.idx` | 2.3 KB | [link](https://noaa-gefs-pds.s3.amazonaws.com/gefs.20211015/00/atmos/pgrb2sp25/gep01.t00z.pgrb2s.0p25.f024.idx) |
 | GRRR reforecast zarr metadata (Google Runoff Reanalysis and Reforecast) | dataset | `research/sources/datasets/grrr_reforecast_zmetadata.json` | 2.8 KB | [link](https://storage.googleapis.com/flood-forecasting/hydrologic_predictions/model_id_8583a5c2_v0/reforecast/streamflow.zarr/.zmetadata) |
 | GUARDIAN rating curves for 210 CWC gauges incl. NEELEESWARAM, ARANGALI, VANDIPERIYAR | — | `research/sources/datasets/guardian_rating_curves.xlsx` | 52.4 KB | [link](https://ndownloader.figshare.com/files/49150798) |
+| IMD 0.25-degree daily gridded rainfall NetCDF, years 2018-2021 | — | `research/raw/imd_rf25/` | 97.1 MB | [link](https://www.imdpune.gov.in/cmpg/Griddata/RF25.php) |
 | KSEB Dam Safety monthly statistics - download listing (86 live workbook IDs) | — | `research/raw/kseb_monthly/listing.html` | 205.0 KB | [link](https://dams.kseb.in/?p=329) |
 | KSEB monthly workbook July 2026 - modern schema exemplar with rule level and alert bands | — | `research/raw/kseb_monthly/2026-07.xlsx` | 246.3 KB | [link](https://dams.kseb.in/?wpdmdl=6380) |
 | KSEB monthly workbook June 2019 (carries the 2018 'Previous Year Water Level' column and the 25.09.2018 status sheet) | — | `research/raw/kseb_monthly/2019-06.xlsx` | 1.4 MB | [link](https://dams.kseb.in/?wpdmdl=315) |
@@ -34,6 +35,8 @@ Last run: 2026-08-27 18:55 UTC
 | opendatakerala-lsg-boundaries | dataset | `research/repos/lsg-kerala-data` | 30.2 MB | [link](https://github.com/opendatakerala/lsg-kerala-data) |
 | rtc-tools | repo | `research/repos/rtc-tools` | 6.5 MB | [link](https://github.com/rtc-tools/rtc-tools) |
 | wltaylor/Robust-FIRO - cvxpy ensemble MPC for reservoir flood control (MIT) | — | `research/repos/Robust-FIRO` | 137.1 MB | [link](https://github.com/wltaylor/Robust-FIRO) |
+| NWDP CWC hourly river water level, basin 031, 2021-2025 - contains the Oct 2021 flagship window at 744/744 hours | — | `research/sources/datasets/cwc_hourly_wl_031_2021_2025.csv` | 223.1 MB | [link](https://nwdp.nwic.gov.in/dataset/d951a09c-6cf8-470e-be77-e80116f13d34/resource/a9f5d910-e360-42e0-a45c-637310b009c4/download/rwl_manual_hr_cwc_031_2021_2025.csv) |
+| RAT-Kerala area-elevation curves, Idukki and Idamalayar (USE ABOVE 724 m ONLY - the Idukki curve has a 40 km2/m discontinuity at 722-723 m) | — | `research/raw/rat_kerala/aec_idukki.csv` | 13.2 KB | [link](http://210.212.226.241:8080/RAT_Kerala_CWRDM/assets/RAT_results/aec/idukki.csv) |
 
 ---
 
@@ -54,8 +57,6 @@ Recorded so the same ground is not covered twice.
 
 | Resource | Why | Source |
 |---|---|---|
-| IMD 0.25-degree daily gridded rainfall NetCDF, years 2018-2021 | JSONDecodeError: Expecting value: line 1 column 1 (char 0) | [link](https://www.imdpune.gov.in/cmpg/Griddata/RF25.php) |
-| SLDC Kerala daily observed inflow archive (2019-08-08 to present) | JSONDecodeError: Expecting value: line 1 column 1 (char 0) | [link](https://sldckerala.com/index.php?id=7) |
 | iRONStoolbox/iRONS - op_piecewiselin_1res rule-curve policy parameterisation (MIT) | compressed tarball is 178.4 MB, over the 150 MB cap | [link](https://github.com/iRONStoolbox/iRONStoolbox) |
 
 ---
