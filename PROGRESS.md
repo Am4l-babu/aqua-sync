@@ -74,7 +74,7 @@ Preparedness · MACE IoT Club, Kothamangalam.
 
 | Component | Status | Assigned To | Branch | Notes |
 |---|---|---|---|---|
-| BOM & sourcing | ✅ Done | Am4l-babu | `feature/project-scaffold` | 4 tiers, ₹6,150 for V1. See [hardware/bom/](hardware/bom/) |
+| BOM & sourcing | ✅ Done | Am4l-babu | `feature/project-scaffold` | 4 tiers, ₹6,250 for V1 (corrected 28 Aug 2026 — was ₹6,150, didn't match its own line items). See [hardware/bom/](hardware/bom/) |
 | Firmware skeleton | ✅ Done | Am4l-babu | `feature/project-scaffold` | PlatformIO, sensor fusion + safety interlock structure |
 | Order V1 components | 📋 Todo | — | — | 🔴 **Blocks all hardware work.** 3–5 day delivery |
 | Two-tank rig build | 📋 Todo | — | — | Acrylic tanks, pump loop, sluice gate |
