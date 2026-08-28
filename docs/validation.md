@@ -6,8 +6,9 @@ A model that has not been validated against something it was not fitted to is
 a hypothesis. This document tracks the distance between those two states, and
 is honest about how far there is still to go.
 
-**Status as of 26 August 2026:** the reservoir model is calibrated and
-replay-validated. The routing and runoff models are **not yet validated**, and
+**Status as of 28 August 2026:** the reservoir model is calibrated and
+replay-validated **on two independent episodes**, not just the one it was
+tuned against. The routing and runoff models are **not yet validated**, and
 the headline counterfactual assumes **perfect foresight**. Read §4 before
 quoting anything.
 
@@ -81,6 +82,47 @@ days is small enough to work with and large enough to be worth explaining.
 **Consequence for the headline claim:** roughly 0.5 m of the ~3 m freeboard
 figure sits inside model error. Quote it as *"about 3 m"*, never to two
 decimal places.
+
+### 2b · Out-of-sample: does it hold up on an episode it has never seen?
+
+**Question:** the calibration above (β, evaporation, spillway physics) was
+fitted or checked against October 2021 data. Does the same untouched model
+reproduce a *different* episode - August 2022 - to a comparable accuracy?
+This is the difference between *calibrated* and *validated*.
+
+**Method:** identical to §2, replayed against `idukki_aug_2022`
+(`twin/scenarios.py`), 1–20 August 2022, 457 hourly steps. Observed inflow
+and releases in, no fitting to the level series. Genuine spillway release in
+this window (191 h active, peak 409 cumecs), so it also exercises the
+spillway-discharge physics that October 2021 barely touched (105 cumecs
+peak).
+
+| Metric | October 2021 (fitted-to) | August 2022 (out-of-sample) |
+|---|---|---|
+| Mean absolute error | 0.303 m | **0.319 m** |
+| Maximum absolute error | 0.571 m | **0.744 m** |
+| Final-step error | +0.517 m (grows positive) | **-0.273 m (does not)** |
+| Spillway active | 216 h, 105 cumecs peak | 191 h, 409 cumecs peak |
+
+**Finding:** mean error on the unseen episode (0.319 m) is within 5% of the
+episode the model was checked against (0.303 m) - the accuracy is not an
+artefact of October 2021 specifically. That is the headline result, and it
+is genuinely evidence of generalisation, not overfitting.
+
+The maximum error is worse (0.744 vs 0.571 m, at hour 120 - early in the
+window, not during the spillway event), which the higher spillway discharge
+is a plausible but unconfirmed cause of. More useful: **the sign of the
+drift flips.** October 2021 drifts high and keeps climbing (final error
++0.517 m); August 2022 drifts low and ends there (-0.273 m). A single
+unmodelled loss term (evaporation, an unreported outlet) would produce the
+*same-sign* drift on both episodes. It does not, which weakens the "missing
+loss term" explanation offered in §2 and points instead toward
+event-specific error - most plausibly the daily-to-hourly interpolation
+mistiming each storm's actual sub-daily inflow pulse differently, since that
+error's sign depends on the shape of the individual event, not on a
+constant physical process.
+
+Reproduce: `python scripts/out_of_sample_replay.py --scenario idukki_aug_2022`.
 
 ---
 
@@ -174,13 +216,6 @@ soil group C, not calibrated.
 
 This does not affect the replay results — those use *observed* inflow directly
 — but it does gate any genuinely forward-looking forecast.
-
-### 🟠 Out-of-sample scenario
-
-Everything above is October 2021. The August 2022 scenario is defined in
-`twin/scenarios.py` and has not been run. Until it has, the model is
-*calibrated*, not *validated*, and the distinction is one a domain-literate
-judge will make.
 
 ### 🟡 Tide
 

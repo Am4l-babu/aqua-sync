@@ -207,11 +207,16 @@ id mapping for basin code 15, which is this basin.
 Blocked on ordering. EVOKE is an **IoT club** event — a software-only
 submission will underperform regardless of how good the modelling is.
 
-### 🟠 5 · Out-of-sample scenario (Aug 2022)
+### ✅ 5 · Out-of-sample scenario (Aug 2022) - done, 28 Aug 2026
 
-The model is calibrated on October 2021. Showing it works on an episode it
-was never tuned to is the difference between "fitted" and "validated". The
-scenario is already defined; it needs a run and a write-up.
+`python scripts/out_of_sample_replay.py --scenario idukki_aug_2022`. Mean
+absolute error 0.319 m against October 2021's 0.303 m - within 5% on an
+episode never tuned to, which is the "fitted" vs "validated" distinction
+this item existed to close. One honest wrinkle: the drift direction flips
+between episodes (Oct 2021 ends +0.517 m high, Aug 2022 ends -0.273 m low),
+which weakens the single-missing-loss-term explanation in
+`docs/validation.md` §2 and points at event-specific interpolation timing
+instead. Full comparison table in `docs/validation.md` §2b.
 
 ### 🟡 6 · Crisis Commander demo mode
 

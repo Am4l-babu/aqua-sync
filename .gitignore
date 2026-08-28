@@ -44,3 +44,9 @@ research/sources/papers/*
 # re-fetched in seconds by scripts/acquire.py (acquire_imd_rf25). Same
 # reasoning as research/sources/datasets/ above - keep it out of git history.
 research/raw/imd_rf25/
+# GEFS ensemble GRIB2 slices fetched by scripts/forecast_error_study.py:
+# ~450 MB per issue date, binary, re-fetched by the script itself (each
+# slice is cached and skipped if already present). The study's OUTPUT
+# (data/processed/forecast_error_study_*.json) is committed; this raw cache
+# is not, same reasoning as imd_rf25/ above.
+research/raw/gefs_hindcast/
