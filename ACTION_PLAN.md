@@ -16,7 +16,7 @@ Everything else can wait a day. These cannot.
 
 Delivery is 3–5 days from Robu.in and Amazon.in, and every hardware task is
 blocked behind it. The full list is in [hardware/bom/](hardware/bom/README.md);
-the minimum order is ₹6,150.
+the minimum order is ₹6,250.
 
 Do not sequence the build so a ₹90 part blocks a demo. Order one spare ESP32.
 

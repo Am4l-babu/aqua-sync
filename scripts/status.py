@@ -254,7 +254,7 @@ def render() -> str:
         nxt.append(f"{g['unpushed']} commit(s) to push")
     if g["ahead_of_main"] != "0":
         nxt.append(f"open PR development -> main ({g['ahead_of_main']} commits)")
-    nxt.append("order V1 hardware (Rs 6,150, 3-5 day delivery)")
+    nxt.append("order V1 hardware (Rs 6,250, 3-5 day delivery)")
     nxt.append("forecast-error study - closes the perfect-foresight gap")
     for i, t in enumerate(nxt[:6], 1):
         L.append(f"  {C.GRY}{i}.{C.R} {t}")
