@@ -298,6 +298,104 @@ def fig_counterfactual() -> dict:
     return {k: v for k, v in s.items() if isinstance(v, (int, float, bool))}
 
 
+def fig_forecast_error() -> dict:
+    """What the policy retains once it can no longer see the true inflow."""
+    files = sorted(PROC.glob("forecast_error_study_*.json"))
+    if not files:
+        print("  (skipping forecast-error figure: run scripts/forecast_error_study.py first)")
+        return {}
+    runs = [json.loads(p.read_text(encoding="utf-8")) for p in files]
+    runs.sort(key=lambda r: r["lead_hours_before_storm_peak"])
+
+    leads = [f"{r['lead_hours_before_storm_peak']:.0f} h" for r in runs]
+    perfect = float(runs[0]["perfect_foresight"]["freeboard_gained_m"])
+    ev_m = [float(r["decision_rule_expected_value"]["freeboard_gained_m"]) for r in runs]
+    mm_m = [float(r["decision_rule_minimax_regret"]["freeboard_gained_m"]) for r in runs]
+    ev_p = [float(r["decision_rule_expected_value"]["retention_of_perfect_foresight_pct"]) for r in runs]
+    mm_p = [float(r["decision_rule_minimax_regret"]["retention_of_perfect_foresight_pct"]) for r in runs]
+    bias = [float(r["bias_factor"]) for r in runs]
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(9.2, 3.6))
+    x = np.arange(len(runs))
+    w = 0.34
+
+    style(ax1, "Forecast error costs most of the benefit", "Freeboard gained (m)")
+    ax1.bar(x - w / 2, ev_m, width=w, color=AMBER, alpha=0.85, label="Expected value")
+    ax1.bar(x + w / 2, mm_m, width=w, color=GREEN, alpha=0.85, label="Minimax regret")
+    ax1.axhline(perfect, color=INK, lw=1.3, ls="--")
+    ax1.text(-0.42, perfect + 0.06, f"perfect foresight {perfect:.2f} m",
+             fontsize=8.5, color=INK, fontweight="bold")
+    ax1.set_xticks(x, leads)
+    ax1.set_xlabel("Lead time before the storm peak", color=MUTED, fontsize=9)
+    ax1.set_ylim(0, perfect * 1.22)
+    for xi, (a, b) in enumerate(zip(ev_m, mm_m, strict=True)):
+        ax1.text(xi - w / 2, a + 0.05, f"{a:.2f}", ha="center", fontsize=8, color=MUTED)
+        ax1.text(xi + w / 2, b + 0.05, f"{b:.2f}", ha="center", fontsize=8, color=MUTED)
+    ax1.legend(frameon=False, fontsize=8.5, labelcolor=MUTED, loc="upper right")
+
+    style(ax2, "Hedging never costs — but shows no trend", "Share of perfect foresight (%)")
+    ax2.plot(x, ev_p, color=AMBER, lw=2.2, marker="o", ms=5, label="Expected value")
+    ax2.plot(x, mm_p, color=GREEN, lw=2.2, marker="o", ms=5, label="Minimax regret")
+    ax2.set_xticks(x, leads)
+    ax2.set_xlabel("Lead time before the storm peak", color=MUTED, fontsize=9)
+    ax2.set_ylim(0, 100)
+    ax2.annotate(f"{max(mm_p):.0f}% at 90 h — then back to {mm_p[-1]:.0f}%.\n"
+                 f"Three points, one storm: not a curve.",
+                 xy=(1, max(mm_p)), xytext=(52, -135), textcoords="offset points",
+                 fontsize=8.5, color=INK, ha="left",
+                 arrowprops=dict(arrowstyle="->", color=MUTED, lw=1))
+    ax2.legend(frameon=False, fontsize=8.5, labelcolor=MUTED, loc="upper left")
+
+    fig.tight_layout()
+    fig.savefig(OUT / "fig6_forecast_error.png", dpi=200, facecolor="white")
+    plt.close(fig)
+
+    return {
+        "perfect_m": perfect,
+        "leads_h": [float(r["lead_hours_before_storm_peak"]) for r in runs],
+        "issue_dates": [f"{r['issue_date']} {r['hh']}z" for r in runs],
+        "ev_m": ev_m, "mm_m": mm_m, "ev_pct": ev_p, "mm_pct": mm_p,
+        "bias_min": min(bias), "bias_max": max(bias),
+        "best_mm_pct": max(mm_p), "worst_mm_pct": min(mm_p),
+    }
+
+
+def fig_cascade_coordination() -> dict:
+    """Independent optimisation of two dams on one river makes the joint peak worse."""
+    p = PROC / "cascade_coordination.json"
+    if not p.exists():
+        print("  (skipping cascade-coordination figure: run scripts/cascade_coordination.py first)")
+        return {}
+    d = json.loads(p.read_text(encoding="utf-8"))
+
+    labels = ["Observed\n(what happened)", "Each dam optimised\nindependently", "Coordinated\n(retimed releases)"]
+    vals = [float(d["observed_joint_peak_cumecs"]),
+            float(d["naive_independent_joint_peak_cumecs"]),
+            float(d["coordinated_joint_peak_cumecs"])]
+    colours = [INK, RED, AMBER]
+
+    notes = ["the benchmark to beat",
+             f"{abs(float(d['naive_vs_observed_reduction_pct'])):.0f}% worse than observed",
+             f"retiming recovers only {float(d['coordination_vs_naive_reduction_pct']):.0f}% of that"]
+
+    fig, ax = plt.subplots(figsize=(9.2, 3.0))
+    style(ax, "Optimising each dam for itself is worse than not coordinating at all",
+          "Joint peak at the confluence (cumecs)")
+    bars = ax.barh(labels, vals, color=colours, alpha=0.85, height=0.58)
+    ax.invert_yaxis()
+    ax.set_xlim(0, max(vals) * 1.45)
+    for b, v, c, note in zip(bars, vals, colours, notes, strict=True):
+        y = b.get_y() + b.get_height() / 2
+        ax.text(v - max(vals) * 0.015, y, f"{v:,.0f}", va="center", ha="right",
+                fontsize=10, color="white", fontweight="bold")
+        ax.text(v + max(vals) * 0.025, y, note, va="center", fontsize=9, color=c)
+
+    fig.tight_layout()
+    fig.savefig(OUT / "fig7_cascade_coordination.png", dpi=200, facecolor="white")
+    plt.close(fig)
+    return {k: v for k, v in d.items() if isinstance(v, (int, float))}
+
+
 def main() -> int:
     OUT.mkdir(parents=True, exist_ok=True)
     facts: dict = {}
@@ -307,6 +405,8 @@ def main() -> int:
         ("calibration", fig_level_storage),
         ("lead_time", fig_lead_time),
         ("counterfactual", fig_counterfactual),
+        ("forecast_error", fig_forecast_error),
+        ("cascade_coordination", fig_cascade_coordination),
     ]:
         print(f"  building {name} ...")
         facts[name] = fn()
