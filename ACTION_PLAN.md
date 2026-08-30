@@ -2,28 +2,61 @@
 
 The next fourteen days, concretely. Written for a solo build.
 
-**As of 26 August 2026.** Phases 0–3 are done; the twin runs, is calibrated,
-and produces a defensible counterfactual. What follows is the work that turns
+**As of 30 August 2026.** Phases 0–3 are done and **Week 1 is complete** —
+the twin runs, is calibrated, and its headline result now has a measured
+error bar rather than a disclosed caveat. What follows is the work that turns
 that into a submission.
 
 ---
 
-## Do these three things first
+## Week 1 result
 
-Everything else can wait a day. These cannot.
+The gate was: *every headline number has a stated error bar, and the
+perfect-foresight caveat is resolved rather than disclosed.* **Met.**
 
-### 1 · Order the V1 components — today
+| Question | Answer now on record |
+|---|---|
+| What if the forecast is wrong? | A real 30-member ensemble retains **33–74%** of the perfect-foresight cushion, at 24 / 90 / 120 h. Minimax-regret never does worse than expected-value |
+| Was the model tuned to one event? | No. August 2022 replays at **0.319 m** against October 2021's 0.303 m |
+| Can the two dams be scheduled jointly? | Not the way it looked. Optimising them independently puts the joint peak **126% above** what happened; retiming recovers 9%. It is an objective-function problem |
+| Are K and x calibrated? | No, and now quantified: the fit fails on daily data (**r² = 0.005**). The CWC 8 h anchor stands |
+
+One claim was **retracted** mid-week when a third data point broke it, and
+the retraction is in the dossier rather than quietly dropped. That record is
+worth more to a sceptical judge than the finding would have been.
+
+All four are written up in [docs/validation.md](docs/validation.md) §2b and
+§4, and the two that change the headline are in the dossier at §4.4 and
+§4.5. Figures, dossier, abstract and ICFOSS analysis all regenerate
+byte-identically from `scripts/`.
+
+---
+
+## Do these two things first
+
+Everything else can wait a day. These cannot — and they have now been open
+since 26 August.
+
+### 1 · Order the V1 components — today, and this is now urgent
 
 Delivery is 3–5 days from Robu.in and Amazon.in, and every hardware task is
-blocked behind it. The full list is in [hardware/bom/](hardware/bom/README.md);
-the minimum order is ₹6,250.
+blocked behind it. The full list is in [hardware/bom/](hardware/bom/README.md)
+with live vendor links in [bom.html](hardware/bom/bom.html); the minimum order
+is ₹6,250.
+
+**Week 2 starts on Monday and it is the entire rig build.** Ordering today
+means parts land Wed–Fri, which costs the first half of that week. Ordering
+later means Week 2 has no hardware in it at all, and EVOKE is an IoT club
+event — a software-only submission underperforms regardless of how good the
+modelling is.
 
 Do not sequence the build so a ₹90 part blocks a demo. Order one spare ESP32.
 
 ### 2 · Confirm the expo entry status
 
-Registration closed on **22 August 2026** and today is the 26th. Before
-investing four more weeks, establish where the team actually stands: whether
+Registration closed on **22 August 2026** and today is the 30th — this has
+now been unanswered for eight days. Before investing four more weeks,
+establish where the team actually stands: whether
 the entry went in, whether late consideration is possible, and what the
 presentation date is.
 
@@ -31,34 +64,35 @@ If the answer is no, the work is not wasted — the project stands on its own
 and there are other venues — but the *schedule* changes completely, and it is
 worth knowing before optimising for a deadline that may not apply.
 
-### 3 · Start the forecast-error study
+### 2b · If the answer on the expo is no
 
-This is the highest-value remaining piece of analysis and it needs no
-hardware. See [ROADMAP.md](ROADMAP.md) §1 for why it matters more than
-anything else on the list.
+Read this before deciding the project failed. The work stands on its own: a
+calibrated twin, a measured forecast-error result, a negative cascade finding
+worth publishing, and four documents that regenerate from public data. Other
+venues exist, and the schedule below simply loses its deadline. What changes
+is *sequencing*, not value — with no expo date, the joint cascade objective
+(§Weeks 3–4) is worth more than the rig.
 
 ---
 
-## Week 1 (26 Aug – 1 Sep) · Make the results defensible
+## Sunday 31 August · the one task left in Week 1
 
-| Day | Task | Output |
-|---|---|---|
-| Tue 26 | Order V1 components. Confirm expo status | Order placed |
-| Tue 26 | Read [docs/data-sources.md](docs/data-sources.md) end to end | You can explain both data corrections from memory |
-| Wed 27 | **Forecast-error study**: perturb inflow with growing error, re-run the policy search as an ensemble | `scripts/forecast_error_study.py`, a figure, a number |
-| Thu 28 | Run the Aug 2022 out-of-sample scenario | Proof the model was not tuned to one event |
-| Fri 29 | Write `docs/validation.md`: replay + lead time + out-of-sample + forecast error, in one place | The document a sceptical judge is handed |
-| Sat 30 | Cascade co-optimisation: extend the policy search across both dams | The Figure 2 failure, solved |
-| Sun 31 | Regenerate figures and the dossier; read the PDF as a stranger would | Updated `AquaSync_Project_Dossier.pdf` |
+| Task | Output |
+|---|---|
+| Read the dossier end to end as a stranger would | Nothing in it contradicts anything else in it |
 
-**Week 1 gate:** every headline number has a stated error bar, and the
-perfect-foresight caveat is resolved rather than disclosed.
+Everything else on Week 1's list is done and committed. If the components
+have not been ordered by tonight, do that instead of reading the PDF.
 
 ---
 
 ## Week 2 (2 – 8 Sep) · Build the rig
 
-Components should have arrived by 30 August.
+**This week is entirely contingent on the order going in.** If parts arrive
+mid-week, compress: bench-test and tanks on the day they land, gate and level
+sensing the next, and cut the EKF refinement rather than the fault injection.
+If they will not arrive at all, do not leave the week empty — fall through to
+Weeks 3–4 and bring Crisis Commander forward, since it needs no hardware.
 
 | Day | Task | Output |
 |---|---|---|
@@ -84,11 +118,11 @@ and full of water, costs more than a day.
 | Priority | Task | Notes |
 |---|---|---|
 | 1 | Crisis Commander mode | Highest demo value per hour of work |
-| 2 | FastAPI backend + live what-if panel | Makes the dashboard real rather than canned |
+| 2 | Wire the what-if panel to the live backend | The API and the slider both exist; they are not connected |
 | 3 | Full offline rehearsal | Pull the network cable and run the entire demo |
 | 4 | A1 poster | Figures 1, 4 and 5 carry it. Print by expo minus 3 days |
 | 5 | Pitch rehearsal, out loud, ten times | Script is in the dossier §12 |
-| 6 | Test suite and CI | Protects against a late refactor breaking the demo |
+| 6 | **Joint cascade objective** | The largest open modelling item. Only worth starting if the rig is on track — or if there is no expo date |
 
 ---
 
@@ -119,7 +153,8 @@ Have an answer ready. Several of these are already answered in the code.
 |---|---|
 | *"Where is the hardware? This is an IoT club."* | The rig, running in front of them. Sensor fusion, LoRa fallback, tamper-evident logging |
 | *"How do you know the model is right?"* | 0.30 m MAE reproducing observed Idukki level over 20 days, on data it was not fitted to |
-| *"What if the forecast is wrong?"* | The forecast-error study. **Do the study first** — this is the question that exposes an unfinished project |
+| *"What if the forecast is wrong?"* | **Answered.** A real GEFS ensemble retains 33–74% of the perfect-foresight cushion. Hedging against the worst member never costs you. The 3 m figure is a ceiling and the dossier says so |
+| *"You optimise two dams on one river — do they interact?"* | Badly, and it is measured: optimising them independently puts the joint peak 126% above what happened. Volunteering this is stronger than being caught by it |
 | *"KSEB will never adopt this."* | Correct, not on trust. Shadow mode for one monsoon, publish the comparison |
 | *"Why not use 2018 data?"* | Because it is not in the public dataset — and finding that out is why the flagship case is October 2021. This answer earns credit rather than losing it |
 | *"Isn't this just a dashboard?"* | The output is a three-parameter release policy, not a screen of gauges |
