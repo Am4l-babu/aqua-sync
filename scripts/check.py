@@ -48,6 +48,9 @@ ARTEFACTS = [
     ROOT / "data" / "processed",
 ]
 ARTEFACT_SUFFIXES = {".png", ".pdf", ".json", ".csv"}
+# .gitattributes normalises these to CRLF in the working tree while Python
+# writes LF, so raw bytes differ on Windows even when nothing changed.
+TEXT_SUFFIXES = {".json", ".csv"}
 
 GREEN, RED, DIM, OFF = "\033[32m", "\033[31m", "\033[2m", "\033[0m"
 
@@ -103,6 +106,13 @@ def check_glyphs() -> bool:
 # 3 and 4 - regeneration and determinism
 # --------------------------------------------------------------------------
 
+def digest(f: Path) -> str:
+    data = f.read_bytes()
+    if f.suffix in TEXT_SUFFIXES:
+        data = data.replace(b"\r\n", b"\n")
+    return hashlib.sha256(data).hexdigest()
+
+
 def snapshot() -> dict[Path, str]:
     out: dict[Path, str] = {}
     for d in ARTEFACTS:
@@ -110,7 +120,7 @@ def snapshot() -> dict[Path, str]:
             continue
         for f in sorted(d.iterdir()):
             if f.is_file() and f.suffix in ARTEFACT_SUFFIXES:
-                out[f] = hashlib.sha256(f.read_bytes()).hexdigest()
+                out[f] = digest(f)
     return out
 
 
