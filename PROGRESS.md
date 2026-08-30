@@ -31,7 +31,7 @@ Preparedness · MACE IoT Club, Kothamangalam.
 | Source-material analysis | ✅ Done | Am4l-babu | `feature/project-scaffold` | Analysed `analyze_1.pdf` + EVOKE chat export. Found 2 load-bearing errors in the brief — see [docs/data-sources.md](docs/data-sources.md) |
 | Data ingestion (KSEB bulletin) | ✅ Done | Am4l-babu | `feature/project-scaffold` | `aquasync.io.kseb_dataset`. 18 dams, 2020-08 → 2026-08 |
 | Data validation layer | ✅ Done | Am4l-babu | `feature/project-scaffold` | Found ~11% of the source feed is physically impossible. `quality_ok` flag + `quality_report()` |
-| Test suite & CI | ✅ Done | Am4l-babu | `feature/api-and-validation` | 46 physics/behaviour tests passing; CI runs tests + ruff + a guard that the twin core stays web-framework-free |
+| Test suite & CI | ✅ Done | Am4l-babu | `feature/api-and-validation` | 65 physics/behaviour tests passing; CI runs tests + ruff + a guard that the twin core stays web-framework-free |
 | Deployment | 📋 Todo | — | — | Expo runs offline on a laptop by design. Optional: Streamlit Cloud / Fly.io free tier for a public link. **Do not** put this on paid infra |
 
 ## Simulation Core
@@ -45,7 +45,8 @@ Preparedness · MACE IoT Club, Kothamangalam.
 | Muskingum–Cunge (ungauged) | ✅ Done | Am4l-babu | `feature/project-scaffold` | Flow-dependent K, x from channel hydraulics |
 | Tidal backwater | ✅ Done | Am4l-babu | `feature/project-scaffold` | Kochi harmonics (M2/S2/K1/O1/N2) + effective conveyance. Offline-capable |
 | Hydropower & tariff | ✅ Done | Am4l-babu | `feature/project-scaffold` | Hill-diagram efficiency, ToD tariff. Verified: 743 MW at rated flow vs 780 MW nameplate |
-| Routing calibration vs gauges | 📋 Todo | — | — | **Highest-value modelling gap.** Needs CWC gauge data at Neeleeswaram / Aluva |
+| Routing calibration vs gauges | 🚫 Blocked | Am4l-babu | `feature/deep-research` | Attempted 28 Aug against 1,967 days of CWC Neeleeswaram discharge: **fit failed, r² = 0.005**, K hit the grid edge. Daily data (dt = 24 h) is ~3× coarser than the 8 h travel time it would need to resolve, and the bottleneck is the *release* record (KSEB is daily-only), not the gauge. K/x stay anchored to CWC's published 8 h figure. Unblocks with the CWC 15-minute telemetry feed |
+| Catchment geometry from DEM | ✅ Done | Am4l-babu | `feature/deep-research` | Idukki catchment derived from a real digital elevation model rather than an estimate. `scripts/catchment_geometry.py` |
 | Runoff model validation | 📋 Todo | — | — | Compare SCS-CN predicted inflow against observed bulletin inflow |
 | 2D inundation | 📋 Todo | — | — | Deferred. LISFLOOD-FP or HEC-RAS on Bhuvan DEM. Not needed for the expo |
 
@@ -57,8 +58,9 @@ Preparedness · MACE IoT Club, Kothamangalam.
 | Rule-curve baseline | ✅ Done | Am4l-babu | `feature/project-scaffold` | Faithful model of reactive practice — the thing to beat |
 | Policy search | ✅ Done | Am4l-babu | `feature/project-scaffold` | Exhaustive grid over (target level, start hour, max rate). Deterministic |
 | Grid offtake constraint | ✅ Done | Am4l-babu | `feature/project-scaffold` | Without it the optimiser books revenue the grid would never take |
-| **Forecast-error study** | 📋 Todo | — | — | 🔴 **Top priority.** Optimiser currently has perfect foresight, so every benefit figure is an upper bound. Must re-run with realistic forecast error |
-| Cascade co-optimisation | 📋 Todo | — | — | Idukki + Idamalayar scheduled jointly. Routing layer is already a DAG |
+| **Forecast-error study** | ✅ Done | Am4l-babu | `feature/deep-research` | Run at 24 / 90 / 120 h from 30-member NOAA GEFS ensembles. A real forecast retains **33–74%** of the perfect-foresight cushion; minimax-regret never does worse than expected-value. One claim ("the minimax advantage grows with lead time") was **retracted** when the 120 h point broke it. `scripts/forecast_error_study.py`, [docs/validation.md](docs/validation.md) §4 |
+| Cascade co-optimisation | ✅ Done | Am4l-babu | `feature/deep-research` | Run, and **the result is a warning, not a win**: optimising the two dams independently puts the joint peak at their confluence **126% above what actually happened**, and retiming both start hours recovers only 9% of that. `scripts/cascade_coordination.py` |
+| **Joint cascade objective** | 📋 Todo | — | — | 🔴 **Largest open modelling item.** Score each dam's policy against the *combined* downstream discharge instead of its own reach. The cascade result shows this is an objective-function problem, not a timing one — a bigger timing search will not fix it |
 
 ## Scenarios & Validation
 
@@ -67,7 +69,7 @@ Preparedness · MACE IoT Club, Kothamangalam.
 | Oct 2021 flagship scenario | ✅ Done | Am4l-babu | `feature/project-scaffold` | Replay MAE 0.30 m / max 0.57 m over 20 days |
 | Cascade evidence (2 dams) | ✅ Done | Am4l-babu | `feature/project-scaffold` | Both dams opened gates 20 Oct 2021, same river, same day |
 | Lead-time study | ✅ Done | Am4l-babu | `feature/project-scaffold` | ~3 m cushion at every lead time; spill share 61% → 40% |
-| Aug 2022 out-of-sample | 📋 Todo | — | — | Scenario defined, not yet run. Needed to show the model was not tuned to one event |
+| Aug 2022 out-of-sample | ✅ Done | Am4l-babu | `feature/deep-research` | 0.319 m MAE against October 2021's 0.303 m — within 5% on an episode never tuned to. Wrinkle: the drift direction flips between episodes, which weakens the single-missing-loss-term explanation. `scripts/out_of_sample_replay.py` |
 | Sentinel-1 SAR validation | 📋 Todo | — | — | Optional. Validates flood *extent*, never timing (6–12 day revisit) |
 
 ## Hardware (V1 rig)
@@ -98,12 +100,15 @@ Preparedness · MACE IoT Club, Kothamangalam.
 
 | Component | Status | Assigned To | Branch | Notes |
 |---|---|---|---|---|
-| Project dossier (PDF) | ✅ Done | Am4l-babu | `feature/project-scaffold` | [docs/AquaSync_Project_Dossier.pdf](docs/AquaSync_Project_Dossier.pdf) — 15 pp, regenerates from data |
+| Project dossier (PDF) | ✅ Done | Am4l-babu | `feature/project-scaffold` | [docs/AquaSync_Project_Dossier.pdf](docs/AquaSync_Project_Dossier.pdf) — 18 pp, regenerates from data. §4.4 and §4.5 now carry the forecast-error and cascade results |
 | Architecture | ✅ Done | Am4l-babu | `feature/project-scaffold` | [docs/architecture.md](docs/architecture.md) |
 | Data sources & corrections | ✅ Done | Am4l-babu | `feature/project-scaffold` | [docs/data-sources.md](docs/data-sources.md) |
 | Roadmap | ✅ Done | Am4l-babu | `feature/project-scaffold` | [ROADMAP.md](ROADMAP.md) |
 | Action plan | ✅ Done | Am4l-babu | `feature/project-scaffold` | [ACTION_PLAN.md](ACTION_PLAN.md) |
 | Validation report | ✅ Done | Am4l-babu | `feature/api-and-validation` | [docs/validation.md](docs/validation.md) — includes an explicit list of what is **not** yet validated |
+| Project abstract (PDF) | ✅ Done | Am4l-babu | `feature/docs-corrections` | [docs/AquaSync_Abstract.pdf](docs/AquaSync_Abstract.pdf) — 4 pp, the one-sitting version |
+| ICFOSS portfolio analysis (PDF) | ✅ Done | Am4l-babu | `feature/docs-corrections` | [docs/AquaSync_ICFOSS_Analysis.pdf](docs/AquaSync_ICFOSS_Analysis.pdf) — what Kerala's open-source institute has already built, and which of it AquaSync can stand on |
+| Deep research report (PDF) | ✅ Done | Am4l-babu | `feature/deep-research` | [docs/AquaSync_Research_Report.pdf](docs/AquaSync_Research_Report.pdf) — 144 verified sources, including the five that contradict this project's thesis |
 | Poster (A1) | 📋 Todo | — | — | Figures 1, 4 and 5 carry it. Print by expo minus 3 days |
 | Pitch rehearsal | 📋 Todo | — | — | Script is in the dossier §12 |
 
@@ -113,9 +118,10 @@ Preparedness · MACE IoT Club, Kothamangalam.
 
 | Risk | Severity | Mitigation |
 |---|---|---|
-| Perfect-foresight assumption inflates every benefit figure | 🔴 High | Forecast-error study is the top open item. Until then, present results as an upper bound and say so |
-| Routing K/x uncalibrated → downstream discharge is indicative | 🟠 Medium | Do not quote Aluva discharge as measured. Calibrate against CWC gauges |
-| Hardware ordering delay blocks the rig | 🟠 Medium | Order V1 today; software is fully demonstrable without it |
+| Perfect-foresight assumption inflates every benefit figure | 🟠 Medium | **Measured, no longer assumed.** A real ensemble retains 33–74% of the perfect-foresight cushion. Quote that range for operational claims; the 3 m figure is a ceiling. Residual risk: one storm, three lead times |
+| Independent per-dam optimisation makes the shared downstream peak worse | 🔴 High | Measured at 126% above observed. Do not present cascade results as a coordination win, and do not ship per-dam optimisation as if it degrades gracefully. Fix is a joint objective |
+| Routing K/x anchored, not calibrated → downstream discharge is indicative | 🟠 Medium | Calibration attempted and failed on daily data (r² = 0.005); the CWC 8 h anchor stands. Do not quote Aluva discharge as measured. Needs the 15-minute telemetry feed |
+| Hardware ordering delay blocks the rig | 🔴 High | Still unordered as of 30 Aug, and Week 2 is the whole rig build. 3–5 day delivery. Software is fully demonstrable without it, but EVOKE is an IoT club event |
 | Feature creep across 25 candidate upgrades | 🟠 Medium | Phases 0–3 + V1 rig is the scope. Everything else is [ROADMAP.md](ROADMAP.md) backlog |
 | Upstream dataset changes or disappears | 🟢 Low | `data/processed/` is committed, so results stay reproducible |
 
@@ -128,5 +134,12 @@ Preparedness · MACE IoT Club, Kothamangalam.
 - Oct 2021: level 728.81 m on the 16th → 168 mm rain on the 17th → inflow
   115.7 → 879.2 cumecs → gates open on the 20th at 730.95 m.
 - Both dams opened spillways on **20 Oct 2021**: 83.85 + 128.13 cumecs.
+- Forecast-driven retention of the perfect-foresight cushion: **33–74%**
+  (minimax-regret, 24/90/120 h). Perfect foresight buys 3.11 m.
+- Cascade joint peak at the confluence: observed **403**, each dam optimised
+  alone **911**, coordinated retiming **828** cumecs. Two dams' contribution
+  only — no lateral inflow, so never read these against bankfull (1,100).
+- Aug 2022 out-of-sample replay: **0.319 m MAE** vs Oct 2021's 0.303 m.
+- Neeleeswaram routing fit: **r² = 0.005** on 1,967 days. Daily is too coarse.
 - The optimiser independently converged on 728.43 m, against KSEB's published
   rule level of 728.50 m.
