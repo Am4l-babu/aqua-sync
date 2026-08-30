@@ -58,6 +58,7 @@ print(out["summary"]["headline_note"])
 | Document | Read it for |
 |---|---|
 | [**Project dossier (PDF)**](docs/AquaSync_Project_Dossier.pdf) | The complete 15-page case: problem, method, results, BOM, limitations, pitch |
+| [**ICFOSS analysis (PDF)**](docs/AquaSync_ICFOSS_Analysis.pdf) | What Kerala's open-source institute has already built, which fourteen of their projects AquaSync can stand on, and what goes back |
 | [PROGRESS.md](PROGRESS.md) | Live status of every component |
 | [ROADMAP.md](ROADMAP.md) | What is next, and what is deliberately *not* being built |
 | [ACTION_PLAN.md](ACTION_PLAN.md) | The next fourteen days |
