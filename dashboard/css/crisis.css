@@ -1,0 +1,118 @@
+/* Crisis Commander — a reading page, not the 3D stage, so it scrolls and
+   breathes. Inherits the palette from dashboard.css. */
+
+body.crisis {
+  overflow: auto;
+  padding-bottom: 48px;
+}
+
+#crisis-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 28px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+#crisis-top h1 { margin: 0; font-size: 17px; letter-spacing: 0.2px; }
+#crisis-top p { margin: 2px 0 0; font-size: 12px; color: var(--muted); }
+#crisis-top .back { color: var(--blue); text-decoration: none; font-size: 13px; }
+#crisis-top .back:hover { text-decoration: underline; }
+
+#crisis {
+  max-width: 940px;
+  margin: 0 auto;
+  padding: 26px 20px;
+  display: grid;
+  gap: 20px;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 20px 22px;
+}
+
+.card h2 {
+  margin: 0 0 12px;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 1.1px;
+  color: var(--muted);
+}
+
+.narrative { margin: 0 0 16px; line-height: 1.55; font-size: 14.5px; }
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.stat {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.stat-v { font-size: 21px; font-weight: 600; font-family: var(--mono); }
+.stat-l { font-size: 11px; text-transform: uppercase; letter-spacing: 0.9px; color: var(--muted); }
+.stat-n { font-size: 11.5px; color: var(--muted); }
+
+.fineprint { font-size: 12.5px; color: var(--muted); line-height: 1.5; margin: 10px 0 0; }
+.fineprint.bad { color: var(--red); }
+
+.ctl {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.ctl-name { font-size: 13.5px; }
+.ctl-val { font-family: var(--mono); font-size: 14px; color: var(--blue); text-align: right; }
+.ctl input { grid-column: 1 / -1; width: 100%; accent-color: var(--blue); }
+.ctl-help { grid-column: 1 / -1; font-size: 11.5px; color: var(--muted); }
+
+#commit {
+  margin-top: 16px;
+  width: 100%;
+  padding: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #06121b;
+  background: var(--blue);
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+}
+#commit:disabled { opacity: 0.45; cursor: default; }
+
+.verdict {
+  margin: 0 0 16px;
+  font-size: 16px;
+  line-height: 1.5;
+  padding: 14px 16px;
+  border-left: 3px solid var(--amber);
+  background: var(--panel);
+  border-radius: 0 8px 8px 0;
+}
+
+.cmp { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.cmp th, .cmp td { padding: 9px 10px; text-align: right; border-bottom: 1px solid var(--line); }
+.cmp thead th { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.9px; }
+.cmp tbody th { text-align: left; font-weight: 500; color: var(--ink); }
+.cmp td { font-family: var(--mono); }
+.cmp td.good { color: var(--green); }
+.cmp td.bad { color: var(--amber); }
