@@ -1,0 +1,771 @@
+<title>AquaSync × ICFOSS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap">
+
+<style>
+:root{
+  --ground:#F3F7FA;
+  --surface:#FFFFFF;
+  --surface-2:#E9F1F6;
+  --ink:#0F2233;
+  --ink-2:#3B5266;
+  --ink-3:#6E8598;
+  --rule:#D6E2EB;
+  --rule-2:#C2D4E0;
+  --on-bar:#FFFFFF;
+  --navy:#08243D;
+  --navy-2:#0E3E63;
+  --accent:#1B7FA8;
+  --accent-2:#2F9FC4;
+  --accent-wash:#E4F1F7;
+  --teal:#0E7F77;
+  --teal-wash:#E3F2F0;
+  --amber:#9A5A0B;
+  --amber-wash:#FAF0E2;
+  --plum:#5B44A0;
+  --plum-wash:#EEEAF9;
+  --on-navy:#F2F8FC;
+  --on-navy-2:#A8C9E0;
+  --on-navy-3:#7FB2D2;
+
+  --measure:68ch;
+  --step-0:1rem;
+  --step-1:1.1875rem;
+  --step-2:1.5rem;
+  --step-3:2rem;
+  --step-4:2.85rem;
+}
+
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#07161F;
+    --surface:#0D2330;
+    --surface-2:#12303F;
+    --ink:#E7F1F7;
+    --ink-2:#AEC6D6;
+    --ink-3:#7F9AAC;
+    --rule:#1D3B4C;
+    --rule-2:#2E5066;
+    --on-bar:#04121A;
+    --navy:#051320;
+    --navy-2:#0A2C46;
+    --accent:#5CC3E4;
+    --accent-2:#3FA8CC;
+    --accent-wash:#0F3040;
+    --teal:#45BFB2;
+    --teal-wash:#0C3230;
+    --amber:#E0A55A;
+    --amber-wash:#31240F;
+    --plum:#AC94E4;
+    --plum-wash:#221C3A;
+  }
+}
+
+:root[data-theme="dark"]{
+  --ground:#07161F;
+  --rule-2:#2E5066;
+  --on-bar:#04121A;
+  --surface:#0D2330;
+  --surface-2:#12303F;
+  --ink:#E7F1F7;
+  --ink-2:#AEC6D6;
+  --ink-3:#7F9AAC;
+  --rule:#1D3B4C;
+  --navy:#051320;
+  --navy-2:#0A2C46;
+  --accent:#5CC3E4;
+  --accent-2:#3FA8CC;
+  --accent-wash:#0F3040;
+  --teal:#45BFB2;
+  --teal-wash:#0C3230;
+  --amber:#E0A55A;
+  --amber-wash:#31240F;
+  --plum:#AC94E4;
+  --plum-wash:#221C3A;
+}
+
+*{box-sizing:border-box;}
+
+body{
+  margin:0;
+  background:var(--ground);
+  color:var(--ink);
+  font-family:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;
+  font-size:var(--step-0);
+  line-height:1.62;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ---------- masthead ---------------------------------------------- */
+.masthead{
+  background:linear-gradient(118deg,var(--navy) 0%,var(--navy-2) 62%,#12558C 100%);
+  color:var(--on-navy);
+  padding:clamp(2.5rem,7vw,4.5rem) 0 0;
+  position:relative;
+  overflow:hidden;
+}
+.masthead .inner{
+  max-width:76rem;margin:0 auto;
+  padding:0 clamp(1.25rem,5vw,3rem) clamp(1.5rem,4vw,2.5rem);
+}
+.eyebrow{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:.7rem;font-weight:500;
+  letter-spacing:.19em;text-transform:uppercase;
+  color:var(--on-navy-3);
+  margin:0 0 1.15rem;
+}
+.masthead h1{
+  font-family:"IBM Plex Serif",Georgia,serif;
+  font-weight:600;
+  font-size:clamp(2.1rem,6.2vw,var(--step-4));
+  line-height:1.06;
+  letter-spacing:-.018em;
+  margin:0 0 .85rem;
+  text-wrap:balance;
+}
+.masthead h1 .x{color:var(--on-navy-3);font-weight:500;padding:0 .12em;}
+.deck{
+  font-size:clamp(1rem,2.4vw,1.2rem);
+  color:var(--on-navy-2);
+  max-width:46ch;margin:0 0 1.5rem;line-height:1.5;
+}
+.mast-meta{
+  display:flex;flex-wrap:wrap;gap:.5rem 1.6rem;
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:.72rem;color:var(--on-navy-3);
+  border-top:1px solid #ffffff26;padding-top:1.1rem;
+}
+.wave{display:block;width:100%;height:38px;}
+
+/* ---------- shell -------------------------------------------------- */
+.shell{
+  max-width:76rem;margin:0 auto;
+  padding:0 clamp(1.25rem,5vw,3rem) 5rem;
+  display:grid;grid-template-columns:1fr;gap:0;
+}
+@media (min-width:64rem){
+  .shell{grid-template-columns:13.5rem minmax(0,1fr);gap:3.5rem;align-items:start;}
+}
+
+/* index rail */
+.rail{display:none;}
+@media (min-width:64rem){
+  .rail{
+    display:block;position:sticky;top:2rem;
+    padding-top:3.25rem;
+    font-family:"IBM Plex Mono",ui-monospace,monospace;
+    font-size:.735rem;line-height:1.5;
+  }
+  .rail p{
+    margin:0 0 .85rem;color:var(--ink-3);
+    letter-spacing:.13em;text-transform:uppercase;font-size:.66rem;
+  }
+  .rail ol{list-style:none;margin:0;padding:0;display:grid;gap:.5rem;}
+  .rail a{
+    color:var(--ink-2);text-decoration:none;
+    display:grid;grid-template-columns:1.7rem 1fr;
+    border-left:2px solid var(--rule);padding-left:.7rem;
+  }
+  .rail a:hover,.rail a:focus-visible{color:var(--accent);border-left-color:var(--accent);}
+  .rail a span{color:var(--ink-3);}
+}
+
+main{min-width:0;padding-top:2.75rem;}
+
+/* ---------- type --------------------------------------------------- */
+section{margin:0 0 3.4rem;scroll-margin-top:1.5rem;}
+h2{
+  font-family:"IBM Plex Serif",Georgia,serif;
+  font-size:var(--step-2);font-weight:600;line-height:1.22;
+  letter-spacing:-.012em;margin:0 0 .3rem;text-wrap:balance;
+}
+h3{
+  font-size:var(--step-1);font-weight:600;line-height:1.32;
+  margin:2.1rem 0 .6rem;letter-spacing:-.005em;text-wrap:balance;
+}
+.kicker{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:.68rem;letter-spacing:.17em;text-transform:uppercase;
+  color:var(--accent);margin:0 0 .55rem;font-weight:500;
+}
+.sec-head{border-top:2px solid var(--ink);padding-top:.9rem;margin-bottom:1.5rem;}
+p{margin:0 0 1.05rem;max-width:var(--measure);}
+main a{color:var(--accent);text-underline-offset:2px;}
+strong{font-weight:600;color:var(--ink);}
+.lede{font-size:1.09rem;line-height:1.58;color:var(--ink);max-width:64ch;}
+code,.mono{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.86em;}
+code{background:var(--surface-2);padding:.1em .34em;border-radius:3px;color:var(--ink-2);}
+
+/* ---------- stat row ------------------------------------------------ */
+.stats{
+  display:grid;gap:.75rem;margin:0 0 2.6rem;
+  grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr));
+}
+.stat{
+  background:var(--surface);border:1px solid var(--rule);
+  border-radius:4px;padding:.95rem 1rem 1rem;
+  border-top:3px solid var(--accent);
+}
+.stat b{
+  display:block;font-family:"IBM Plex Serif",Georgia,serif;
+  font-size:1.85rem;font-weight:600;line-height:1;color:var(--accent);
+  font-variant-numeric:tabular-nums;margin-bottom:.4rem;
+}
+.stat span{font-size:.76rem;color:var(--ink-3);line-height:1.35;display:block;}
+.stat:nth-child(2){border-top-color:var(--navy-2);}
+.stat:nth-child(2) b{color:var(--ink);}
+.stat:nth-child(3){border-top-color:var(--teal);}
+.stat:nth-child(3) b{color:var(--teal);}
+.stat:nth-child(4){border-top-color:var(--amber);}
+.stat:nth-child(4) b{color:var(--amber);}
+
+/* ---------- findings list ------------------------------------------- */
+.findings{list-style:none;margin:0;padding:0;display:grid;gap:1.15rem;}
+.findings li{
+  max-width:var(--measure);padding-left:1.1rem;
+  border-left:2px solid var(--rule-2);
+}
+.findings li strong{display:block;margin-bottom:.15rem;}
+
+/* ---------- funnel --------------------------------------------------- */
+.funnel{
+  background:var(--surface);border:1px solid var(--rule);border-radius:4px;
+  padding:1.4rem 1.5rem 1.5rem;margin:1.6rem 0 0;
+}
+.funnel h4{
+  margin:0 0 1.1rem;font-size:.78rem;font-weight:600;
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3);
+}
+.frow{display:flex;align-items:center;gap:.8rem;margin-bottom:.55rem;}
+.fbar{
+  height:1.7rem;border-radius:3px;display:flex;align-items:center;
+  padding-left:.65rem;font-weight:600;font-size:.86rem;
+  font-variant-numeric:tabular-nums;flex:none;
+  color:var(--on-bar);
+}
+.frow span{font-size:.82rem;color:var(--ink-2);}
+.f1{width:min(100%,18rem);background:var(--navy-2);}
+.f2{width:min(64%,11.5rem);background:var(--accent);}
+.f3{width:min(42%,7.5rem);background:var(--teal);}
+.f4{width:min(25%,4.5rem);background:#1A7F37;}
+
+/* ---------- datasheet cards ------------------------------------------ */
+.sheet{
+  background:var(--surface);border:1px solid var(--rule);
+  border-radius:4px;border-left:3px solid var(--accent);
+  padding:1.25rem 1.4rem 1.35rem;margin:0 0 1.1rem;
+}
+.sheet-top{
+  display:flex;flex-wrap:wrap;align-items:baseline;gap:.6rem 1rem;
+  margin-bottom:1rem;
+}
+.tag{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:.63rem;letter-spacing:.13em;text-transform:uppercase;
+  background:var(--accent);color:var(--surface);
+  padding:.24rem .5rem;border-radius:3px;font-weight:600;flex:none;
+}
+.sheet h3{margin:0;font-size:1.06rem;flex:1 1 14rem;}
+.repo{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:.68rem;color:var(--ink-3);
+  overflow-wrap:anywhere;flex:1 1 100%;
+}
+.rows{display:grid;gap:.7rem;}
+.row{display:grid;gap:.15rem .95rem;grid-template-columns:1fr;}
+@media (min-width:38rem){.row{grid-template-columns:7.2rem minmax(0,1fr);}}
+.row dt{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:.63rem;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--accent);font-weight:600;padding-top:.28rem;
+}
+.row dd{margin:0;font-size:.925rem;line-height:1.55;color:var(--ink-2);}
+.verdict{
+  margin:1.05rem 0 0;padding-top:.85rem;border-top:1px solid var(--rule);
+  font-size:.925rem;font-weight:600;color:var(--accent);line-height:1.5;
+  max-width:none;
+}
+.sheet.t-navy{border-left-color:var(--navy-2);}
+.sheet.t-navy .tag{background:var(--navy-2);}
+.sheet.t-navy .row dt,.sheet.t-navy .verdict{color:var(--navy-2);}
+.sheet.t-teal{border-left-color:var(--teal);}
+.sheet.t-teal .tag{background:var(--teal);}
+.sheet.t-teal .row dt,.sheet.t-teal .verdict{color:var(--teal);}
+
+/* ---------- the layer map -------------------------------------------- */
+.map{display:grid;gap:.7rem;margin:1.5rem 0 0;}
+.layer{
+  display:grid;gap:.7rem;grid-template-columns:1fr;
+  align-items:stretch;
+}
+@media (min-width:48rem){.layer{grid-template-columns:15rem minmax(0,1fr);}}
+.lbox{
+  background:linear-gradient(125deg,var(--navy),var(--navy-2));
+  color:var(--on-navy);border-radius:4px;padding:1rem 1.1rem 1.1rem;
+}
+.lbox b{
+  display:block;font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:.63rem;letter-spacing:.15em;color:var(--on-navy-3);
+  font-weight:500;margin-bottom:.35rem;
+}
+.lbox strong{
+  display:block;font-family:"IBM Plex Serif",Georgia,serif;
+  font-size:1.22rem;font-weight:600;color:var(--on-navy);
+  letter-spacing:.01em;margin-bottom:.4rem;
+}
+.lbox span{font-size:.75rem;color:var(--on-navy-2);line-height:1.45;display:block;}
+.lassets{
+  background:var(--surface);border:1px solid var(--rule);
+  border-left:3px solid var(--accent);border-radius:4px;
+  padding:1rem 1.15rem 1.05rem;
+}
+.lassets p{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:.62rem;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--ink-3);margin:0 0 .6rem;font-weight:500;
+}
+.lassets ul{margin:0;padding:0 0 0 1.05rem;display:grid;gap:.34rem;}
+.lassets li{font-size:.875rem;line-height:1.5;color:var(--ink-2);}
+.lassets li::marker{color:var(--accent);}
+.layer.gap .lassets{
+  border-style:dashed;border-color:var(--amber);
+  background:var(--amber-wash);
+}
+.layer.gap .lassets li::marker{color:var(--amber);}
+.layer.gap .lassets li.none{color:var(--amber);font-weight:600;}
+
+/* ---------- tables ---------------------------------------------------- */
+.tw{overflow-x:auto;margin:1.4rem 0 0;border:1px solid var(--rule);border-radius:4px;}
+table{border-collapse:collapse;width:100%;min-width:36rem;background:var(--surface);}
+caption{
+  text-align:left;font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:.68rem;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--ink-3);padding:0 0 .6rem;
+}
+th,td{
+  text-align:left;padding:.62rem .85rem;font-size:.845rem;line-height:1.48;
+  border-bottom:1px solid var(--rule);vertical-align:top;
+}
+thead th{
+  background:var(--navy-2);color:var(--on-navy);font-weight:600;
+  font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;
+  border-bottom:none;position:sticky;top:0;
+}
+tbody tr:last-child td{border-bottom:none;}
+tbody th{font-weight:600;color:var(--ink);white-space:nowrap;}
+td:first-child{font-weight:600;color:var(--ink);}
+tbody tr:nth-child(even){background:var(--surface-2);}
+.num{font-variant-numeric:tabular-nums;}
+
+/* ---------- callouts --------------------------------------------------- */
+.note{
+  border-radius:4px;padding:1.15rem 1.35rem 1.2rem;margin:1.6rem 0 0;
+  border:1px solid var(--accent);border-left-width:3px;
+  background:var(--accent-wash);
+}
+.note h4{
+  margin:0 0 .45rem;font-size:.94rem;font-weight:600;color:var(--accent);
+}
+.note p{margin:0;font-size:.925rem;line-height:1.58;color:var(--ink);max-width:66ch;}
+.note.warn{border-color:var(--amber);background:var(--amber-wash);}
+.note.warn h4{color:var(--amber);}
+.note.deep{border-color:var(--plum);background:var(--plum-wash);}
+.note.deep h4{color:var(--plum);}
+.note.good{border-color:var(--teal);background:var(--teal-wash);}
+.note.good h4{color:var(--teal);}
+
+/* ---------- closing ----------------------------------------------------- */
+.closer{
+  background:linear-gradient(125deg,var(--navy),var(--navy-2));
+  color:var(--on-navy);border-radius:5px;
+  padding:clamp(1.6rem,4vw,2.4rem);margin:3.4rem 0 0;
+}
+.closer p{
+  font-family:"IBM Plex Serif",Georgia,serif;
+  font-size:clamp(1.1rem,2.7vw,1.42rem);line-height:1.42;
+  margin:0;color:var(--on-navy);max-width:38ch;font-weight:500;
+}
+.src{
+  margin:2.4rem 0 0;padding-top:1.1rem;border-top:1px solid var(--rule);
+  font-size:.76rem;color:var(--ink-3);line-height:1.55;max-width:none;
+}
+
+ul.plain{margin:0;padding-left:1.15rem;display:grid;gap:.6rem;max-width:var(--measure);}
+ul.plain li{line-height:1.58;}
+ul.plain li::marker{color:var(--accent);}
+
+:where(a,button):focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:2px;}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}
+</style>
+
+<header class="masthead">
+  <div class="inner">
+    <p class="eyebrow">Portfolio analysis · Open-source reuse · Kerala</p>
+    <h1>AquaSync <span class="x">×</span> ICFOSS</h1>
+    <p class="deck">What Kerala's open-source institute has already built — and how AquaSync should stand on it.</p>
+    <div class="mast-meta">
+      <span>54 projects reviewed</span>
+      <span>~120 repositories read</span>
+      <span>30 August 2026</span>
+    </div>
+  </div>
+  <svg class="wave" viewBox="0 0 1200 38" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+    <path d="M0,20 C150,4 300,34 450,20 C600,6 750,32 900,19 C1030,8 1120,26 1200,17 L1200,38 L0,38 Z" fill="#7FD3EA" opacity=".16"/>
+    <path d="M0,27 C170,14 320,38 480,26 C640,14 800,36 960,25 C1080,17 1140,29 1200,24 L1200,38 L0,38 Z" fill="#ffffff" opacity=".10"/>
+  </svg>
+</header>
+
+<div class="shell">
+  <nav class="rail" aria-label="Sections">
+    <p>Contents</p>
+    <ol>
+      <li><a href="#finding"><span>01</span>The finding</a></li>
+      <li><a href="#portfolio"><span>02</span>The portfolio</a></li>
+      <li><a href="#tier1"><span>03</span>Direct reuse</a></li>
+      <li><a href="#map"><span>04</span>Integration map</a></li>
+      <li><a href="#hardware"><span>05</span>Hardware path</a></li>
+      <li><a href="#geodata"><span>06</span>Geodata &amp; OCR</a></li>
+      <li><a href="#giveback"><span>07</span>What goes back</a></li>
+      <li><a href="#plan"><span>08</span>What to do</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <div class="stats">
+      <div class="stat"><b class="num">54</b><span>published ICFOSS projects reviewed</span></div>
+      <div class="stat"><b class="num">~120</b><span>public repositories behind them</span></div>
+      <div class="stat"><b class="num">14</b><span>directly reusable by AquaSync</span></div>
+      <div class="stat"><b class="num">5</b><span>drop-in today, MIT-licensed</span></div>
+    </div>
+
+    <section id="finding">
+      <div class="sec-head">
+        <p class="kicker">Section 01</p>
+        <h2>The finding, in one paragraph</h2>
+      </div>
+      <p class="lede">ICFOSS has spent roughly a decade building the sensing and telemetry layer of a Kerala-wide environmental monitoring system, and publishing almost all of it under MIT. There are solar-powered radar water-level stations built explicitly for flood monitoring, LoRaWAN rain gauges, a river current meter, an acoustic rain gauge with a public labelled dataset, gateway designs, a network server stack, a QGIS coverage planner, a GeoNode geoportal carrying Kerala's stream network, and a live flood-alerting web portal on a canal in Thiruvananthapuram.</p>
+      <p class="lede"><strong>What does not exist anywhere in that portfolio is a model that looks forward.</strong> Every ICFOSS water project answers what the level is now and whether it has crossed a line. None of them answers what the level will be in eighteen hours, or what release schedule to run to change that. AquaSync is exactly that missing layer — and it should be built to sit on top of their hardware rather than beside it.</p>
+
+      <h3>Why this matters more than a reading list</h3>
+      <ul class="findings">
+        <li><strong>The field node stops being a hobby build.</strong> AquaSync's field node is currently a ₹6,250 ESP32 rig with a JSN-SR04T ultrasonic sensor. ICFOSS publishes a complete, field-deployed, solar-autonomous alternative using a VEGAPULS C 11 radar with 8 m range and a month of battery endurance — schematics, firmware and wiring diagrams included. Citing it turns a demonstrator into a credible deployment plan without spending a rupee more.</li>
+        <li><strong>It unblocks a failure already in the git log.</strong> This repository's history records that routing calibration against Neeleeswaram was abandoned because of data resolution. ICFOSS's LoRaWAN water current meter measures river velocity directly. That is the specific instrument the Muskingum layer needs, and it already exists.</li>
+        <li><strong>They already work with KSEB.</strong> ICFOSS mapped 14 lakh+ 11 kV poles for the Kerala State Electricity Board and displaced a ₹200 crore proprietary estimate doing it. KSEB is the utility that operates Idukki. A working relationship with the exact counterparty AquaSync's recommendations are addressed to is worth more than any single component.</li>
+        <li><strong>The catchment is already mapped.</strong> Their <em>Ini Njan Ozhukkate</em> stream mapping covered 249 highland panchayats and pushed the result to OpenStreetMap. Idukki is a highland district. The channel network for this catchment is public, and can be cross-checked against the DEM-derived geometry AquaSync computed independently.</li>
+      </ul>
+
+      <div class="note">
+        <h4>The strategic reading</h4>
+        <p>Treat ICFOSS not as a source of parts but as the other half of a system. They own the nervous system — sensors, radio, gateways, geodata, and a relationship with the state. AquaSync is proposing the brain. Positioning the project that way is stronger than positioning it as a self-contained build, because it is both more honest about what is already solved and more ambitious about what is not.</p>
+      </div>
+    </section>
+
+    <section id="portfolio">
+      <div class="sec-head">
+        <p class="kicker">Section 02</p>
+        <h2>What ICFOSS is, and what is actually in the portfolio</h2>
+      </div>
+      <p>The International Centre for Free and Open Source Software is an autonomous body established by the Government of Kerala in 2009, and the state's nodal organisation for free software. It runs the Swatantra Incubator — a Kerala Startup Mission associate incubator — and hosts a LoRaWAN Centre of Excellence and an Open-FPGA Centre of Excellence, the former established with support from Hardware Mission Kerala. Practically, this means three things for a student project: the work is genuinely open-licensed, it is built against Kerala's own terrain and institutions rather than imported assumptions, and there are formal doors that a good project can walk through.</p>
+
+      <div class="funnel">
+        <h4>Filtered for AquaSync</h4>
+        <div class="frow"><span class="fbar f1 num">54</span><span>published projects reviewed</span></div>
+        <div class="frow"><span class="fbar f2 num">31</span><span>touch water, weather or terrain</span></div>
+        <div class="frow"><span class="fbar f3 num">14</span><span>directly reusable here</span></div>
+        <div class="frow"><span class="fbar f4 num">5</span><span>drop-in today, MIT-licensed</span></div>
+      </div>
+
+      <div class="tw">
+        <table>
+          <thead><tr><th scope="col">GitLab group</th><th scope="col">Scale</th><th scope="col">What is in it</th><th scope="col">Bearing on AquaSync</th></tr></thead>
+          <tbody>
+            <tr><td>OpenIoT</td><td class="num">~80 repos</td><td>LoRaWAN nodes, boards, gateways, energy harvesting, water level, rain, flow, air and soil sensing; ChirpStack and Grafana stacks</td><td><strong>Decisive.</strong> Contains the field-node reference designs, the flood portal, and the network plumbing Layer 1 needs.</td></tr>
+            <tr><td>gis_and_mapping</td><td class="num">10 repos</td><td>OpenSDI / Kerala Geoportal (GeoNode), QNetPlanner QGIS plugin, Spatial DECM browser GIS, RescueRoute, tile server</td><td><strong>High.</strong> Catchment geometry, gateway siting, evacuation routing, and a lightweight map viewer for the dashboard.</td></tr>
+            <tr><td>drone</td><td class="num">10 repos</td><td>Thermal imaging drone, hexacopter documentation, Kole wetland canal mapping, LiDAR configuration</td><td><strong>Moderate.</strong> Post-event inundation validation and terrain capture for the reach downstream of the dam.</td></tr>
+            <tr><td>Malayalam-Computing</td><td class="num">11 repos</td><td>Malayalam OCR including handwritten-text recognition, spell check, morpheme generator, root extractor, tagged corpus</td><td><strong>Higher than it looks.</strong> Layer 4 promises Malayalam alerts — and OCR is the route to the pre-2020 bulletin data this project lacks.</td></tr>
+            <tr><td>Assistive_Tech</td><td class="num">~60 repos</td><td>Braille learners, tactile Kerala map, adaptive input devices, exoskeleton, wheelchair</td><td>Low for function, useful as precedent: a rigorous open-hardware documentation pattern worth imitating.</td></tr>
+            <tr><td>openfpga · incubation · Internship-projects · website</td><td>—</td><td>Chisel bootcamp and Chipyard, incubation material, internship NLP projects, the public site</td><td>Contextual. Mainly evidence of the routes by which a student project can engage the institution.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note warn">
+        <h4>A caveat on sourcing</h4>
+        <p>The project pages at icfoss.in are short marketing summaries; the engineering detail lives in the GitLab READMEs, and the two do not always agree. Everything asserted here about hardware, licensing or specifications was read from the repository itself. Where a repository is silent — deployment sites, calibration records, current operational status — this page says so rather than inferring.</p>
+      </div>
+    </section>
+
+    <section id="tier1">
+      <div class="sec-head">
+        <p class="kicker">Section 03 · Tier 1</p>
+        <h2>The five assets AquaSync can use immediately</h2>
+      </div>
+      <p>These are MIT-licensed, documented to the wiring-diagram level, and map one-to-one onto a component AquaSync either has as a weak placeholder or does not have at all.</p>
+
+      <article class="sheet t-navy">
+        <div class="sheet-top">
+          <span class="tag">Layer 1</span>
+          <h3>Automatic Level Monitoring Station — radar, solar, LoRaWAN</h3>
+          <span class="repo">OpenIoT/c1_dev_lorawan_automatic_level_monitoring_station</span>
+        </div>
+        <dl class="rows">
+          <div class="row"><dt>What it is</dt><dd>A non-contact water level station built on the VEGAPULS C 11 radar sensor (8 m range) and ICFOSS's own C1-Dev board — an STM32 design around Murata's CMWX1ZZABZ-091 LoRaWAN module. A 100 W panel and 50 Ah Li-ion pack give over a month of endurance on battery alone, recharging from flat in about two days.</dd></div>
+          <div class="row"><dt>What it sends</dt><dd>Water level; the last sixteen transmitted levels; rate of change in m/hr; and solar and battery voltage and current. The rate-of-change field is the notable one — it is derived on the node, not reconstructed later from a level series.</dd></div>
+          <div class="row"><dt>Why it matters</dt><dd>The repository states it was developed specifically as a component of a flood monitoring station — the same problem AquaSync's Layer 1 addresses, solved to a standard the ₹6,250 rig cannot reach: no contact with the water, no drift with air temperature, and no mains power.</dd></div>
+          <div class="row"><dt>Cost to adopt</dt><dd>Zero for the demonstrator. The ESP32 rig stays as the hardware-in-the-loop model; this becomes the documented field specification, with the BOM gaining a fifth tier that is a citation rather than a purchase.</dd></div>
+        </dl>
+        <p class="verdict">Adopt as the reference field node. It converts AquaSync's weakest claim — that a hobby ultrasonic rig represents a deployable sensor — into a sourced, costed, already-built answer.</p>
+      </article>
+
+      <article class="sheet">
+        <div class="sheet-top">
+          <span class="tag">Layer 4</span>
+          <h3>Flood Monitoring System for Technopark — the operational sibling</h3>
+          <span class="repo">OpenIoT/flood-monitoring-technopark</span>
+        </div>
+        <dl class="rows">
+          <div class="row"><dt>What it is</dt><dd>A live flood monitoring portal for the Thettiyar canal at Technopark, Thiruvananthapuram. React, Tailwind and Chart.js on the front; Node/Express, MongoDB and JWT behind; LoRaWAN sensors via ChirpStack; deployed with Docker Compose behind Nginx. It sends email and SMS when levels cross admin-configured thresholds, and ships separate user, admin and super-admin manuals.</dd></div>
+          <div class="row"><dt>What it proves</dt><dd>That the alerting half of AquaSync's Layer 4 — thresholds, roles, notification, historical charts — is a solved and deployed pattern in Kerala, not a speculative feature. It also shows the governance shape: a named admin sets the thresholds.</dd></div>
+          <div class="row"><dt>The contrast</dt><dd>It is purely reactive. There is no forecast, no simulation and no release policy — because a canal has no gate to operate. This is the clearest single illustration of where AquaSync begins.</dd></div>
+          <div class="row"><dt>Cost to adopt</dt><dd>Do not fork it. Read the three manuals, mirror their role model and threshold semantics in the Crisis Commander, and cite the system as the operational precedent AquaSync extends.</dd></div>
+        </dl>
+        <p class="verdict">Use as precedent and as contrast: the strongest available evidence that the alerting layer is understood, and that the decision layer is the open problem.</p>
+      </article>
+
+      <article class="sheet">
+        <div class="sheet-top">
+          <span class="tag">Layer 2</span>
+          <h3>LoRaWAN Water Current Meter — the instrument routing calibration needs</h3>
+          <span class="repo">OpenIoT/ulplora_lorawan_water_current_meter_v1.0</span>
+        </div>
+        <dl class="rows">
+          <div class="row"><dt>What it is</dt><dd>A Savonius rotor velocity sensor on a wading rod, read by the ULP LoRa board and reported over LoRaWAN. MIT-licensed, with BOM, schematics, firmware and a setup guide.</dd></div>
+          <div class="row"><dt>Problem solved</dt><dd>Muskingum's <em>K</em> and <em>x</em> are properties of a reach, and inferring them from stage alone at daily resolution is close to hopeless — which is exactly why the Neeleeswaram calibration stalled. Direct velocity at a known section is the measurement that makes the fit identifiable.</dd></div>
+          <div class="row"><dt>Honest limit</dt><dd>One rotor at one section does not calibrate a 38 km reach. It constrains the celerity, which converts <em>K</em> from a free parameter into a bounded one — enough to turn an unconstrained fit into a checked one.</dd></div>
+        </dl>
+        <p class="verdict">The single highest-value item for model credibility: it addresses a failure this project has already documented rather than a gap it has merely noticed.</p>
+      </article>
+
+      <article class="sheet t-teal">
+        <div class="sheet-top">
+          <span class="tag">Layer 2</span>
+          <h3>Acoustic Rain Gauge — and a public labelled dataset</h3>
+          <span class="repo">OpenIoT/rainfall-acoustic-sensing · Kaggle: Rain_Data_Master_2023</span>
+        </div>
+        <dl class="rows">
+          <div class="row"><dt>What it is</dt><dd>Rainfall estimated from sound. A USB microphone on a Raspberry Pi records timestamped WAV files; a deep model maps audio to rainfall, trained against a Davis AeroCone 6466M mechanical gauge as ground truth, with live data published to Grafana.</dd></div>
+          <div class="row"><dt>The asset</dt><dd>The training data is on Kaggle — audio paired with mechanical-gauge rainfall, collected in Kerala. Openly licensed paired rainfall observations from this state are not easy to come by.</dd></div>
+          <div class="row"><dt>Use here</dt><dd>The SCS-CN runoff layer is driven by forecast rainfall and validated against almost nothing local. This gives an independent local rainfall series to sanity-check depths against, and a second, cheaper sensing modality for the field node.</dd></div>
+          <div class="row"><dt>Watch out</dt><dd>The published accuracy of these non-mechanical instruments is modest — the companion ultrasonic anemometer reports 72.6% against its mechanical reference. Cite them as a research direction and a data source, not as calibrated instruments.</dd></div>
+        </dl>
+        <p class="verdict">Take the dataset now; treat the sensor as a Phase 2 research thread.</p>
+      </article>
+
+      <article class="sheet t-navy">
+        <div class="sheet-top">
+          <span class="tag">Layer 1</span>
+          <h3>Davis LoRaWAN Rain Gauge Station — deployed, and framed for dams</h3>
+          <span class="repo">OpenIoT/lorawan_based_rain_gauge_davis</span>
+        </div>
+        <dl class="rows">
+          <div class="row"><dt>What it is</dt><dd>A Davis AeroCone tipping-bucket gauge on the C1-Dev board, solar powered, transmitting 15-minute rainfall continuously and a daily total at 08:00. Deployed at the Greenfield Stadium site in Thiruvananthapuram. Firmware sits on ST's I-CUBE-LRWAN package; both ABP and OTAA activation are documented.</dd></div>
+          <div class="row"><dt>The framing</dt><dd>The repository's own opening line describes the purpose as flood warning and reservoir management. ICFOSS built this instrument with AquaSync's use case in mind — the reservoir application is stated; the decision support to act on it is not.</dd></div>
+          <div class="row"><dt>Use here</dt><dd>Pair it with the radar station to complete the field kit: rainfall in, level out, both on one LoRaWAN network, both solar, both MIT. The daily-total-at-08:00 convention also aligns with the KSEB bulletin's own daily cadence.</dd></div>
+        </dl>
+        <p class="verdict">Adopt alongside the radar station as the second half of the documented field specification.</p>
+      </article>
+
+      <div class="note warn">
+        <h4>Read the licences before you lean on them</h4>
+        <p>The radar station, the current meter, the rain gauge and the C1-Dev board all carry MIT, which is compatible with AquaSync's own licence. Several other repositories — including the Technopark flood portal — carry no licence file at all. An unlicensed public repository is not open source; it is all-rights-reserved code you can read. Cite those, learn from them, and ask before reusing.</p>
+      </div>
+    </section>
+
+    <section id="map">
+      <div class="sec-head">
+        <p class="kicker">Section 04</p>
+        <h2>Where each ICFOSS asset attaches to AquaSync's architecture</h2>
+      </div>
+      <p>AquaSync is built in four layers, and the portfolio maps onto them with a striking asymmetry. Layers 1 and 4 — getting data in, and getting decisions out to people — are densely covered by work that already exists and runs. Layer 2 is partially covered, mostly by instruments rather than models. Layer 3 is essentially empty. That asymmetry is the argument for this project.</p>
+
+      <div class="map">
+        <div class="layer">
+          <div class="lbox"><b>LAYER 4</b><strong>Interface</strong><span>3D twin · what-if panel · Crisis Commander · Malayalam alerts</span></div>
+          <div class="lassets">
+            <p>What ICFOSS already supplies</p>
+            <ul>
+              <li>Flood Monitoring Technopark — threshold alerts, SMS and email, admin roles</li>
+              <li>Spatial DECM — browser GIS viewer beside the Three.js twin</li>
+              <li>RescueRoute — width-aware evacuation routing</li>
+              <li>Malayalam Computing — OCR, corpus, summarisation for alert text</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="layer gap">
+          <div class="lbox"><b>LAYER 3</b><strong>Decision</strong><span>Policy search over target level, start time, maximum release rate</span></div>
+          <div class="lassets">
+            <p>What ICFOSS already supplies</p>
+            <ul>
+              <li>QNetPlanner — the same multi-criteria optimisation pattern, but over static placement in QGIS</li>
+              <li class="none">No ICFOSS equivalent exists. This layer is AquaSync's own contribution.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="layer">
+          <div class="lbox"><b>LAYER 2</b><strong>Simulation</strong><span>SCS-CN runoff · mass balance · Muskingum · tidal backwater · hydropower</span></div>
+          <div class="lassets">
+            <p>What ICFOSS already supplies</p>
+            <ul>
+              <li>Water Current Meter — the velocity observations Muskingum needs to calibrate</li>
+              <li>Acoustic Rain Gauge and Kaggle dataset — labelled rainfall for the runoff model</li>
+              <li>OpenSDI and stream mapping — catchment and channel geometry</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="layer">
+          <div class="lbox"><b>LAYER 1</b><strong>Ingestion</strong><span>KSEB bulletin · IMD/Open-Meteo · INCOIS tide · Sentinel-1 · field nodes</span></div>
+          <div class="lassets">
+            <p>What ICFOSS already supplies</p>
+            <ul>
+              <li>Radar level station — VEGAPULS C 11, 8 m, solar, MIT-licensed</li>
+              <li>Davis LoRaWAN rain gauge — 15-minute and daily rainfall</li>
+              <li>C1-Dev and ULP LoRa boards, ChirpStack, LoraLink API, gateway designs</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="note good">
+        <h4>The gap is the thesis</h4>
+        <p>Across 54 published projects and roughly 120 repositories, there is no forward simulation of a water body, no optimisation over an operating policy, and no counterfactual analysis of a past event. The closest structural analogue is QNetPlanner — genuine multi-criteria optimisation, but over static infrastructure placement, not over a time-varying control policy. AquaSync's Layer 3 has no counterpart in the portfolio, which is precisely why it is worth building.</p>
+      </div>
+    </section>
+
+    <section id="hardware">
+      <div class="sec-head">
+        <p class="kicker">Section 05 · Tier 2</p>
+        <h2>The hardware and network path, from expo rig to field</h2>
+      </div>
+      <p>AquaSync's V1 rig is correct for what it is: a ₹6,250 tabletop demonstrator that closes a control loop onto a servo in a 30 cm acrylic tank. It is not a field node, and the project already says so. ICFOSS's open hardware line is what a field node looks like — and showing both, the rig you can touch and the station you would actually install, is a stronger position than either alone.</p>
+
+      <div class="tw">
+        <table>
+          <thead><tr><th scope="col"></th><th scope="col">AquaSync V1 rig (today)</th><th scope="col">ICFOSS field station (the target)</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Controller</th><td>ESP32-WROOM-32, dual-core 240 MHz, Wi-Fi</td><td>C1-Dev v1.0 — STM32 with Murata CMWX1ZZABZ-091; or ULP LoRa</td></tr>
+            <tr><th scope="row">Level sensing</th><td>JSN-SR04T ultrasonic, 25–450 cm, ±1 cm, needs a DS18B20 to correct sound speed</td><td>VEGAPULS C 11 radar, 8 m, non-contact, no temperature correction needed</td></tr>
+            <tr><th scope="row">Link</th><td>Wi-Fi with LoRa fallback</td><td>LoRaWAN to ChirpStack, via ICFOSS gateway designs</td></tr>
+            <tr><th scope="row">Power</th><td>12 V 5 A mains adapter</td><td>100 W solar with MPPT and a 50 Ah Li-ion pack; over a month of battery-only endurance</td></tr>
+            <tr><th scope="row">Telemetry</th><td>Level, temperature, pressure, flow</td><td>Level, last 16 levels, rate of change in m/hr, plus solar and battery voltage and current</td></tr>
+            <tr><th scope="row">Honest status</th><td>Built, demonstrable, closes a loop on a servo</td><td>Published and documented by ICFOSS; not built or verified by this project</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>The supporting network stack, all published</h3>
+      <ul class="plain">
+        <li><code>LoRaWAN_in_a_Box</code> and <code>rpi-with-rak831-gateway</code> — packet forwarder plus network server, and a Raspberry Pi gateway build. Enough to stand up a private LoRaWAN network without depending on anyone's infrastructure, which matters for a system that claims to work offline.</li>
+        <li><code>gateway_docking_station</code>, <code>solar-charge-controller-mppt</code> and <code>solar-battery-pack-monitoring-system</code> — the unglamorous half of a remote deployment: keeping the gateway alive on a hill through a monsoon, and knowing when it will not be.</li>
+        <li><strong>LoraLink</strong> — a REST layer over ChirpStack that reads from InfluxDB rather than the LoRaWAN stack directly, with token and user administration. This is the shape of the seam between AquaSync's ingestion layer and someone else's sensor network.</li>
+        <li><code>lorawan-range-mapper</code> and <strong>TriLocate</strong> — coverage measurement and fine-timestamp triangulation, for verifying that a planned gateway site actually reaches the nodes you placed.</li>
+      </ul>
+
+      <h3>Gateway siting: a solved method for an unsolved question</h3>
+      <p>AquaSync has never answered where sensors and gateways should go in the Idukki catchment. ICFOSS has answered that class of question twice. Their viewshed methodology takes DEMs from ASF Alaska, treats candidate gateway sites as observer points at a stated antenna height, computes visibility in QGIS, and reads coverage off the result — the same approach used to site air-quality sensors in Thiruvananthapuram and, notably, for water level monitoring at CET and Barton Hill. QNetPlanner then automates the selection: given candidate sites, a cost field normalised 1–10 and an elevation weighting, it returns a minimum set of gateways and sensors covering the area.</p>
+
+      <div class="note good">
+        <h4>A concrete, cheap, high-yield next figure</h4>
+        <p>Run QNetPlanner over the existing DEM-derived Idukki catchment and publish the resulting gateway and node layout. It costs no hardware, uses a published open-source method that ICFOSS has already validated on Kerala terrain, and turns “ESP32 field nodes” in the architecture diagram into a specific, sited, countable network.</p>
+      </div>
+    </section>
+
+    <section id="geodata">
+      <div class="sec-head">
+        <p class="kicker">Section 06 · Tier 3</p>
+        <h2>Geodata, routing, and an unexpected route to the 2018 data</h2>
+      </div>
+
+      <div class="tw">
+        <table>
+          <caption>Geospatial: the catchment is already mapped</caption>
+          <thead><tr><th scope="col">ICFOSS asset</th><th scope="col">What it holds</th><th scope="col">Use in AquaSync</th></tr></thead>
+          <tbody>
+            <tr><td>OpenSDI / Kerala Geoportal</td><td>GeoNode-based open replacement for the proprietary KSDI stack; road networks, stream networks, administrative boundaries, freely licensed</td><td>Authoritative channel and boundary geometry for the Periyar reach, and the natural place to publish AquaSync's own catchment layer</td></tr>
+            <tr><td>Ini Njan Ozhukkate</td><td>Small watercourses across 249 highland panchayats, mapped with Nava Keralam Mission and contributed to OpenStreetMap</td><td>An independent check on the DEM-derived Idukki catchment geometry; the tributary network the runoff model implicitly assumes</td></tr>
+            <tr><td>Viewshed / QNetPlanner</td><td>DEM-driven visibility analysis and a QGIS plugin for minimum-set gateway and sensor selection</td><td>Sensor network design for the catchment — see Section 05</td></tr>
+            <tr><td>Spatial DECM</td><td>A browser-based GIS viewer and editor; drag-and-drop GeoJSON, multiple basemaps, no installation, runs entirely client-side</td><td>A map pane for the dashboard that keeps the no-build-step, opens-from-the-filesystem constraint intact</td></tr>
+            <tr><td>RescueRoute</td><td>Optimal routing that accounts for vehicle size against road width, built for fire services; live tracking and reachability reporting</td><td>The evacuation half of the Crisis Commander. A release schedule implies who must move and by which road — this computes it</td></tr>
+            <tr><td>Thermal drone / UAV disaster work</td><td>Tarot X6 hexacopter, FLIR Vue Pro R on a 3-axis gimbal, 20 min endurance, YOLOv5 human detection</td><td>Post-event validation of modelled inundation extent, and search support once a release has happened</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>The Malayalam stack — and the 2018 problem</h3>
+      <p>AquaSync's Layer 4 promises Malayalam alerts, and ICFOSS is the single best source in the state for that: OCR, a tagged corpus, a morphological analyser, a root extractor, a LibreOffice spell checker and Malayalam text summarisation, all public. Any of it improves the alert path. But there is a second, less obvious use that is worth more.</p>
+
+      <div class="note deep">
+        <h4>OCR as a route to the missing 2018 flood data</h4>
+        <p>This project's most-stated limitation is that its dataset begins on 13 August 2020, so the 2018 flood — the reason anyone cares — cannot be modelled quantitatively. That is a limitation of one GitHub scraper, not of the historical record: KSEB and KSDMA published daily dam bulletins throughout 2018, as documents. ICFOSS's OCR stack, including a Malayalam OCR with integrated handwritten-text recognition, is built precisely to turn published Kerala documents into structured data. Recovering even a partial 2018 Idukki series would let AquaSync replay the flood everyone actually remembers — and would be a genuine contribution back, not just a borrowing. It stays speculative until the bulletins are located and their quality assessed, and it should be scoped after the current deliverables are safe.</p>
+      </div>
+    </section>
+
+    <section id="giveback">
+      <div class="sec-head">
+        <p class="kicker">Section 07</p>
+        <h2>What AquaSync gives back</h2>
+      </div>
+      <p>A reuse analysis that only takes is a weak proposal. The reciprocal case is unusually clear, because the thing AquaSync has is the thing the portfolio lacks.</p>
+      <ul class="plain">
+        <li><strong>A decision layer for sensor networks ICFOSS has already deployed.</strong> Their level stations, rain gauges and flood portal produce readings and thresholds; AquaSync produces a forward simulation and a recommended action from the same inputs.</li>
+        <li><strong>A validated Kerala reservoir model</strong> — level–storage fitted at r² = 0.9957 over 1,836 validated rows, an October 2021 replay to 0.30 m mean error, and an independent August 2022 replay. Reusable for any Kerala reservoir with published bulletins.</li>
+        <li><strong>A documented data-quality finding.</strong> Roughly 11% of the widely used public Kerala dam dataset is corrupt, with storage above physical capacity between September 2020 and April 2021. Fitting on the raw feed gives r² = 0.784 against 0.996 on validated rows. Anyone else building on that feed needs to know.</li>
+        <li><strong>Malayalam alert templates for reservoir operations</strong>, which the Malayalam Computing group could fold into a domain corpus.</li>
+      </ul>
+    </section>
+
+    <section id="plan">
+      <div class="sec-head">
+        <p class="kicker">Section 08</p>
+        <h2>What to actually do, in order</h2>
+      </div>
+      <p>Ordered by ratio of credibility gained to time spent, and scoped so that nothing here competes with the deliverables already committed. The first three items cost no hardware and no travel.</p>
+
+      <div class="tw">
+        <table>
+          <thead><tr><th scope="col">#</th><th scope="col">Action</th><th scope="col">Why it pays</th><th scope="col">Effort</th><th scope="col">When</th></tr></thead>
+          <tbody>
+            <tr><td class="num">1</td><td>Add an ICFOSS references section to the hardware and data-source docs</td><td>Turns the field-node claim from aspiration into a sourced, MIT-licensed, already-built specification.</td><td>An afternoon</td><td>Immediately</td></tr>
+            <tr><td class="num">2</td><td>Download <code>Rain_Data_Master_2023</code> and cross-check local rainfall depths</td><td>The only openly licensed paired rainfall dataset from Kerala found in this review. Gives the runoff layer a local reference.</td><td>A day</td><td>This week</td></tr>
+            <tr><td class="num">3</td><td>Run QNetPlanner over the DEM-derived Idukki catchment</td><td>Produces a new, defensible figure — a sited sensor and gateway network — using a method ICFOSS validated on Kerala terrain.</td><td>A weekend</td><td>Before the expo</td></tr>
+            <tr><td class="num">4</td><td>Read the Technopark flood portal manuals; align Crisis Commander roles and thresholds</td><td>Matches the governance semantics of a system already running in Kerala, which is what a reviewer will ask about.</td><td>A day</td><td>Before the expo</td></tr>
+            <tr><td class="num">5</td><td>Write to ICFOSS describing the project and the reuse</td><td>They publish an Express Interest route on every project page and run an incubator. The best case is a conversation with the people who mapped KSEB's network.</td><td>An hour</td><td>Now — lead time is long</td></tr>
+            <tr><td class="num">6</td><td>Pull the OSM stream network for the Idukki highland panchayats</td><td>Independent validation of catchment geometry this project derived from a DEM alone.</td><td>A few days</td><td>Post-expo</td></tr>
+            <tr><td class="num">7</td><td>Scope the 2018 bulletin OCR recovery</td><td>Potentially removes this project's largest stated limitation. Speculative — assess document availability first.</td><td>Unknown; scope first</td><td>Post-expo</td></tr>
+            <tr><td class="num">8</td><td>Explore the LoRaWAN CoE and Swatantra Incubator routes</td><td>The institutional path from an expo project to a deployed one, with Hardware Mission Kerala behind it.</td><td>Ongoing</td><td>Post-expo</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Risks worth naming before you build on any of this</h3>
+      <ul class="plain">
+        <li>Several repositories carry no licence file. Public is not open. The Technopark flood portal in particular should be cited and learned from, not forked, until its licence is clarified.</li>
+        <li>Repository activity is uneven — some were last touched in 2024, and documentation quality varies from wiring-diagram-complete to a stub README. Verify a repository is alive before making it a dependency.</li>
+        <li>No ICFOSS repository reviewed here documents a deployment in the Idukki catchment. Their water-level work is in Thiruvananthapuram — the Thettiyar canal, CET, Barton Hill — and Kattakkada. Coverage in the Periyar basin is an open question, not an assumption.</li>
+        <li>The non-mechanical instruments are research-grade: the ultrasonic anemometer reports 72.6% accuracy against its mechanical reference, and the acoustic rain gauge's operational accuracy is not stated. Present them as directions, not as calibrated sensors.</li>
+        <li>Nothing in this analysis changes AquaSync's central caveat. The counterfactual still assumes perfect foresight of inflow, and every benefit figure remains an upper bound. Better sensors improve the present state; they do not supply the forecast.</li>
+      </ul>
+
+      <div class="closer">
+        <p>ICFOSS has built Kerala's environmental sensing nervous system and given it away under MIT. Nobody has built the brain. AquaSync should be that brain, should say so plainly, and should be engineered from the outset to plug into their nerves rather than grow its own.</p>
+      </div>
+
+      <p class="src">Sources: icfoss.in/projects and its 54 project detail pages; the icfoss GitLab organisation and its nine subgroups, read at the repository-README level; openiot.in. Reviewed 30 August 2026. Specifications quoted here come from the repositories, not the marketing pages. The full nine-page version of this analysis is in the AquaSync repository at <span class="mono">docs/AquaSync_ICFOSS_Analysis.pdf</span>.</p>
+    </section>
+  </main>
+</div>
