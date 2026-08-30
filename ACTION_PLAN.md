@@ -167,6 +167,10 @@ Have an answer ready. Several of these are already answered in the code.
 
 - **Follow the git workflow.** Update `PROGRESS.md` on `main` before branching.
   Branch from `development`, never from `main`. PR into `development`.
+- **Human contributors only.** No `Co-Authored-By:` trailer for an AI
+  assistant, on any commit, ever. GitHub promotes those addresses to
+  repository contributors, and the contributor list should show the people
+  accountable for the work. Full rule in [CLAUDE.md](CLAUDE.md).
 - **No new features.** The scope is Phases 0–3 plus the V1 rig plus two chosen
   upgrades. New ideas go in [ROADMAP.md](ROADMAP.md), not the build.
 - **Never quote a number the code cannot regenerate.** Every figure in the
