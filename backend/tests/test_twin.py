@@ -20,6 +20,7 @@ from aquasync.twin import (
     HydropowerModel,
     LevelStorageCurve,
     MuskingumReach,
+    RainfallRunoffModel,
     ReservoirModel,
     ReservoirState,
     RiverNetwork,
@@ -33,6 +34,7 @@ from aquasync.twin.optimizer import (
     OperationalLimits,
     ReleaseOptimizer,
 )
+from aquasync.twin.runoff import adjust_cn_for_amc
 
 # --------------------------------------------------------------------------
 # level - storage curve
@@ -199,6 +201,80 @@ class TestRunoff:
         steep = UnitHydrograph.from_catchment(649.0, 40.0, slope=0.08)
         flat = UnitHydrograph.from_catchment(649.0, 40.0, slope=0.005)
         assert steep.time_to_peak_h < flat.time_to_peak_h
+
+
+class TestStormExcess:
+    """The curve-number equation is an event-total relation, so the chain's
+    answer must not depend on the timestep the same storm is handed at.
+
+    It did. Ia was charged against every step independently, so driving the
+    17 October 2021 storm hourly instead of daily took its runoff from 89 mm
+    to 0.00 mm - the model silently produced no storm at all. Five monsoon
+    seasons scored NSE -1.14 with a -100% volume bias before this was fixed.
+    """
+
+    @staticmethod
+    def _model(cn=72.0, **kw):
+        uh = UnitHydrograph.from_catchment(650.0, 66.3, 0.0087)
+        return RainfallRunoffModel(650.0, cn, uh, **kw)
+
+    def test_excess_is_independent_of_driving_timestep(self):
+        m = self._model()
+        totals = [
+            m.storm_excess(
+                np.full(steps, 168.0 / steps), dt_hours=24.0 / steps,
+                antecedent_rain_mm=200.0,
+            ).sum()
+            for steps in (1, 8, 24, 48)
+        ]
+        assert totals[0] == pytest.approx(totals[-1], rel=1e-9)
+        assert all(t == pytest.approx(totals[0], rel=1e-9) for t in totals)
+
+    def test_excess_matches_the_event_total_relation(self):
+        """Sub-daily driving must reproduce the closed-form event answer."""
+        m = self._model()
+        hourly = m.storm_excess(
+            np.full(24, 100.0 / 24), dt_hours=1.0, antecedent_rain_mm=200.0,
+        ).sum()
+        cn_wet = adjust_cn_for_amc(72.0, 200.0)
+        assert hourly == pytest.approx(scs_effective_rainfall(100.0, cn_wet), rel=1e-9)
+
+    def test_a_dry_gap_starts_a_new_storm(self):
+        """Two separated storms each pay their own initial abstraction, so
+        together they yield less than the same depth falling as one.
+
+        Seeded wet so both storms sit at AMC-III and share a curve number. On
+        a dry catchment the comparison inverts, because the second storm
+        starts on ground the first one soaked - a real effect, and the subject
+        of the test below rather than a flaw in this one.
+        """
+        m = self._model(dry_gap_hours=6.0)
+        split = np.concatenate([np.full(6, 10.0), np.zeros(12), np.full(6, 10.0)])
+        joined = np.concatenate([np.full(12, 10.0), np.zeros(12)])
+        assert m.storm_excess(split, 1.0, antecedent_rain_mm=200.0).sum() < \
+            m.storm_excess(joined, 1.0, antecedent_rain_mm=200.0).sum()
+
+    def test_a_wet_catchment_converts_the_same_storm_more_efficiently(self):
+        """The AMC shift is the whole reason a mid-monsoon storm floods and
+        the same depth falling in May does not."""
+        m = self._model()
+        storm = np.full(12, 10.0)
+        dry = m.storm_excess(storm, 1.0, antecedent_rain_mm=0.0).sum()
+        wet = m.storm_excess(storm, 1.0, antecedent_rain_mm=200.0).sum()
+        # 120 mm gives about 17 mm of runoff dry against about 80 mm wet
+        assert wet > dry * 3
+
+    def test_excess_is_never_negative_and_never_exceeds_rainfall(self):
+        rng = np.random.default_rng(0)
+        rain = rng.gamma(shape=0.6, scale=9.0, size=720) * (rng.random(720) > 0.45)
+        e = self._model().storm_excess(rain, dt_hours=1.0, antecedent_rain_mm=120.0)
+        assert (e >= -1e-12).all()
+        assert e.sum() <= rain.sum() + 1e-9
+
+    def test_no_rain_produces_only_baseflow(self):
+        m = self._model(baseflow_cumecs=25.0)
+        q = m.inflow_series(np.zeros(48), dt_hours=1.0)
+        assert q == pytest.approx(np.full(48, 25.0))
 
 
 # --------------------------------------------------------------------------

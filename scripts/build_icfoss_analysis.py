@@ -59,14 +59,17 @@ pdfmetrics.registerFont(TTFont("Glyph", str(_DJ)))
 RS = "₹"
 
 
-def forecast_retention() -> tuple[float, float]:
-    """Min and max share of the perfect-foresight cushion a real ensemble keeps,
-    across every lead time in data/processed. Typed numbers go stale; this does
-    not."""
-    keep = [json.loads(q.read_text(encoding="utf-8"))
-            ["decision_rule_minimax_regret"]["retention_of_perfect_foresight_pct"]
-            for q in PROC.glob("forecast_error_study_*.json")]
-    return (min(keep), max(keep)) if keep else (33.0, 74.0)
+def forecast_excess_cost() -> tuple[float, float]:
+    """Best and worst excess cost against perfect foresight, across every lead
+    time in data/processed. Typed numbers go stale; this does not."""
+    costs = []
+    for q in PROC.glob("forecast_error_study_*.json"):
+        d = json.loads(q.read_text(encoding="utf-8"))
+        for rule in ("decision_rule_expected_value", "decision_rule_minimax_regret"):
+            v = d.get(rule, {}).get("excess_cost_vs_perfect_foresight_pct")
+            if v is not None:
+                costs.append(v)
+    return (min(costs), max(costs)) if costs else (0.0, 84.7)
 
 
 # --------------------------------------------------------------------------
@@ -1156,7 +1159,7 @@ def page_7(doc):
 
 
 def page_8(doc):
-    _FC_LO, _FC_HI = forecast_retention()
+    _FC_LO, _FC_HI = forecast_excess_cost()
     doc.start_page("Engagement plan")
     doc.band("Section 06", "What to actually do, in order")
 
@@ -1227,9 +1230,9 @@ def page_8(doc):
         "and the acoustic rain gauge's operational accuracy is not stated. "
         "Present them as directions, not as calibrated sensors.",
 
-        "Nothing here changes AquaSync's central constraint. The forecast-error "
-        f"study puts a real ensemble at {_FC_LO:.0f}-{_FC_HI:.0f}% of the "
-        "perfect-foresight cushion. Better sensors improve the present state; they "
+        "Nothing here changes AquaSync's central constraint. Deciding from a real "
+        f"ensemble costs {_FC_LO:+.0f}% to {_FC_HI:+.0f}% more than hindsight, and the "
+        "penalty grows with lead time. Better sensors improve the present state; they "
         "do not supply the forecast.",
     ], colour=AMBER, size=8.3, leading=10.6, gap=2.4)
 

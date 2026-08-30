@@ -16,7 +16,7 @@ perfect-foresight caveat is resolved rather than disclosed.* **Met.**
 
 | Question | Answer now on record |
 |---|---|
-| What if the forecast is wrong? | A real 30-member ensemble retains **33–74%** of the perfect-foresight cushion, at 24 / 90 / 120 h. Minimax-regret never does worse than expected-value |
+| What if the forecast is wrong? | Measured at five lead times on the optimiser's own objective: a real ensemble matches hindsight **exactly at 24 and 48 h**, then degrades to about **+69%** excess cost by 90 h. Hedging (minimax-regret) is never better and usually worse |
 | Was the model tuned to one event? | No. August 2022 replays at **0.319 m** against October 2021's 0.303 m |
 | Can the two dams be scheduled jointly? | Not the way it looked. Optimising them independently puts the joint peak **126% above** what happened; retiming recovers 9%. It is an objective-function problem |
 | Are K and x calibrated? | No, and now quantified: the fit fails on daily data (**r² = 0.005**). The CWC 8 h anchor stands |
@@ -153,7 +153,7 @@ Have an answer ready. Several of these are already answered in the code.
 |---|---|
 | *"Where is the hardware? This is an IoT club."* | The rig, running in front of them. Sensor fusion, LoRa fallback, tamper-evident logging |
 | *"How do you know the model is right?"* | 0.30 m MAE reproducing observed Idukki level over 20 days, on data it was not fitted to |
-| *"What if the forecast is wrong?"* | **Answered.** A real GEFS ensemble retains 33–74% of the perfect-foresight cushion. Hedging against the worst member never costs you. The 3 m figure is a ceiling and the dossier says so |
+| *"What if the forecast is wrong?"* | **Answered, at five lead times.** Inside 48 h a real GEFS ensemble picks the same policy hindsight would; by 90 h it costs about 69% more on the full objective. So the value sits in the last two days — which is also when a control room has least time to think |
 | *"You optimise two dams on one river — do they interact?"* | Badly, and it is measured: optimising them independently puts the joint peak 126% above what happened. Volunteering this is stronger than being caught by it |
 | *"KSEB will never adopt this."* | Correct, not on trust. Shadow mode for one monsoon, publish the comparison |
 | *"Why not use 2018 data?"* | Because it is not in the public dataset — and finding that out is why the flagship case is October 2021. This answer earns credit rather than losing it |

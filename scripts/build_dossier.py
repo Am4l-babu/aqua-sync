@@ -263,8 +263,8 @@ def cover(f: dict) -> list:
     fe = f.get("forecast_error", {})
     out += [
         kpi_row([
-            (f"{min(fe.get('mm_m', [1.03])):.1f}–{max(fe.get('mm_m', [2.30])):.1f} m",
-             "flood cushion gained driving from<br/>real ensemble forecasts (§4.4)"),
+            (f"{min(fe.get('ev_excess_cost_pct', [0.0])):+.0f}%",
+             "excess cost against hindsight,<br/>24 h ensemble forecast (§4.4)"),
             (f"{cal.get('r2', 0.9957):.4f}", "r² of the calibrated<br/>level–storage curve"),
             (f"{cf.get('replay_level_mae_m', 0.30):.2f} m", "mean error reproducing<br/>observed reservoir level"),
             ("Rs 0", "software and data cost"),
@@ -414,13 +414,15 @@ def section_results(f: dict) -> list:
     cc = f.get("cascade_coordination", {})
     oos = f.get("out_of_sample", {})
 
-    fe_rows = [[f"{h:.0f} h", issued, f"{em:.2f} m ({ep:.0f}%)", f"{mm:.2f} m ({mp:.0f}%)"]
-               for h, issued, em, ep, mm, mp in zip(
+    fe_rows = [[f"{h:.0f} h", issued, f"{ec:+.0f}%", f"{mc:+.0f}%", f"{em:.2f} m", f"{mmm:.2f} m"]
+               for h, issued, ec, mc, em, mmm in zip(
                    fe.get("leads_h", []), fe.get("issue_dates", []),
-                   fe.get("ev_m", []), fe.get("ev_pct", []),
-                   fe.get("mm_m", []), fe.get("mm_pct", []), strict=True)]
+                   fe.get("ev_excess_cost_pct", []), fe.get("mm_excess_cost_pct", []),
+                   fe.get("ev_m", []), fe.get("mm_m", []), strict=True)]
+    rv = f.get("runoff_validation", {})
     forecast_block = _forecast_error_block(fe, fe_rows) if fe_rows else []
     cascade_block = _cascade_block(cc) if cc else []
+    runoff_block = _runoff_block(rv) if rv else []
 
     return [
         PageBreak(),
@@ -504,14 +506,17 @@ def section_results(f: dict) -> list:
             "reviewer, which is the outcome to aim for. The full evidence, including the "
             "positions that contradict this project's thesis, is in the companion "
             "<i>Deep Research Report</i>."),
-    ] + forecast_block + cascade_block
+    ] + forecast_block + cascade_block + runoff_block
 
 
 def _forecast_error_block(fe: dict, rows: list) -> list:
     """4.4 - what the counterfactual is worth once the forecast is real."""
     perfect = fe.get("perfect_m", 3.111)
-    mm_pct = fe.get("mm_pct", [33.1])
-    ev_pct = fe.get("ev_pct", [26.1])
+    pf_rev = fe.get("perfect_revenue_cr", 1.94)
+    ev_cost = fe.get("ev_excess_cost_pct", [0.0])
+    mm_cost = fe.get("mm_excess_cost_pct", [19.4])
+    best = fe.get("best_excess_cost_pct", 0.0)
+    worst = fe.get("worst_excess_cost_pct", 84.7)
     return [
         PageBreak(),
         para("4.4 \u00b7 What survives once the forecast is real", "h2"),
@@ -522,42 +527,138 @@ def _forecast_error_block(fe: dict, rows: list) -> list:
             "member is bias-corrected against IMD gridded rainfall, pushed through the same "
             "SCS-CN and Muskingum chain, and given its own policy search. One policy is then "
             "committed to under that uncertainty and scored against what actually happened."),
+        para(
+            f"It is scored on the objective the optimiser actually minimises - flood, dam "
+            f"safety, revenue and gate wear together. <b>Zero excess cost means the forecast "
+            f"picked the policy hindsight would have picked</b>, and the figure can never go "
+            f"below it. Freeboard alone cannot answer the question: a policy built on an "
+            f"over-forecast releases too much, ends <i>lower</i> than the "
+            f"{perfect:.2f} m hindsight optimum, and would score above 100% on a "
+            f"cushion-only metric while quietly giving up revenue to do it."),
         data_table(
-            ["Lead time", "Ensemble issued", "Expected value", "Minimax regret"],
-            rows, widths=[26 * mm, 40 * mm, (CONTENT_W - 66 * mm) / 2,
-                          (CONTENT_W - 66 * mm) / 2], align_right=(2, 3)),
+            ["Lead time", "Ensemble issued", "Expected value", "Minimax regret",
+             "EV cushion", "MM cushion"],
+            rows, widths=[20 * mm, 30 * mm, 26 * mm, 26 * mm,
+                          (CONTENT_W - 102 * mm) / 2, (CONTENT_W - 102 * mm) / 2],
+            align_right=(2, 3, 4, 5)),
         Spacer(1, 6),
         para(
-            f"Percentages are the share of the {perfect:.2f} m that perfect foresight buys over "
-            f"the same window. <i>Expected value</i> commits to the candidate policy with the "
-            f"lowest mean cost across all 30 members; <i>minimax regret</i> commits to the one "
-            f"whose worst case across the ensemble is least bad.", "caption"),
+            f"Excess cost against perfect foresight, then the flood cushion each policy "
+            f"actually delivered. Perfect foresight gains {perfect:.2f} m while earning "
+            f"Rs {pf_rev:+.2f} crore against observed operation.", "caption"),
         figure("fig6_forecast_error.png",
-               "Figure 6 \u2014 The benefit that survives a real forecast, by lead time and "
-               "decision rule, against the perfect-foresight ceiling."),
+               "Figure 6 \u2014 Left: what deciding without hindsight costs on the full "
+               "objective. Right: every forecast-driven policy earns less than the hindsight "
+               "optimum - the extra cushion in the table was bought, not found."),
         callout(
-            "Between a quarter and three quarters of the benefit survives \u2014 and the choice "
-            "of decision rule matters as much as the lead time.",
-            f"Driven from a real ensemble the policy retains <b>{min(ev_pct):.0f}\u2013{max(mm_pct):.0f}%</b> "
-            f"of the perfect-foresight gain. <b>Hedging against the worst ensemble member never "
-            f"did worse than betting on the average one, and at 90 h it did more than twice as "
-            f"well ({max(mm_pct):.0f}% against {ev_pct[1]:.0f}%).</b> That makes minimax regret a safe "
-            f"default: it costs nothing on the occasions it does not help. The perfect-foresight "
-            f"figures elsewhere in this document are a ceiling, and should be read as one.",
+            "At one day out, a real forecast is as good as hindsight. Three days out, it is "
+            "not.",
+            f"At the shortest lead the expected-value rule reproduces the hindsight-optimal "
+            f"policy exactly ({min(ev_cost):+.0f}% excess cost). By 90 hours that has "
+            f"decayed to roughly {max(ev_cost):+.0f}%, and it does not recover with more "
+            f"lead time. <b>The operational reading is that this system's value is "
+            f"concentrated in the last day or two before a storm</b>, which is also the "
+            f"window in which a control room has least time to deliberate - and therefore "
+            f"the window where a pre-computed policy is worth most.",
             accent=GREEN, tint="#eefbf1"),
         callout(
-            "What did not survive the third data point.",
-            f"After the 24 h and 90 h runs it looked like the minimax advantage grows with lead "
-            f"time \u2014 a 7-point gap widening to 41, and mechanistically plausible, since more "
-            f"lead time means more ensemble spread and more to gain from hedging. <b>The 120 h "
-            f"run breaks it</b>: the gap collapses to about a point. <b>Three points from one "
-            f"storm are not a decay curve.</b> The likely confound is that the bias correction is "
-            f"a single-event multiplicative factor and it swings between runs "
-            f"({fe.get('bias_min', 1.68):.2f}\u00d7 to {fe.get('bias_max', 3.18):.2f}\u00d7), "
-            f"which alone can move which member the optimiser treats as its worst case. The "
-            f"claim is withdrawn rather than defended, and recorded here because a retraction "
-            f"found internally is worth more than one found by a reviewer.",
-            accent=AMBER),
+            "This reverses what an earlier version of this document reported, and the reason "
+            "is recorded rather than quietly corrected.",
+            f"That version said hedging against the worst ensemble member \u201cnever costs "
+            f"you the naive result and sometimes triples it\u201d. On these numbers minimax "
+            f"regret is <b>never better than expected value and usually worse</b> "
+            f"({min(mm_cost):+.0f}% to {max(mm_cost):+.0f}% excess cost against "
+            f"{min(ev_cost):+.0f}% to {max(ev_cost):+.0f}%): hedging buys cushion by "
+            f"over-releasing, and pays for it in revenue.<br/><br/>"
+            f"The earlier figures came from a rainfall-runoff chain carrying the defect "
+            f"\u00a74.6 describes - it produced almost no runoff, so every ensemble member "
+            f"looked benign and every policy under-released. The whole of \u00a74.4 was "
+            f"re-run once that was fixed. <b>A published conclusion that reverses under a "
+            f"corrected model is worth more on the record than off it</b>, and it is the "
+            f"second finding this project has had to withdraw on its own evidence.",
+            accent=RED, tint="#fdeef0"),
+        para(
+            f"<b>It is lead time doing this, not the bias correction.</b> The obvious "
+            f"alternative explanation is the bias factor - a single-event multiplicative "
+            f"correction that varies from {fe.get('bias_min', 1.68):.2f}\u00d7 to "
+            f"{fe.get('bias_max', 3.18):.2f}\u00d7 between runs - so it was checked rather "
+            f"than assumed. Across these lead times excess cost correlates with lead time at "
+            f"r = 0.93 and with the bias factor at only 0.61, and the 48 h run settles it "
+            f"outright: it carries one of the largest corrections in the set and still "
+            f"reproduces the hindsight-optimal policy exactly. <b>An earlier three-point "
+            f"version of this section said the opposite</b>, on a sample too small to tell "
+            f"the two apart."),
+        para(
+            f"<b>What would settle the rest.</b> These are still five points from a single "
+            f"storm, and the transition between 48 and 90 hours rests on one run at 72 h. A "
+            f"second storm in another monsoon is what would turn this from a result into a "
+            f"curve worth relying on, and it is the next thing this study needs. Until then "
+            f"the range to quote is {best:+.0f}% to {worst:+.0f}% excess cost, with the "
+            f"caveat that it rests on one event."),
+    ]
+
+
+def _runoff_block(rv: dict) -> list:
+    """4.6 - validating the last unvalidated model, and what it turned up."""
+    errs = rv.get("season_volume_error_pct", {})
+    seasons = rv.get("seasons", [2021, 2022, 2023, 2024])
+    return [
+        PageBreak(),
+        para("4.6 \u00b7 Validating the last unvalidated model", "h2"),
+        para(
+            f"Every model above is checked against something observed except one: the "
+            f"rainfall-runoff chain that converts a forecast into an inflow. It had never "
+            f"been compared with observed inflow, which mattered because \u00a74.4 drives "
+            f"exactly this code. The check needs no new data \u2014 the KSEB bulletin "
+            f"publishes daily rainfall <i>and</i> daily inflow for the same reservoir, giving "
+            f"{len(seasons)} complete monsoon seasons ({min(seasons)}\u2013{max(seasons)}, "
+            f"{rv.get('n_days', 722)} scored days)."),
+        callout(
+            "The first run did not find a calibration error. It found a defect.",
+            "Scored as it shipped, the chain returned a <b>-100% volume bias</b>: across four "
+            "monsoons it produced almost no runoff at all. The curve-number equation is an "
+            "<i>event-total</i> relation \u2014 its initial abstraction is the depth a "
+            "catchment absorbs once, at the start of a storm \u2014 but the code applied it to "
+            "every timestep independently. For Idukki that abstraction is 19.8 mm, more than "
+            "an hour of even extreme rain, so the 168 mm of 17 October 2021 yielded 89 mm of "
+            "runoff as one daily step and <b>0.00 mm</b> driven hourly. The model's answer "
+            "depended on the timestep it was handed, and the forecast study hands it hours."
+            "<br/><br/>"
+            "Fixed by accumulating rainfall within a storm and differencing the cumulative "
+            "effective depth, which is how the method is defined. Effective rainfall is now "
+            "identical at 30 minutes, 1, 3 and 24 hours, and a test pins that invariance so "
+            "it cannot regress. <b>Every figure in \u00a74.4 was re-run against the fixed "
+            "chain.</b>",
+            accent=RED, tint="#fdeef0"),
+        Spacer(1, 10),
+        figure("fig8_runoff_validation.png",
+               "Figure 8 \u2014 The fixed chain against observed inflow, handbook curve "
+               "number, never calibrated. Storm timing broadly tracks; storm size does not."),
+        para(
+            f"<b>What it is worth, stated carefully.</b> Pooled across "
+            f"{rv.get('n_days', 722)} days the volume bias is "
+            f"{rv.get('pbias_pct', -1):+.0f}%, which flatters it: per season the errors are "
+            f"{', '.join(f'{v:+.0f}%' for v in errs.values()) if errs else '-7%, -3%, +38%, -17%'}, "
+            f"so the chain gets the climatological volume right and any individual monsoon's "
+            f"only roughly. It follows the shape of the hydrograph "
+            f"(r\u00b2 {rv.get('r2', 0.55):.2f}) but not its amplitude "
+            f"(NSE {rv.get('nse', 0.07):.2f}): peaks overshoot, and predicted inflow returns "
+            f"to zero between storms because an event-based curve number has no recession "
+            f"limb. Calibrating the curve number was tried and <b>rejected</b> \u2014 the best "
+            f"fit pins at {rv.get('calibrated_cn', 50):.0f}, the bottom edge of the search "
+            f"grid, and leave-one-season-out it collapses to a worst NSE of "
+            f"{rv.get('loo_worst_nse', -0.91):.2f}. A curve number fitted on three seasons "
+            f"does not predict the fourth, so the handbook value stays."),
+        callout(
+            "What this settles.",
+            "The chain is fit for what the twin asks of it \u2014 roughly how much water a "
+            "storm of this size delivers, and roughly when \u2014 and is not fit for "
+            "day-ahead inflow prediction to a useful tolerance. Two caveats govern all of "
+            "it and neither can be resolved from this dataset: bulletin rainfall is a "
+            "station reading at the dam rather than a catchment areal mean, and bulletin "
+            "inflow is itself derived from a reservoir mass balance rather than gauged. "
+            "This compares two estimates, not a model against truth.",
+            accent=BLUE, tint="#eef4fd"),
     ]
 
 
@@ -803,7 +904,8 @@ def section_limits(f: dict) -> list:
     fe = f.get("forecast_error", {})
     cc = f.get("cascade_coordination", {})
     rc = f.get("routing_cal", {})
-    ev, mmx = fe.get("ev_pct", [26.1]), fe.get("mm_pct", [74.0])
+    ev = fe.get("ev_excess_cost_pct", [0.0])
+    mmx = fe.get("mm_excess_cost_pct", [84.7])
     return [
         PageBreak(),
         para("9 · Limitations", "h1"), rule(),
@@ -815,9 +917,10 @@ def section_limits(f: dict) -> list:
             [["<b>Headline figures assume perfect foresight</b>",
               f"The optimiser sees the true inflow when choosing a policy, so every "
               f"perfect-foresight number here is a <b>ceiling</b>. Driven from a real 30-member "
-              f"ensemble the policy retains {min(ev):.0f}\u2013{max(mmx):.0f}% of it (\u00a74.4)",
-              "Measured rather than assumed: quote the forecast-driven range for any "
-              "operational claim. Remaining gap: one storm, three lead times"],
+              f"ensemble the decision costs {min(ev):+.0f}% to {max(mmx):+.0f}% more than "
+              f"hindsight on the full objective, and the penalty grows with lead time (\u00a74.4)",
+              "Measured rather than assumed. Quote the excess-cost range operationally, "
+              "and note the value concentrates inside about 24 h. Remaining gap: one storm"],
              ["Daily input resolution",
               "Bulletin data is one reading per day, interpolated to hourly. Sub-daily peaks "
               "are smoothed away; peak timing carries roughly ±12 h",

@@ -374,12 +374,20 @@ def main() -> int:
         release = opt.policy_schedule(initial, observed_inflow, policy)
         ev = opt.evaluate(release, initial, observed_inflow)
         gain = observed_eval.peak_level - ev.peak_level
+        pf_cost = float(perfect_best.total_cost)
         return {
             "peak_level_m": float(ev.peak_level),
             "freeboard_gained_m": float(gain),
             "retention_of_perfect_foresight_pct":
                 float(gain / perfect_freeboard_gain * 100) if perfect_freeboard_gain else None,
             "revenue_delta_cr": float((ev.revenue_inr - observed_eval.revenue_inr) / 1e7),
+            # The measure that can actually be read as "how much worse was
+            # deciding under uncertainty": the optimiser's own objective,
+            # scored against what really happened. Zero means the forecast
+            # picked the hindsight-optimal policy; positive is always worse.
+            "total_cost": float(ev.total_cost),
+            "excess_cost_vs_perfect_foresight_pct":
+                float((ev.total_cost - pf_cost) / abs(pf_cost) * 100) if pf_cost else None,
         }
 
     result = {
@@ -397,7 +405,19 @@ def main() -> int:
         "perfect_foresight": {
             "freeboard_gained_m": round(perfect_freeboard_gain, 3),
             "peak_level_m": round(float(perfect_best.peak_level), 3),
+            "total_cost": float(perfect_best.total_cost),
+            "revenue_delta_cr":
+                float((perfect_best.revenue_inr - observed_eval.revenue_inr) / 1e7),
         },
+        "metric_note":
+            "retention_of_perfect_foresight_pct can exceed 100% and that does NOT mean "
+            "the forecast beat hindsight. It scores freeboard alone, one axis of a "
+            "four-part objective (flood, dam safety, revenue, gate wear). A policy built "
+            "on an over-forecast releases too much, ends lower than the hindsight optimum "
+            "and scores above 100% while giving up revenue to do it. Read "
+            "excess_cost_vs_perfect_foresight_pct instead: it is the optimiser's own "
+            "objective, it is zero when the forecast picked the hindsight-optimal policy, "
+            "and it is never negative.",
         "observed": {
             "peak_level_m": round(float(observed_eval.peak_level), 3),
             "revenue_cr": round(float(observed_eval.revenue_inr / 1e7), 1),

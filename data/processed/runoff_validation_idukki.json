@@ -1,0 +1,115 @@
+{
+  "as_shipped": {
+    "n_days": 722,
+    "nse": 0.06584519959002033,
+    "r2": 0.5543385624488739,
+    "pbias_pct": -1.2162817482435575,
+    "mae_cumecs": 65.92864698692354,
+    "rmse_cumecs": 92.92514938123145,
+    "volume_ratio": 0.9878371825175644,
+    "mean_observed_cumecs": 102.58994459833795,
+    "mean_predicted_cumecs": 101.34216182665519
+  },
+  "handbook_cn_with_baseflow": {
+    "n_days": 722,
+    "nse": -0.06406358916325905,
+    "r2": 0.5772633294344194,
+    "pbias_pct": 33.759639657930116,
+    "mae_cumecs": 62.2423347084754,
+    "rmse_cumecs": 99.17623886861604,
+    "volume_ratio": 1.3375963965793012,
+    "mean_observed_cumecs": 102.58994459833795,
+    "mean_predicted_cumecs": 137.223940220007
+  },
+  "calibrated_in_sample": {
+    "curve_number": 50.0,
+    "n_days": 722,
+    "nse": 0.2510683277013861,
+    "r2": 0.5964632464120855,
+    "pbias_pct": -17.310376400111256,
+    "mae_cumecs": 61.48933432346894,
+    "rmse_cumecs": 83.20414105981925,
+    "volume_ratio": 0.8268962359988874,
+    "mean_observed_cumecs": 102.58994459833795,
+    "mean_predicted_cumecs": 84.83123903970005
+  },
+  "leave_one_season_out": {
+    "2021": {
+      "fitted_cn_excluding_this_season": 50.0,
+      "n_days": 182,
+      "nse": -0.033440201993133245,
+      "r2": 0.5259393965705983,
+      "pbias_pct": -20.0975266261622,
+      "mae_cumecs": 74.64041024407696,
+      "rmse_cumecs": 91.8682431644868,
+      "volume_ratio": 0.7990247337383781,
+      "mean_observed_cumecs": 140.71862637362636,
+      "mean_predicted_cumecs": 112.43766297021712
+    },
+    "2022": {
+      "fitted_cn_excluding_this_season": 50.0,
+      "n_days": 179,
+      "nse": 0.3813063449312084,
+      "r2": 0.5776071907947696,
+      "pbias_pct": -16.106286928312873,
+      "mae_cumecs": 66.88301949231649,
+      "rmse_cumecs": 93.82982282916662,
+      "volume_ratio": 0.8389371307168715,
+      "mean_observed_cumecs": 113.8708379888268,
+      "mean_predicted_cumecs": 95.53047409467209
+    },
+    "2023": {
+      "fitted_cn_excluding_this_season": 50.0,
+      "n_days": 183,
+      "nse": -0.9056233482319214,
+      "r2": 0.5961034250757682,
+      "pbias_pct": 12.93878189157923,
+      "mae_cumecs": 52.04533173011554,
+      "rmse_cumecs": 77.04758405797314,
+      "volume_ratio": 1.1293878189157924,
+      "mean_observed_cumecs": 62.63934426229507,
+      "mean_predicted_cumecs": 70.74411239470889
+    },
+    "2024": {
+      "fitted_cn_excluding_this_season": 50.0,
+      "n_days": 178,
+      "nse": 0.457850651638704,
+      "r2": 0.8147866522500848,
+      "pbias_pct": -35.36267998469964,
+      "mae_cumecs": 52.32802540104926,
+      "rmse_cumecs": 67.04204223527472,
+      "volume_ratio": 0.6463732001530036,
+      "mean_observed_cumecs": 93.33297752808988,
+      "mean_predicted_cumecs": 60.327935364639835
+    }
+  },
+  "loo_summary": {
+    "mean_nse": -0.024976638413785557,
+    "worst_nse": -0.9056233482319214,
+    "cn_spread": [
+      50.0
+    ]
+  },
+  "setup": {
+    "dam": "Idukki",
+    "seasons": [
+      2021,
+      2022,
+      2023,
+      2024
+    ],
+    "season_window": "1 Jun - 30 Nov",
+    "handbook_cn": 72.0,
+    "catchment": {
+      "area_km2": 650.0,
+      "main_channel_km": 66.3,
+      "slope": 0.0087
+    },
+    "caveats": [
+      "Bulletin rainfall is a station reading at the dam, not a catchment areal mean. In steep orographic terrain the catchment mean is usually the larger number, so a positive-bias result may be the rain gauge, not the model.",
+      "Bulletin inflow is itself derived by KSEB from a reservoir mass balance, not gauged. This compares two estimates, not a model against truth.",
+      "Each day's rainfall is spread uniformly over 24 hours; the bulletin does not publish sub-daily rainfall, so storm intensity within a day is lost.",
+      "Baseflow is a per-season constant (10th percentile of observed inflow), standing in for every inflow the rainfall-runoff chain does not generate."
+    ]
+  }
+}
