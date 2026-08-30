@@ -35,195 +35,59 @@ it means a slipped week costs polish, not the demo.
 
 Ordered by value per hour. The first item is worth more than the rest combined.
 
-### 🟢 1 · Forecast-error study — all three lead times in, 28 Aug 2026
+### 🟢 1 · Forecast-error study — five lead times, re-run on a fixed chain, 30 Aug 2026
 
-The optimiser sees the **true** inflow series when choosing a policy. Every
-benefit figure in the dossier is therefore an upper bound.
+The optimiser sees the **true** inflow when choosing a policy, so every
+benefit figure elsewhere is a ceiling. This closes that gap.
 
-This was the biggest open question in the project. The research sweep found
-the data that closes it, and it has now been run at the full 24 / 90 / 120 h
-set (`scripts/forecast_error_study.py`):
+**Run:** `python scripts/forecast_error_study.py` once per lead time
+(commands in `docs/validation.md` §4). A 30-member NOAA GEFS ensemble issued
+before the storm, bias-corrected against IMD gridded rainfall, pushed through
+the SCS-CN and Muskingum chain, one policy committed to per member, scored
+against what actually happened.
 
-| Lead time | Decision rule | Freeboard gained | % of perfect foresight |
-|---|---|---|---|
-| 24 h (issued 15 Oct 18z) | perfect foresight | 3.11 m | 100% |
-| 24 h | expected-value | 0.81 m | **26%** |
-| 24 h | minimax-regret | 1.03 m | **33%** |
-| 90 h (issued 13 Oct 00z) | perfect foresight | 3.11 m | 100% |
-| 90 h | expected-value | 1.03 m | **33%** |
-| 90 h | minimax-regret | 2.30 m | **74%** |
-| 120 h (issued 11 Oct 18z) | perfect foresight | 3.11 m | 100% |
-| 120 h | expected-value | 1.03 m | **33%** |
-| 120 h | minimax-regret | 1.07 m | **34%** |
+**Scored on the optimiser's own objective** — flood, dam safety, revenue and
+gate wear together. Zero means the forecast picked the policy hindsight would
+have picked, and the figure can never go below it:
 
-**One finding survives all three points; a second one had to be retracted
-when the third point arrived, and that retraction is itself worth keeping
-on the record.**
+| Lead time | Expected value | Minimax regret |
+|---|---|---|
+| 24 h | **+0%** | +19% |
+| 48 h | **+0%** | +19% |
+| 72 h | **+37%** | +53% |
+| 90 h | **+69%** | +85% |
+| 120 h | **+69%** | +69% |
 
-1. **Minimax-regret never does worse than expected-value, and at 90 h it
-   did dramatically better (74% vs 33%).** Hedging against your worst
-   ensemble member instead of betting on the average one is a safe default
-   - it never costs you the naive result and sometimes triples it.
-2. **What did NOT survive: "the minimax advantage grows with lead time."**
-   That claim was written after the 24 h and 90 h runs (7-point gap
-   growing to 41 points) and looked like a mechanistically sensible trend
-   - more lead time, more ensemble spread, more to gain from hedging. The
-   120 h run breaks it: the gap collapses back to 1 point (33% vs 34%),
-   barely different from 24 h's naive result. **Three points from one
-   storm do not make a decay curve**, and forcing a monotonic story onto
-   them would have been the same mistake the lead-time study's methodology
-   note already warns about (see §3's "search luck" note) - a coincidence
-   in a small, noisy sample dressed up as a trend. The likely confound: the
-   bias correction is a single-event multiplicative factor and it swings a
-   lot between runs (1.68x at 24 h, 3.18x at 90 h, 2.64x at 120 h) - that
-   alone can move which member the optimiser treats as the worst case, and
-   with it whether the minimax pick happens to be strong or unremarkable.
-   A genuine skill-decay curve needs many storms averaged, not one storm
-   sampled at three lead times - flagged as real future work rather than
-   claimed as already answered.
+1. **A real forecast is as good as hindsight out to 48 hours.** Exactly +0% at
+   both 24 h and 48 h, degrading through 72 h to a plateau near +69% from 90 h
+   on. The system's value is concentrated in the last two days before a storm.
 
-Full method and other caveats in `docs/validation.md` §4 "Perfect
-foresight". **Update, 28 Aug 2026:** the catchment geometry these three
-runs used (35 km channel, 3.6% slope) was an order-of-magnitude guess;
-`scripts/catchment_geometry.py` has since replaced it with a real DEM
-watershed delineation (66.3 km, 0.87%, net of the Mullaperiyar diversion -
-see that script). The three lead-time results above predate the fix and
-have not been re-run against it; see `docs/validation.md` for what a
-~2x longer, ~4x gentler channel likely changes.
+2. **Retracted: "minimax-regret never underperforms expected-value."** Across
+   five lead times hedging is never better and usually worse. It buys cushion
+   by over-releasing and pays in revenue — Rs +1.34 to +1.40 crore against
+   perfect foresight's +1.94.
 
-**A bug was caught and fixed between the first and second pass at the 24 h
-and 90 h leads**, worth stating rather than quietly overwriting: the first
-version of the script only fetched GEFS rainfall out to the forecast
-horizon but let the optimiser's evaluation window run to the scenario's
-full default end (2021-10-28), zero-padding the ungoverned days. Real
-observed inflow there is 130-240 cumecs, not near-zero, so the padding
-fabricated a low-inflow tail that skewed every policy ranking that used
-it. The fix truncates the evaluation window to exactly `[scenario start,
-issue + horizon]` for every run, including 120 h, which was only ever run
-post-fix.
+3. **Lead time explains it, the bias correction does not** (r = 0.93 against
+   0.61). The 48 h run carries one of the largest bias corrections in the set
+   and still matches hindsight exactly.
 
-The rest of this section is the original method spec, kept for
-reproducibility.
+**Why the numbers here changed completely.** The earlier version of this
+section reported 26–74% retention of the perfect-foresight cushion and
+concluded hedging was a safe default. Both came from a rainfall-runoff chain
+carrying the defect in item 8 — it charged the curve number's initial
+abstraction against every timestep, produced almost no runoff, and so made
+every ensemble member look benign. The study was re-run end to end once that
+was fixed.
 
-**The source: NOAA GEFS operational archive on AWS** — `s3://noaa-gefs-pds`,
-free, no credentials, no registration.
+**Do not quote freeboard retention from this study.** Every forecast-driven
+policy ends *lower* than the hindsight optimum, so a cushion-only metric reads
+above 100% and looks like beating hindsight. It is over-release. The JSON
+keeps the old field with a `metric_note` saying so;
+`excess_cost_vs_perfect_foresight_pct` is the one to read.
 
-```
-gefs.20211015/00/atmos/pgrb2sp25/gep01..gep30 .t00z.pgrb2s.0p25.f000..f240
-```
-
-30 perturbed members plus control, 0.25°, 4 cycles/day, out to 240 h, with an
-archive reaching back to 2017 — so it covers the October 2021 case study. The
-`.idx` sidecar names `APCP:surface:18-24 hour acc fcst:ENS=+1` at a byte
-offset, and a Range GET of that slice returns HTTP 206 with GRIB magic bytes.
-About 270 kB per member per lead hour, so a whole 30-member October 2021
-hindcast is a few hundred MB of range reads, not terabytes.
-
-GEFSv12 has been operational since September 2020, so October 2021 runs the
-**same model generation as today** — skill measured on the hindcast transfers
-to present-day operation. That is a genuinely strong argument for the case
-study.
-
-**The method:**
-
-1. For each 00z issue date across the event, range-fetch APCP for `gep01`–`gep30`
-2. Bias-correct against IMD gridded rainfall or the SLDC daily rainfall column
-3. Push each member through the existing SCS-CN + Muskingum chain → 30 inflow
-   trajectories
-4. Run the existing exhaustive policy search per member; pick by a **declared**
-   rule (expected value, CVaR, or minimax regret — the choice changes the
-   answer, so state it)
-5. Score the chosen policy against observed inflow from the Kerala SLDC form,
-   which serves arbitrary historical dates via
-   `POST sldckerala.com/index.php?id=7` with `date1_day/date1_month/date1_year`
-   plus `sbtstore=SHOW` (numeric month; posting "October," or omitting
-   `sbtstore`, silently returns today's data instead of an error)
-
-   **Verified 28 Aug 2026** (`scripts/acquire.py`, `acquire_sldc_storage`):
-   October 2021 returns all 31 days cleanly, 331 dam-day rows including
-   IDUKKI and IDAMALAYAR — this works for the flagship case study. August
-   2018 returns **zero** days — every date in that window comes back with
-   no data table, confirming the manifest's own note that the archive
-   starts 2019-08-08. The August 2018 CAG comparison (§ item 3 below) must
-   therefore be scored against IMD gridded rainfall or the CWC discharge
-   series, never SLDC.
-
-**The deliverable is one honest number**: the fraction of the perfect-foresight
-benefit that survives, reported separately at 24 / 72 / 120 h, because the
-literature says those are very different regimes.
-
-#### A trap that would have silently faked this
-
-Open-Meteo's Historical Forecast API returns hourly precipitation for October
-2021 and *looks* like a hindcast. It is not. The lead-time variable
-`precipitation_previous_day3` is **100% null** for 2021-10-15 (0 of 24 hours)
-while the identical request for 2024-07-15 returns 24 of 24. The lead-time
-archive begins in early 2024; for 2021 that endpoint serves what is
-effectively an analysis — near-perfect foresight. Building the
-"forecast-driven" comparison on it would reproduce the perfect-foresight
-result *while appearing to have fixed it*.
-
-#### Free bonus: a second, independent route
-
-Google's **GRRR** (Runoff Reanalysis & Reforecast) sits in an anonymously
-readable GCS bucket, no key and no waitlist:
-`gs://flood-forecasting/hydrologic_predictions/model_id_8583a5c2_v0/`.
-Its reforecast is [1,031,646 gauges × 2,738 issue times × 8 lead days],
-2016-01-01 to 2023-06-30 — so it spans October 2021. Virtual gauge
-`hybas_4121152880` sits **0.61 km from Idukki dam**, and its reanalysis
-reproduces the August 2018 flood (peak 239.65 m³/s on 16 Aug, against its own
-2/5/10-year thresholds of 173.2 / 214.9 / 242.2).
-
-Running both matters: GEFS gives error-bearing **rainfall** through AquaSync's
-own model; GRRR gives error-bearing **discharge** from a global ML model. The
-gap between them separates *"the rainfall forecast was wrong"* from *"my
-rainfall-runoff model was wrong"* — two error sources the project currently
-cannot tell apart.
-
-Caveat to state: GRRR is a **reforecast**, a modern model re-run over past
-dates, so it flatters the result relative to what an operator actually had.
-GEFS operational is the stricter test.
-
-**Second caveat, verified 28 Aug 2026:** the "8 lead days" run from **0 to 7**,
-and lead 0 is not a forecast — Google's own documentation gives the identity
-`Reanalysis[T] == Reforecast[T+1, lead=0]`. Lead 0 is the reanalysis value,
-driven by observed CPC/IMERG rainfall for the day that has just ended. A
-benefit-retention curve that starts at lead 0 will show a suspiciously strong
-first point that is really perfect-foresight discharge in disguise — the
-exact leak this whole exercise exists to remove. **Score from lead 1 upward.**
-Separately, GRRR's reforecast is driven by "HRES and GraphCast weather
-forecasts issued until time T" — GraphCast did not exist in 2021, so the
-reforecast is a legitimately causal 2023-generation model re-run over 2021,
-not a contemporary one. Treat it as an optimistic bound, with GEFS as the
-stricter test, as already stated above.
-
-#### The ceiling this work will run into
-
-Two published numbers bound what any forecast-driven system can deliver here:
-
-- **Durai et al. (2015), Mausam 66(3)**: day-3 ensemble-mean rainfall RMSE is
-  10–15 mm/day over most of India but **25–30 mm/day along the west coast** —
-  in all four of ECMWF, UKMO, NCEP and JMA. **Correction, 28 Aug 2026**: this
-  is an absolute error, not a skill ranking — the same paper gives an
-  observed seasonal mean of ~15 mm/day over the Konkan coast, so RMSE is
-  largest exactly where rainfall is largest. Durai's own skill metric says
-  the opposite: anomaly correlation is *highest* on the west coast of any
-  region measured, in all four EPS. The honest claim is that absolute
-  forecast error here is roughly double the all-India figure because the
-  rainfall itself is roughly double — not that the Western Ghats are
-  uniquely hard to forecast. (Nitha et al. 2025, Atmosphere 16(4) 372, is
-  consistent with this once read in full — CSI 0.49–0.57, ECMWF FAR 0.41 at
-  day 1–3 over Kerala — but it only measures day 1–3, JJAS only, so it
-  cannot speak to the 3–7 day window this project needs, or to October.)
-- **Sudheer et al. (2019)**: even pre-emptively emptying Periyar reservoirs to
-  25–50% capacity bought only **16–21% peak attenuation** at Neeleeswaram,
-  against an **observed** peak of 8,800 m³/s (9,965 m³/s in the same source
-  is the HEC-HMS *modelled* peak — do not quote it as observed).
-
-So the target framing is not "X% benefit" but: *"X% under perfect foresight,
-Y% with the 30-member ensemble that was actually available, decaying from 24 h
-to 120 h as follows."* That turns the project's biggest methodological
-weakness into its most credible result.
+**Still open:** five points, one storm, and the 48→90 h transition rests on a
+single 72 h run. A second storm in another monsoon is the next thing this
+study needs.
 
 ### 🟢 2 · Cascade co-optimisation — first result in, and it is a warning, 28 Aug 2026
 
@@ -358,6 +222,53 @@ crowd, which matters at an expo.
 
 The 3D dashboard exists but replays a canned series. Wiring it to a live
 backend makes the what-if panel real.
+
+### 🟢 8 · Rainfall–runoff validation — done, and it found a defect, 30 Aug 2026
+
+The last unvalidated link in the twin, and the one under everything item 1
+claims: the forecast-error study drives this chain, so its retention figures
+inherit whatever error lives here.
+
+**Run:** `python scripts/runoff_validation.py`. No new data was needed — the
+KSEB bulletin publishes daily rainfall *and* daily inflow for the same
+reservoir, giving four complete monsoon seasons (2021–2024, 722 scored days).
+
+**The first run returned NSE −1.14 at −100% volume bias: the model produced
+essentially no runoff at all.** The curve-number equation is an event-total
+relation whose initial abstraction is charged once per storm, but
+`inflow_series` was applying it to every timestep independently. Since Ia for
+CN 72 is 19.8 mm — more than an hour of even extreme rain — the same 168 mm
+that fell on 17 October 2021 yielded 88.97 mm of runoff as one daily step and
+**0.00 mm** driven hourly. The chain's answer depended on the timestep it was
+handed, and the forecast-error study drives it hourly.
+
+Fixed by accumulating rainfall within a storm and differencing the cumulative
+effective depth, with storms separated by a rainless gap. Effective rainfall
+is now identical at 30 min, 1 h, 3 h and 24 h, and
+`TestStormExcess::test_excess_is_independent_of_driving_timestep` pins it.
+**Item 1 was re-run against the fixed chain.**
+
+With the defect gone the honest scoring is mixed, and worth stating as such:
+
+| | |
+|---|---|
+| Pooled volume bias, handbook CN 72 | **−1%** — but per season −7%, −3%, **+38%**, −17% |
+| Shape (r²) | 0.55 — rises and falls with the observed hydrograph |
+| Amplitude (NSE) | **0.07** — peaks overshoot, and inflow returns to zero between storms |
+| Calibrated curve number | Pins at **50, the grid floor**; leave-one-season-out mean NSE −0.02, worst −0.91 |
+
+The grid-edge optimum is the same signature the routing calibration produced
+(item 3), and the same diagnosis: a structural mismatch being absorbed by a
+parameter. Calibration was **not adopted** — it buys in-sample fit and pays in
+volume bias and generalisation. The handbook 72 stays.
+
+So the chain is fit for "roughly how much water, roughly when", and not for
+day-ahead inflow to a useful tolerance. Fixing that is a continuous
+soil-moisture model with a recession limb, not a better curve number — which
+is a genuine piece of work, and squarely in the "beyond the expo" column.
+
+Full method, caveats and the per-season table in `docs/validation.md` §4
+"Rainfall–runoff".
 
 ---
 

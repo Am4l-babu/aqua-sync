@@ -301,64 +301,80 @@ def fig_counterfactual() -> dict:
 
 
 def fig_forecast_error() -> dict:
-    """What the policy retains once it can no longer see the true inflow."""
+    """What deciding under a real forecast costs, on the optimiser's own objective."""
     files = sorted(PROC.glob("forecast_error_study_*.json"))
     if not files:
         print("  (skipping forecast-error figure: run scripts/forecast_error_study.py first)")
         return {}
     runs = [json.loads(p.read_text(encoding="utf-8")) for p in files]
+    runs = [r for r in runs if "total_cost" in r.get("perfect_foresight", {})]
+    if not runs:
+        print("  (skipping forecast-error figure: results predate the cost metric, re-run)")
+        return {}
     runs.sort(key=lambda r: r["lead_hours_before_storm_peak"])
 
-    leads = [f"{r['lead_hours_before_storm_peak']:.0f} h" for r in runs]
-    perfect = float(runs[0]["perfect_foresight"]["freeboard_gained_m"])
-    ev_m = [float(r["decision_rule_expected_value"]["freeboard_gained_m"]) for r in runs]
-    mm_m = [float(r["decision_rule_minimax_regret"]["freeboard_gained_m"]) for r in runs]
-    ev_p = [float(r["decision_rule_expected_value"]["retention_of_perfect_foresight_pct"]) for r in runs]
-    mm_p = [float(r["decision_rule_minimax_regret"]["retention_of_perfect_foresight_pct"]) for r in runs]
-    bias = [float(r["bias_factor"]) for r in runs]
+    leads = [float(r["lead_hours_before_storm_peak"]) for r in runs]
+    ev = [r["decision_rule_expected_value"] for r in runs]
+    mm = [r["decision_rule_minimax_regret"] for r in runs]
+    pf_rev = float(runs[0]["perfect_foresight"]["revenue_delta_cr"])
+    ev_cost = [v["excess_cost_vs_perfect_foresight_pct"] for v in ev]
+    mm_cost = [v["excess_cost_vs_perfect_foresight_pct"] for v in mm]
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(9.2, 3.6))
     x = np.arange(len(runs))
-    w = 0.34
+    labels = [f"{h:.0f} h" for h in leads]
 
-    style(ax1, "Forecast error costs most of the benefit", "Freeboard gained (m)")
-    ax1.bar(x - w / 2, ev_m, width=w, color=AMBER, alpha=0.85, label="Expected value")
-    ax1.bar(x + w / 2, mm_m, width=w, color=GREEN, alpha=0.85, label="Minimax regret")
-    ax1.axhline(perfect, color=INK, lw=1.3, ls="--")
-    ax1.text(-0.42, perfect + 0.06, f"perfect foresight {perfect:.2f} m",
-             fontsize=8.5, color=INK, fontweight="bold")
-    ax1.set_xticks(x, leads)
+    # The honest axis: the objective the optimiser actually minimises. Zero
+    # means the forecast picked the policy hindsight would have picked.
+    style(ax1, "What deciding without hindsight costs", "Excess cost vs perfect foresight (%)")
+    ax1.axhline(0.0, color=INK, lw=1.3, ls="--")
+    ax1.text(-0.35, 2.0, "hindsight-optimal", fontsize=8.5, color=INK, fontweight="bold")
+    ax1.plot(x, ev_cost, color=AMBER, lw=2.2, marker="o", ms=6, label="Expected value")
+    ax1.plot(x, mm_cost, color=GREEN, lw=2.2, marker="s", ms=5.5, label="Minimax regret")
+    ax1.set_xticks(x, labels)
     ax1.set_xlabel("Lead time before the storm peak", color=MUTED, fontsize=9)
-    ax1.set_ylim(0, perfect * 1.22)
-    for xi, (a, b) in enumerate(zip(ev_m, mm_m, strict=True)):
-        ax1.text(xi - w / 2, a + 0.05, f"{a:.2f}", ha="center", fontsize=8, color=MUTED)
-        ax1.text(xi + w / 2, b + 0.05, f"{b:.2f}", ha="center", fontsize=8, color=MUTED)
-    ax1.legend(frameon=False, fontsize=8.5, labelcolor=MUTED, loc="upper right")
+    ax1.set_ylim(-6, max(mm_cost + ev_cost) * 1.32)
+    ax1.legend(frameon=False, fontsize=8.5, labelcolor=MUTED, loc="upper left")
 
-    style(ax2, "Hedging never costs — but shows no trend", "Share of perfect foresight (%)")
-    ax2.plot(x, ev_p, color=AMBER, lw=2.2, marker="o", ms=5, label="Expected value")
-    ax2.plot(x, mm_p, color=GREEN, lw=2.2, marker="o", ms=5, label="Minimax regret")
-    ax2.set_xticks(x, leads)
+    # Why the freeboard-only reading flatters it: the extra cushion is bought.
+    style(ax2, "What the extra cushion cost", "Revenue vs observed (Rs crore)")
+    w = 0.34
+    ax2.bar(x - w / 2, [v["revenue_delta_cr"] for v in ev], width=w, color=AMBER,
+            alpha=0.85, label="Expected value")
+    ax2.bar(x + w / 2, [v["revenue_delta_cr"] for v in mm], width=w, color=GREEN,
+            alpha=0.85, label="Minimax regret")
+    ax2.axhline(pf_rev, color=INK, lw=1.3, ls="--")
+    ax2.text(-0.35, pf_rev + 0.03, f"perfect foresight {pf_rev:+.2f}", fontsize=8.5,
+             color=INK, fontweight="bold")
+    ax2.set_xticks(x, labels)
     ax2.set_xlabel("Lead time before the storm peak", color=MUTED, fontsize=9)
-    ax2.set_ylim(0, 100)
-    ax2.annotate(f"{max(mm_p):.0f}% at 90 h — then back to {mm_p[-1]:.0f}%.\n"
-                 f"Three points, one storm: not a curve.",
-                 xy=(1, max(mm_p)), xytext=(52, -135), textcoords="offset points",
-                 fontsize=8.5, color=INK, ha="left",
-                 arrowprops=dict(arrowstyle="->", color=MUTED, lw=1))
-    ax2.legend(frameon=False, fontsize=8.5, labelcolor=MUTED, loc="upper left")
+    ax2.set_ylim(0, max(pf_rev * 1.45, 0.1))
+    ax2.legend(frameon=False, fontsize=8.5, labelcolor=MUTED, loc="upper right")
 
+    fig.suptitle(
+        "Every forecast-driven policy releases more than hindsight would, and pays for it",
+        color=INK, fontsize=11, fontweight="bold", x=0.01, ha="left", y=1.0,
+    )
     fig.tight_layout()
     fig.savefig(OUT / "fig6_forecast_error.png", dpi=200, facecolor="white")
     plt.close(fig)
 
     return {
-        "perfect_m": perfect,
-        "leads_h": [float(r["lead_hours_before_storm_peak"]) for r in runs],
+        "leads_h": leads,
         "issue_dates": [f"{r['issue_date']} {r['hh']}z" for r in runs],
-        "ev_m": ev_m, "mm_m": mm_m, "ev_pct": ev_p, "mm_pct": mm_p,
-        "bias_min": min(bias), "bias_max": max(bias),
-        "best_mm_pct": max(mm_p), "worst_mm_pct": min(mm_p),
+        "perfect_m": float(runs[0]["perfect_foresight"]["freeboard_gained_m"]),
+        "perfect_revenue_cr": pf_rev,
+        "ev_excess_cost_pct": ev_cost,
+        "mm_excess_cost_pct": mm_cost,
+        "ev_m": [v["freeboard_gained_m"] for v in ev],
+        "mm_m": [v["freeboard_gained_m"] for v in mm],
+        "ev_revenue_cr": [v["revenue_delta_cr"] for v in ev],
+        "mm_revenue_cr": [v["revenue_delta_cr"] for v in mm],
+        "best_excess_cost_pct": min(ev_cost + mm_cost),
+        "worst_excess_cost_pct": max(ev_cost + mm_cost),
+        "minimax_ever_better": bool(any(m < e for m, e in zip(mm_cost, ev_cost, strict=True))),
+        "bias_min": min(float(r["bias_factor"]) for r in runs),
+        "bias_max": max(float(r["bias_factor"]) for r in runs),
     }
 
 
@@ -398,6 +414,70 @@ def fig_cascade_coordination() -> dict:
     return {k: v for k, v in d.items() if isinstance(v, (int, float))}
 
 
+def fig_runoff_validation() -> dict:
+    """Does SCS-CN reproduce observed inflow? Volume yes, day-to-day no."""
+    csv = PROC / "runoff_validation_idukki_series.csv"
+    js = PROC / "runoff_validation_idukki.json"
+    if not (csv.exists() and js.exists()):
+        print("  (skipping runoff figure: run scripts/runoff_validation.py first)")
+        return {}
+    d = pd.read_csv(csv, parse_dates=["date"])
+    stats = json.loads(js.read_text(encoding="utf-8"))
+    shipped = stats["as_shipped"]
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(9.2, 3.6))
+
+    # One season at daily resolution: the shape is broadly right, the
+    # day-to-day amplitude is not.
+    season = int(d.season.max())
+    w = d[d.season == season]
+    style(ax1, f"{season} monsoon, day by day", "Inflow (cumecs)")
+    ax1.plot(w.date, w.observed_cumecs, color=INK, lw=2.0, label="Observed (bulletin)")
+    ax1.plot(w.date, w.predicted_cumecs, color=BLUE, lw=1.8, alpha=0.85,
+             label="SCS-CN from rainfall")
+    ax1.legend(frameon=False, fontsize=8.5, labelcolor=MUTED, loc="upper right")
+    ax1.xaxis.set_major_formatter(mdates.DateFormatter("%b"))
+
+    # Seasonal totals: the volume the chain is actually good for.
+    style(ax2, "Season totals", "Inflow volume (Mm³)")
+    seasons = sorted(d.season.unique())
+    obs_v, pred_v = [], []
+    for s in seasons:
+        g = d[(d.season == s) & d.scored]
+        obs_v.append(g.observed_cumecs.sum() * 86400 / 1e6)
+        pred_v.append(g.predicted_cumecs.sum() * 86400 / 1e6)
+    x = np.arange(len(seasons))
+    ax2.bar(x - 0.19, obs_v, width=0.38, color=INK, alpha=0.85, label="Observed")
+    ax2.bar(x + 0.19, pred_v, width=0.38, color=BLUE, alpha=0.85, label="Predicted")
+    ax2.set_xticks(x, [str(s) for s in seasons])
+    ax2.legend(frameon=False, fontsize=8.5, labelcolor=MUTED, loc="upper right")
+    for xi, (o, p) in enumerate(zip(obs_v, pred_v, strict=True)):
+        ax2.text(xi, max(o, p) * 1.03, f"{(p / o - 1) * 100:+.0f}%", ha="center",
+                 fontsize=8, color=MUTED)
+    ax2.set_ylim(0, max(max(obs_v), max(pred_v)) * 1.22)
+
+    errs = [(p / o - 1) * 100 for o, p in zip(obs_v, pred_v, strict=True)]
+    fig.suptitle(
+        f"Storm timing broadly right, storm size wrong: daily NSE "
+        f"{shipped['nse']:.2f}, season volume {min(errs):+.0f}% to {max(errs):+.0f}%",
+        color=INK, fontsize=11, fontweight="bold", x=0.01, ha="left", y=1.0,
+    )
+    fig.tight_layout()
+    fig.savefig(OUT / "fig8_runoff_validation.png", dpi=200, facecolor="white")
+    plt.close(fig)
+
+    return {
+        "nse": shipped["nse"], "r2": shipped["r2"],
+        "pbias_pct": shipped["pbias_pct"], "volume_ratio": shipped["volume_ratio"],
+        "n_days": shipped["n_days"], "seasons": [int(s) for s in seasons],
+        "season_volume_error_pct": {str(s): float(e) for s, e in zip(seasons, errs, strict=True)},
+        "worst_season_volume_error_pct": float(max(errs, key=abs)),
+        "loo_mean_nse": stats["loo_summary"]["mean_nse"],
+        "loo_worst_nse": stats["loo_summary"]["worst_nse"],
+        "calibrated_cn": stats["calibrated_in_sample"]["curve_number"],
+    }
+
+
 def main() -> int:
     OUT.mkdir(parents=True, exist_ok=True)
     facts: dict = {}
@@ -409,6 +489,7 @@ def main() -> int:
         ("counterfactual", fig_counterfactual),
         ("forecast_error", fig_forecast_error),
         ("cascade_coordination", fig_cascade_coordination),
+        ("runoff_validation", fig_runoff_validation),
     ]:
         print(f"  building {name} ...")
         facts[name] = fn()

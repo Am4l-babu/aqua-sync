@@ -144,12 +144,78 @@ class RainfallRunoffModel:
         unit_hydrograph: UnitHydrograph,
         baseflow_cumecs: float = 0.0,
         initial_abstraction_ratio: float = 0.2,
+        dry_gap_hours: float = 6.0,
     ) -> None:
         self.area_km2 = area_km2
         self.cn2 = curve_number
         self.uh = unit_hydrograph
         self.baseflow = baseflow_cumecs
         self.ia_ratio = initial_abstraction_ratio
+        # Rainless span that ends one storm and starts the next, after which a
+        # fresh initial abstraction is charged.
+        self.dry_gap_hours = dry_gap_hours
+
+    def storm_excess(
+        self,
+        rain_mm_per_step,
+        dt_hours: float = 1.0,
+        antecedent_rain_mm: float = 0.0,
+        growing_season: bool = True,
+    ) -> np.ndarray:
+        """Effective rainfall per step, accumulated within storms.
+
+        The curve-number equation is an **event-total** relation: the initial
+        abstraction Ia is the depth a catchment soaks up once, at the start of
+        a storm, before any runoff occurs at all. So it has to be applied to
+        cumulative storm depth and then differenced, never to each timestep
+        independently.
+
+        Applying it per step instead is not a small error, it silently
+        destroys the storm. Every increment gets compared against the whole of
+        Ia, and for Idukki's CN 72 that is 19.8 mm - more than an hour of even
+        extreme rain. Driven hourly, the 168 mm that fell on 17 October 2021
+        produced 0.00 mm of runoff; as a single event step the same depth
+        gives 89 mm. The model's answer depended on the timestep it was handed,
+        which is what `scripts/runoff_validation.py` found (NSE -1.14, bias
+        -100%: essentially no runoff at all across five monsoon seasons).
+
+        Storms are separated by ``dry_gap_hours`` without rain, and the
+        antecedent-moisture shift is evaluated once at storm onset and held -
+        recomputing it mid-storm can drop S underneath the rain already
+        accumulated and produce negative increments.
+        """
+        rain = np.asarray(rain_mm_per_step, dtype=float)
+        n = len(rain)
+        excess = np.zeros(n)
+
+        window = max(1, int(round(120.0 / dt_hours)))          # 5-day antecedent
+        gap_steps = max(1, int(round(self.dry_gap_hours / dt_hours)))
+
+        active = False
+        cum = pe_prev = s = ia = 0.0
+        dry = 0
+
+        for i in range(n):
+            r = rain[i]
+            if r > 0.0:
+                if not active:
+                    prior = antecedent_rain_mm + rain[max(0, i - window):i].sum()
+                    cn = adjust_cn_for_amc(self.cn2, prior, growing_season)
+                    s = 25400.0 / cn - 254.0
+                    ia = self.ia_ratio * s
+                    cum = pe_prev = 0.0
+                    active = True
+                dry = 0
+                cum += r
+                pe = (cum - ia) ** 2 / (cum - ia + s) if cum > ia else 0.0
+                excess[i] = pe - pe_prev
+                pe_prev = pe
+            elif active:
+                dry += 1
+                if dry >= gap_steps:
+                    active = False
+
+        return excess
 
     def inflow_series(
         self,
@@ -160,21 +226,15 @@ class RainfallRunoffModel:
     ) -> np.ndarray:
         """Convolve effective rainfall with the unit hydrograph.
 
-        Antecedent wetness is updated as the storm proceeds, so a long storm
-        progressively saturates its own catchment - the runoff coefficient
-        rises hour by hour. That feedback is what turns a multi-day monsoon
-        spell into a flood.
+        Wetness carries across storms through the rolling 5-day antecedent
+        depth, so a catchment that has been rained on for a fortnight converts
+        the next storm far more efficiently than a dry one. That feedback is
+        what turns a multi-day monsoon spell into a flood.
         """
         rain = np.asarray(rain_mm_per_step, dtype=float)
         n = len(rain)
 
-        # Rolling 5-day antecedent depth, seeded with the supplied prior.
-        window = max(1, int(round(120.0 / dt_hours)))  # 5 days
-        excess = np.zeros(n)
-        for i in range(n):
-            prior = antecedent_rain_mm + rain[max(0, i - window):i].sum()
-            cn = adjust_cn_for_amc(self.cn2, prior, growing_season)
-            excess[i] = scs_effective_rainfall(rain[i], cn, self.ia_ratio)
+        excess = self.storm_excess(rain, dt_hours, antecedent_rain_mm, growing_season)
 
         uh = self.uh.ordinates(dt_hours=dt_hours, area_km2=self.area_km2)
         direct = np.convolve(excess, uh)[:n]

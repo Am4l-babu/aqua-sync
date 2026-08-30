@@ -1,0 +1,19 @@
+#!/bin/sh
+#
+# Runs the source-only checks before every commit: ruff, the test suite, and
+# the glyph audit that catches characters the PDF fonts would silently drop.
+#
+# Enable once per clone:
+#
+#     git config core.hooksPath .githooks
+#
+# Skip deliberately for a work-in-progress commit:
+#
+#     git commit --no-verify
+#
+# The regeneration and determinism checks are not run here - they rebuild
+# every figure and document, which takes minutes and needs the bulletin cache
+# in data/raw/. Run `python scripts/check.py` in full before pushing anything
+# that touched a builder or the twin.
+
+exec python scripts/check.py --fast

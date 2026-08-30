@@ -43,6 +43,26 @@ exactly as they apply to hand-written work:
 
 ## Before committing
 
-`python -m pytest backend/tests -q` and `ruff check backend/ scripts/` both
-have to pass — CI runs them on `main` and `development`, plus a guard that
-`aquasync.twin` still imports with no web framework installed.
+**`python scripts/check.py`** is the single gate. It runs ruff, the test
+suite, a glyph audit, and — locally, where `data/raw/` exists — verifies that
+every figure and document still regenerates from `scripts/` and that a second
+build is byte-identical.
+
+`python scripts/check.py --fast` is the source-only subset that needs no data.
+It runs automatically:
+
+- **Before every commit**, via `.githooks/pre-commit`. Enable once per clone
+  with `git config core.hooksPath .githooks`; bypass a work-in-progress commit
+  with `git commit --no-verify`.
+- **In CI**, as the `selfcheck` job, alongside the existing test and lint jobs
+  and the guard that `aquasync.twin` imports with no web framework installed.
+
+Run the **full** `check.py` before pushing anything that touched a document
+builder or the twin, because the regeneration and determinism checks are the
+ones that catch a committed PDF built from older code.
+
+The glyph audit exists because reportlab's base-14 fonts drop characters they
+cannot draw *without erroring*. That is how the layer diagram lost every
+arrow, the hydropower formula rendered as "gQH", and GitHub star counts became
+bare numbers — in documents that built cleanly. Say it in words, or register a
+Unicode font.
