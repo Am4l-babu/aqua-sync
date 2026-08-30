@@ -16,11 +16,13 @@ from aquasync.twin import (
     IDAMALAYAR,
     IDUKKI,
     REACHES,
+    RULE_CURVE_2020,
     HydropowerModel,
     LevelStorageCurve,
     MuskingumReach,
     ReservoirModel,
     ReservoirState,
+    RiverNetwork,
     TidePredictor,
     UnitHydrograph,
     scs_effective_rainfall,
@@ -125,8 +127,35 @@ class TestReservoirModel:
         assert dry[-1].level < none[-1].level
 
     def test_no_spill_below_crest(self):
+        """Head is measured above the SPILLWAY CREST, not an alert level.
+
+        This test previously asserted no spill below ``red_level`` and so
+        encoded the bug it should have caught: red_level is a KSDMA alert
+        threshold at 728.19 m, while Idukki's chute spillway crest is
+        723.29 m. Measuring head from the alert level understated discharge
+        capacity roughly threefold.
+        """
         m = ReservoirModel(IDUKKI)
-        assert m.spill_capacity(IDUKKI.red_level - 1.0, gates_open=5) == 0.0
+        assert m.spill_capacity(IDUKKI.spillway_crest - 0.01, gates_open=5) == 0.0
+        assert m.spill_capacity(IDUKKI.spillway_crest + 2.0, gates_open=5) > 0.0
+
+    def test_spill_capacity_matches_design_discharge(self):
+        """At FRL, the weir relation should land near the official figure.
+
+        CAG Appendix 3.1 gives Idukki a design discharge of 5,012 cumec. A
+        simple broad-crested weir formula will not match exactly - design
+        discharge is normally quoted at MWL, and the real structure is a
+        gated chute - but being within about 20% is the check that catches a
+        wrong crest or wrong gate geometry.
+        """
+        q = ReservoirModel(IDUKKI).spill_capacity(IDUKKI.frl, gates_open=IDUKKI.n_gates)
+        assert 0.7 * IDUKKI.design_discharge_cumecs <= q <= 1.1 * IDUKKI.design_discharge_cumecs
+
+    def test_crest_is_not_an_alert_level(self):
+        """Regression guard: the crest must never be re-set to an alert band."""
+        for res in (IDUKKI, IDAMALAYAR):
+            assert res.spillway_crest < res.blue_level
+            assert res.spillway_crest not in (res.red_level, res.orange_level, res.blue_level)
 
     def test_spill_capacity_grows_with_head_and_gates(self):
         m = ReservoirModel(IDUKKI)
@@ -218,6 +247,73 @@ class TestMuskingum:
         k, x, r2 = MuskingumReach.calibrate(inflow, outflow, dt_hours=1.0)
         assert r2 > 0.98
         assert k == pytest.approx(6.0, rel=0.15)
+
+
+class TestRiverNetwork:
+    """RiverNetwork had zero test coverage until scripts/cascade_coordination.py
+    used it for the first time - these lock in the behaviour that script
+    depends on: mass conservation through a chain, and correct summing at a
+    confluence where a routed upstream series meets a second raw source.
+    """
+
+    def _idukki_idamalayar_network(self) -> RiverNetwork:
+        return RiverNetwork(
+            reaches={"periyar_upper": REACHES["periyar_upper"],
+                     "periyar_lower": REACHES["periyar_lower"]},
+            topology={"periyar_upper": ["idukki"],
+                      "periyar_lower": ["periyar_upper", "idamalayar"]},
+            dt_hours=1.0,
+        )
+
+    def test_conserves_volume_through_a_chain(self):
+        net = self._idukki_idamalayar_network()
+        n = 72
+        idukki = np.zeros(n)
+        idukki[10:20] = 500.0
+        idamalayar = np.zeros(n)
+        idamalayar[10:20] = 300.0
+        result = net.route_all({"idukki": idukki, "idamalayar": idamalayar})
+        assert result["periyar_lower"].sum() == pytest.approx(
+            idukki.sum() + idamalayar.sum(), rel=0.01,
+        )
+
+    def test_confluence_sums_routed_and_raw_sources(self):
+        """periyar_lower must reflect BOTH Idukki's routed arrival and
+        Idamalayar's direct entry, not just one of them."""
+        net = self._idukki_idamalayar_network()
+        n = 72
+        idukki = np.zeros(n)
+        idukki[10:20] = 500.0
+        zero = np.zeros(n)
+
+        idukki_only = net.route_all({"idukki": idukki, "idamalayar": zero})
+        idamalayar = np.zeros(n)
+        idamalayar[10:20] = 300.0
+        both = net.route_all({"idukki": idukki, "idamalayar": idamalayar})
+
+        # Idamalayar enters periyar_lower directly (no periyar_upper lag),
+        # so adding it can only raise the combined series, never lower it.
+        assert np.all(both["periyar_lower"] >= idukki_only["periyar_lower"] - 1e-6)
+        assert both["periyar_lower"].sum() > idukki_only["periyar_lower"].sum()
+
+    def test_upstream_reach_lags_the_confluence_less_than_downstream(self):
+        """Idukki's contribution passes through periyar_upper AND
+        periyar_lower; its peak should arrive later at periyar_lower than
+        at periyar_upper alone."""
+        net = self._idukki_idamalayar_network()
+        n = 72
+        idukki = np.zeros(n)
+        idukki[10:15] = 800.0
+        zero = np.zeros(n)
+        result = net.route_all({"idukki": idukki, "idamalayar": zero})
+        assert int(np.argmax(result["periyar_lower"])) > int(np.argmax(result["periyar_upper"]))
+
+    def test_rejects_a_cycle(self):
+        net = RiverNetwork(
+            reaches={}, topology={"a": ["b"], "b": ["a"]}, dt_hours=1.0,
+        )
+        with pytest.raises(ValueError, match="cycle"):
+            net.route_all({})
 
 
 # --------------------------------------------------------------------------
@@ -379,3 +475,76 @@ class TestOptimizer:
     def test_policy_describes_itself(self):
         text = DrawdownPolicy(728.5, 118, 480.0).describe("Idukki")
         assert "728.50" in text and "480" in text and "118" in text
+
+
+# --------------------------------------------------------------------------
+# constants, against the published record
+# --------------------------------------------------------------------------
+
+class TestPublishedConstants:
+    """Guards against the four constant defects the research sweep found.
+
+    Every figure here is traceable to CAG Appendix 3.1 or 3.3 in
+    research/sources/papers/CAG_Kerala_flood_audit.pdf, cross-checked against
+    the live KSEB monthly workbook.
+    """
+
+    @pytest.mark.parametrize("res", [IDUKKI, IDAMALAYAR])
+    def test_mwl_is_above_frl(self, res):
+        """MWL equal to FRL models zero surcharge - it hid ~90 MCM at Idukki."""
+        assert res.mwl > res.frl
+        assert res.surcharge_range > 0.5
+
+    def test_published_mwl_values(self):
+        assert IDUKKI.mwl == pytest.approx(734.11)
+        assert IDAMALAYAR.mwl == pytest.approx(171.20)
+
+    @pytest.mark.parametrize("res", [IDUKKI, IDAMALAYAR])
+    def test_rule_curve_is_monotonic_through_the_monsoon(self, res):
+        """The curve refills the reservoir as the monsoon recedes."""
+        levels = [lv for _, _, lv in RULE_CURVE_2020[res.key]]
+        # strict=False is correct here: levels[1:] is deliberately one shorter.
+        assert all(b >= a for a, b in zip(levels, levels[1:], strict=False))
+        assert levels[-1] <= res.frl
+
+    @pytest.mark.parametrize("res", [IDUKKI, IDAMALAYAR])
+    def test_rule_curve_is_a_step_function(self, res):
+        """KSEB holds the end-of-period value across each ten-day step."""
+        # 01 and 10 July must give the same level; 11 July must not.
+        assert res.rule_level_on(7, 1) == res.rule_level_on(7, 10)
+        assert res.rule_level_on(7, 11) != res.rule_level_on(7, 10)
+
+    def test_rule_curve_matches_kseb_workbook(self):
+        """Spot values KSEB published independently of CAG."""
+        assert IDUKKI.rule_level_on(7, 10) == pytest.approx(724.00)   # 2375.33 ft
+        assert IDUKKI.rule_level_on(7, 20) == pytest.approx(724.80)   # 2377.95 ft
+        assert IDUKKI.rule_level_on(7, 31) == pytest.approx(725.60)   # 2380.58 ft
+        assert IDUKKI.rule_level_on(8, 15) == pytest.approx(727.50)   # 2386.81 ft
+
+    def test_scalar_rule_level_is_the_end_of_august_row(self):
+        for res in (IDUKKI, IDAMALAYAR):
+            assert res.rule_level == pytest.approx(res.rule_level_on(8, 31))
+
+    def test_alert_bands_are_offsets_below_the_rule_level(self):
+        """Idamalayar blue and orange previously fired 1.0 m and 0.5 m late."""
+        blue, orange, red = IDAMALAYAR.alert_levels_on(8, 31)
+        assert (blue, orange, red) == pytest.approx((162.50, 163.00, 163.50))
+        assert (IDAMALAYAR.blue_level, IDAMALAYAR.orange_level, IDAMALAYAR.red_level) \
+            == pytest.approx((162.50, 163.00, 163.50))
+
+    def test_idukki_alert_offsets_are_in_feet(self):
+        blue, orange, red = IDUKKI.alert_levels_on(8, 31)
+        assert (blue, orange, red) == pytest.approx((726.06, 727.89, 728.19), abs=0.01)
+
+    def test_alert_bands_move_with_the_season(self):
+        """A frozen scalar would give the same band in June and October."""
+        assert IDUKKI.alert_levels_on(6, 15) != IDUKKI.alert_levels_on(10, 15)
+
+    def test_routing_matches_the_cwc_published_travel_time(self):
+        """CWC's December-2018 report: 8 h Idukki to Neeleeswaram.
+
+        The previous geometry estimates summed to 19 h - about 2x too slow,
+        which would make the twin recommend acting far too late.
+        """
+        total_k = REACHES["periyar_upper"].k_hours + REACHES["periyar_lower"].k_hours
+        assert total_k == pytest.approx(8.0, abs=0.5)

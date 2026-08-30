@@ -193,17 +193,27 @@ class ReservoirModel:
         self,
         level: float,
         gates_open: int,
-        gate_width_m: float = 12.2,
-        n_gates: int = 5,
+        gate_width_m: float | None = None,
+        n_gates: int | None = None,
         discharge_coeff: float = 0.6,
     ) -> float:
         """Free-flow discharge through ``gates_open`` fully-raised gates.
 
         Broad-crested weir relation Q = C * L * sqrt(2g) * H^1.5, with head H
-        measured above the spillway crest. Below the crest, spilling is not
+        measured above the SPILLWAY CREST. Below the crest, spilling is not
         physically possible at all.
+
+        This previously measured head above ``red_level`` (728.19 m), which is
+        an alert threshold, not a structure. Idukki's chute spillway crest is
+        2373 ft = 723.29 m - nearly five metres lower. The error understated
+        discharge capacity roughly threefold: at FRL the old formula returned
+        about 1,400 cumec against an official design discharge of 5,012 cumec
+        (CAG Appendix 3.1). Every "we could have released more, earlier"
+        conclusion was capped by it.
         """
-        crest = self.res.red_level
+        crest = self.res.spillway_crest
+        gate_width_m = gate_width_m or self.res.gate_width_m
+        n_gates = n_gates or self.res.n_gates
         head = max(0.0, level - crest)
         if head == 0.0 or gates_open <= 0:
             return 0.0

@@ -139,7 +139,277 @@
       "priority": "high",
       "size_hint": "<1 MB",
       "note": "Today's bulletin snapshot for all dams."
+    },
+    {
+      "name": "SLDC Kerala daily observed inflow archive (2019-08-08 to present)",
+      "url": "https://sldckerala.com/index.php?id=7",
+      "method": "api",
+      "destination": "research/raw/sldc_kerala_daily/",
+      "size_hint": "~75 MB raw HTML for ~2,575 days; ~2 MB parsed to CSV",
+      "priority": "high"
+    },
+    {
+      "name": "KSEB Dam Safety monthly statistics - download listing (86 live workbook IDs)",
+      "url": "https://dams.kseb.in/?p=329",
+      "method": "curl",
+      "destination": "research/raw/kseb_monthly/listing.html",
+      "size_hint": "210 KB",
+      "priority": "high"
+    },
+    {
+      "name": "KSEB monthly workbook June 2019 (carries the 2018 'Previous Year Water Level' column and the 25.09.2018 status sheet)",
+      "url": "https://dams.kseb.in/?wpdmdl=315",
+      "method": "curl",
+      "destination": "research/raw/kseb_monthly/2019-06.xlsx",
+      "size_hint": "1,511,065 bytes (verified)",
+      "priority": "high"
+    },
+    {
+      "name": "KSEB monthly workbooks Jul-Oct 2019 (wpdmdl 500, 501, 502, 503) - completes the 96 unique 2018 dates",
+      "url": "https://dams.kseb.in/?wpdmdl=500",
+      "method": "curl",
+      "destination": "research/raw/kseb_monthly/2019-07..10.xlsx",
+      "size_hint": "~6 MB total (July 2019 verified at 1,561,406 bytes)",
+      "priority": "high"
+    },
+    {
+      "name": "KSEB monthly workbooks Nov 2020 - Apr 2021 (wpdmdl 1178, 1256, 1320, 1386, 1465, 1520) - the amith-vp corrupt window, legacy .xls",
+      "url": "https://dams.kseb.in/?wpdmdl=1178",
+      "method": "curl",
+      "destination": "research/raw/kseb_monthly/corrupt_window/",
+      "size_hint": "~6 MB total; needs xlrd or LibreOffice, openpyxl will refuse",
+      "priority": "high"
+    },
+    {
+      "name": "KSEB monthly workbook July 2026 - modern schema exemplar with rule level and alert bands",
+      "url": "https://dams.kseb.in/?wpdmdl=6380",
+      "method": "curl",
+      "destination": "research/raw/kseb_monthly/2026-07.xlsx",
+      "size_hint": "252,222 bytes (verified, 33 sheets)",
+      "priority": "high"
+    },
+    {
+      "name": "RAT-Kerala Idukki daily inflow (modelled VIC, 2015-10-24 to 2025-02-22)",
+      "url": "http://210.212.226.241:8080/RAT_Kerala_CWRDM/assets/RAT_results/inflow/idukki.csv",
+      "method": "curl",
+      "destination": "research/raw/rat_kerala/inflow_idukki.csv",
+      "size_hint": "100,264 bytes (verified)",
+      "priority": "high"
+    },
+    {
+      "name": "RAT-Kerala Idamalayar daily inflow (note the double-a slug)",
+      "url": "http://210.212.226.241:8080/RAT_Kerala_CWRDM/assets/RAT_results/inflow/idamalayaar.csv",
+      "method": "curl",
+      "destination": "research/raw/rat_kerala/inflow_idamalayaar.csv",
+      "size_hint": "100,426 bytes (verified)",
+      "priority": "high"
+    },
+    {
+      "name": "RAT-Kerala Mullaperiyar daily inflow - the upstream regulation AquaSync ignores",
+      "url": "http://210.212.226.241:8080/RAT_Kerala_CWRDM/assets/RAT_results/inflow/mullaperiyar.csv",
+      "method": "curl",
+      "destination": "research/raw/rat_kerala/inflow_mullaperiyar.csv",
+      "size_hint": "100,535 bytes (verified)",
+      "priority": "high"
+    },
+    {
+      "name": "RAT-Kerala area-elevation curves, Idukki and Idamalayar (USE ABOVE 724 m ONLY - the Idukki curve has a 40 km2/m discontinuity at 722-723 m)",
+      "url": "http://210.212.226.241:8080/RAT_Kerala_CWRDM/assets/RAT_results/aec/idukki.csv",
+      "method": "curl",
+      "destination": "research/raw/rat_kerala/aec_idukki.csv",
+      "size_hint": "7,228 bytes; Idamalayar twin 6,283 bytes (both verified)",
+      "priority": "medium"
+    },
+    {
+      "name": "RAT-Kerala observation-based products for Idukki: TMS-OS surface area, storage change, evaporation, outflow",
+      "url": "http://210.212.226.241:8080/RAT_Kerala_CWRDM/assets/RAT_results/sarea_tmsos/idukki.csv",
+      "method": "curl",
+      "destination": "research/raw/rat_kerala/",
+      "size_hint": "sarea 11,747 B, dels 18,004 B, evaporation 73,752 B, outflow 17,502 B (all verified)",
+      "priority": "medium"
+    },
+    {
+      "name": "IMD 0.25-degree daily gridded rainfall NetCDF, years 2018-2021",
+      "url": "https://www.imdpune.gov.in/cmpg/Griddata/RF25.php",
+      "method": "api",
+      "destination": "research/raw/imd_rf25/",
+      "size_hint": "~25 MB per year (2018 verified at 25,431,832 bytes); ~100 MB for four years. POST body: RF25=YYYY",
+      "priority": "high"
+    },
+    {
+      "name": "GUARDIAN rating curves for 210 CWC gauges incl. NEELEESWARAM, ARANGALI, VANDIPERIYAR",
+      "url": "https://ndownloader.figshare.com/files/49150798",
+      "method": "curl",
+      "destination": "research/sources/datasets/guardian_rating_curves.xlsx",
+      "size_hint": "53,652 bytes (verified)",
+      "priority": "high"
+    },
+    {
+      "name": "NWDP CWC hourly river water level, basin 031 (West flowing rivers Tadri-Kanyakumari), 1991-2020 - contains Aug 2018 Neeleeswaram stage at 743/744 hours",
+      "url": "https://nwdp.nwic.gov.in/dataset/d951a09c-6cf8-470e-be77-e80116f13d34/resource/c94d9352-442c-4e99-ade4-537eebc251f4/download/rwl_manual_hr_cwc_031_1991_2020.csv",
+      "method": "curl",
+      "destination": "research/sources/datasets/cwc_hourly_wl_031_1991_2020.csv",
+      "size_hint": "259,673,038 bytes. NOTE: the existing local cwc_kerala_hourly_water_level.csv is 150,579,920 bytes and matches neither official resource - verify it covers Aug 2018 before assuming it is complete. Supports HTTP Range.",
+      "priority": "high"
+    },
+    {
+      "name": "NWDP CWC hourly river water level, basin 031, 2021-2025 - contains the Oct 2021 flagship window at 744/744 hours",
+      "url": "https://nwdp.nwic.gov.in/dataset/d951a09c-6cf8-470e-be77-e80116f13d34/resource/a9f5d910-e360-42e0-a45c-637310b009c4/download/rwl_manual_hr_cwc_031_2021_2025.csv",
+      "method": "curl",
+      "destination": "research/sources/datasets/cwc_hourly_wl_031_2021_2025.csv",
+      "size_hint": "233,971,888 bytes",
+      "priority": "medium"
+    },
+    {
+      "name": "NWDP CWC hourly river water level, basin 031, 2026-2030 (current/ongoing file - not in any prior sweep)",
+      "url": "https://nwdp.nwic.gov.in/dataset/d951a09c-6cf8-470e-be77-e80116f13d34/resource/7c9f934f-9643-41e5-bfb4-2807cacc5573/download/rwl_manual_hr_cwc_031_2026_2030.csv",
+      "method": "curl",
+      "destination": "research/sources/datasets/cwc_hourly_wl_031_2026_2030.csv",
+      "size_hint": "18,836,582 bytes (verified by HEAD)",
+      "priority": "low"
+    },
+    {
+      "name": "wltaylor/Robust-FIRO - cvxpy ensemble MPC for reservoir flood control (MIT)",
+      "url": "https://github.com/wltaylor/Robust-FIRO",
+      "method": "git-shallow-clone",
+      "destination": "research/repos/Robust-FIRO",
+      "size_hint": "~50 MB (includes perfect_forecast.nc 48.5 MB). 1 star, pushed 2025-03-18 - paper code, not a library.",
+      "priority": "high"
+    },
+    {
+      "name": "iRONStoolbox/iRONS - op_piecewiselin_1res rule-curve policy parameterisation (MIT)",
+      "url": "https://github.com/iRONStoolbox/iRONStoolbox",
+      "method": "git-shallow-clone",
+      "destination": "research/repos/iRONS",
+      "size_hint": "~40 MB. DEFAULT BRANCH IS 'master', not 'main' - raw URLs built on main will 404.",
+      "priority": "high"
+    },
+    {
+      "name": "zpb4/syn-forecast_stochastic - synthetic forecast generation with deliberate skill degradation (MIT)",
+      "url": "https://github.com/zpb4/syn-forecast_stochastic",
+      "method": "git-shallow-clone",
+      "destination": "research/repos/syn-forecast_stochastic",
+      "size_hint": "small; but it is a MIXED R + Python stack (R: future, DEoptim, twosamples, ncdf4). Budget an R toolchain.",
+      "priority": "medium"
+    },
+    {
+      "name": "wltaylor/SSJRB-FIRO-Publishing - risk-threshold policy training and the LOOCV generalisation harness (MIT)",
+      "url": "https://github.com/wltaylor/SSJRB-FIRO-Publishing",
+      "method": "git-shallow-clone",
+      "destination": "research/repos/SSJRB-FIRO",
+      "size_hint": "small. train_firo.py raises NameError as committed (line 82 uses `bounds`, defined only in a commented block at line 63) - one-line fix.",
+      "priority": "medium"
+    },
+    {
+      "name": "CWC weekly reservoir level & storage bulletins, 2018 (45 of 52 Thursdays exist; the two flood weeks 08-09 and 08-16 are absent)",
+      "url": "https://cwc.gov.in/en/reservoir-level-storage-bulletin",
+      "method": "curl",
+      "destination": "research/raw/cwc_weekly_bulletins/2018/",
+      "size_hint": "~25 MB for 45 PDFs (the 02.08.2018 issue verified at 539,052 bytes). Scrape the paginated listing for hrefs; filenames are not predictable.",
+      "priority": "medium"
+    },
+    {
+      "name": "Dam Safety Act 2021 (Act 41 of 2021) full gazette text",
+      "url": "https://wrd.maharashtra.gov.in/Site/Upload/Pdf/DSA_2021_act.pdf?MenuID=1474",
+      "method": "curl",
+      "destination": "research/sources/legal/dam_safety_act_2021.pdf",
+      "size_hint": "459,259 bytes (verified). Maharashtra WRD mirror - for formal citation prefer indiacode.nic.in.",
+      "priority": "medium"
+    },
+    {
+      "name": "CEA Guidelines on Cyber Security in Power Sector 2021 (issuing-authority copy)",
+      "url": "https://cea.nic.in/wp-content/uploads/notification/2021/10/Guidelines_on_Cyber_Security_in_Power_Sector_2021.pdf",
+      "method": "curl",
+      "destination": "research/sources/legal/cea_cyber_security_2021.pdf",
+      "size_hint": "567,765 bytes (verified). Source of the 'hard isolation of OT from any internet facing IT system' cardinal principle.",
+      "priority": "medium"
+    },
+    {
+      "name": "CERT-In Directions under s.70B(6) IT Act, 28 April 2022 (6-hour reporting, 180-day in-country logs, NIC/NPL NTP)",
+      "url": "https://www.cert-in.org.in/PDF/CERT-In_Directions_70B_28.04.2022.pdf",
+      "method": "curl",
+      "destination": "research/sources/legal/certin_directions_2022.pdf",
+      "size_hint": "434,961 bytes (verified)",
+      "priority": "low"
+    },
+    {
+      "name": "NDSA regulations index (open JSON API - poll for newly gazetted regulations)",
+      "url": "https://ndsa.gov.in/ndsa-backend/web/api/document-config",
+      "method": "api",
+      "destination": "research/raw/ndsa/regulations.json",
+      "size_hint": "<1 MB. Then POST /ndsa-backend/web/regulation?lang=en with {\"page\":0,\"sort\":\"\",\"search\":\"\"} for all 20 regulations across 2 pages.",
+      "priority": "low"
+    },
+    {
+      "name": "KSDMA daily KSEB + Irrigation dam bulletins (rolling scrape)",
+      "url": "https://sdma.kerala.gov.in/dam-water-level/",
+      "method": "api",
+      "destination": "research/raw/ksdma_bulletins/",
+      "size_hint": "~65 KB/day. MUST scrape the current href - the filename rotates and is overwritten in place. I found three KSEB-SITE-N.pdf hrefs live on the page today including a stale 2025/11 one, so select the newest, never hardcode.",
+      "priority": "low"
+    },
+    {
+      "name": "Deltares/SFINCS + hydromt_sfincs (only if 2D proceeds)",
+      "url": "https://github.com/Deltares/SFINCS",
+      "method": "git-shallow-clone",
+      "destination": "research/repos/SFINCS",
+      "size_hint": "moderate. GPL-3.0 source; the precompiled Windows exe is Deltares Freeware, 'no distribution, no modification'.",
+      "priority": "low"
+    },
+    {
+      "name": "CWRDM - request in-situ KSEB 2018 Idukki/Idamalayar inflow and the official Idukki rule curve",
+      "url": "https://cwrdm.kerala.gov.in/reservoir-assessment-tool-kerala-rat-30",
+      "method": "manual-registration",
+      "destination": "research/sources/correspondence/",
+      "size_hint": "n/a - a human must write. CWRDM co-developed RAT-Kerala with UW SASWE under NASA grant 80NSSC22K0918 and is the most tractable single point of contact; three independent teams state they obtained KSEB in-situ 2018 data.",
+      "priority": "high"
+    },
+    {
+      "name": "Das et al. (2025) J. Hydrologic Engineering 30(2) - the closest published prior art to AquaSync's thesis",
+      "url": "https://ascelibrary.org/doi/10.1061/JHYEFF.HEENG-6276",
+      "method": "manual-registration",
+      "destination": "research/sources/papers/Das_2025_FIRO_Kerala_2018.pdf",
+      "size_hint": "n/a - genuinely closed access (OpenAlex is_oa=false, no green copy). Needs institutional access or an author request. AquaSync cannot state how it differs from the nearest existing work until someone reads it.",
+      "priority": "medium"
+    },
+    {
+      "name": "ISRO Bhoonidhi (NRSC) - register and inspect the catalogue before assuming CartoDEM is available",
+      "url": "https://bhoonidhi.nrsc.gov.in/bhoonidhi/registration.html",
+      "method": "manual-registration",
+      "destination": "research/sources/dem/",
+      "size_hint": "unknown. NOTHING on the registration page substantiates CartoDEM availability, resolution or price. Copernicus GLO-30 is one anonymous S3 command away, so treat this as an optional upgrade, not a dependency.",
+      "priority": "low"
+    },
+    {
+      "name": "Durai 2015 Mausam - EPS QPF verification over India",
+      "url": "https://mausamjournal.imd.gov.in/index.php/MAUSAM/article/download/557/483/1884",
+      "method": "curl",
+      "destination": "research/sources/papers/Durai_2015_Mausam_EPS_QPF_verification_India.pdf",
+      "kind": "paper",
+      "priority": "high",
+      "size_hint": "~776 KB",
+      "note": "THE forecast-skill numbers: day-3 ensemble-mean rainfall RMSE is 25-30 mm/day along the west coast vs 10-15 mm/day elsewhere, in all four of ECMWF/UKMO/NCEP/JMA. This is the number that bounds what AquaSync can claim."
+    },
+    {
+      "name": "GEFS Oct-2021 ensemble index (proof of ensemble members for the hindcast)",
+      "url": "https://noaa-gefs-pds.s3.amazonaws.com/gefs.20211015/00/atmos/pgrb2sp25/gep01.t00z.pgrb2s.0p25.f024.idx",
+      "method": "curl",
+      "destination": "research/sources/datasets/gefs_20211015_gep01_f024.idx",
+      "kind": "dataset",
+      "priority": "high",
+      "size_hint": "~10 KB",
+      "note": "GRIB index sidecar proving 30-member APCP is retrievable by byte range for the October 2021 case study. Record 16 is APCP:surface 18-24h acc, ENS=+1."
+    },
+    {
+      "name": "GRRR reforecast zarr metadata (Google Runoff Reanalysis and Reforecast)",
+      "url": "https://storage.googleapis.com/flood-forecasting/hydrologic_predictions/model_id_8583a5c2_v0/reforecast/streamflow.zarr/.zmetadata",
+      "method": "curl",
+      "destination": "research/sources/datasets/grrr_reforecast_zmetadata.json",
+      "kind": "dataset",
+      "priority": "high",
+      "size_hint": "small",
+      "note": "Anonymously readable. 1,031,646 gauges x 2,738 issue times x 8 lead days, 2016-01-01 to 2023-06-30. Virtual gauge hybas_4121152880 sits 0.61 km from Idukki dam."
     }
   ],
-  "source": "seed - verified by hand via GitHub API"
+  "source": "seed (hand-verified) + deep-research synthesis"
 }

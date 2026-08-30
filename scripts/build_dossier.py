@@ -11,6 +11,7 @@ the analysis. Run the analyses first:
 
 from __future__ import annotations
 
+import datetime as dt
 import json
 from pathlib import Path
 
@@ -45,6 +46,7 @@ BLUE = colors.HexColor("#1f6feb")
 RED = colors.HexColor("#d1242f")
 GREEN = colors.HexColor("#1a7f37")
 AMBER = colors.HexColor("#bf8700")
+VIOLET = colors.HexColor("#6f42c1")
 RULE = colors.HexColor("#dde3ea")
 BG = colors.HexColor("#f6f8fa")
 
@@ -177,12 +179,31 @@ def figure(name: str, caption: str, width: float = CONTENT_W):
     return KeepTogether([img, para(caption, "caption")])
 
 
+def fmt_window(w: str) -> str:
+    """'2022-08-01 to 2022-08-20' -> '1-20 August 2022'. Returns w unchanged
+    if it is not a window this understands."""
+    try:
+        a, b = (dt.date.fromisoformat(x.strip()) for x in w.split("to"))
+    except ValueError:
+        return w
+    if (a.month, a.year) == (b.month, b.year):
+        return f"{a.day}\u2013{b.day} {b:%B %Y}"
+    return f"{a.day} {a:%B} \u2013 {b.day} {b:%B %Y}"
+
+
 def load_facts() -> dict:
     facts = {}
     for f in ("figure_facts.json", "lead_time_headline.json"):
         p = PROC / f
         if p.exists():
             facts.update(json.loads(p.read_text(encoding="utf-8")))
+    # Nested rather than merged: these carry generic top-level keys that would
+    # collide with the figure facts.
+    for key, f in (("out_of_sample", "replay_idukki_aug_2022.json"),
+                   ("routing_cal", "routing_calibration_neeleeswaram.json")):
+        p = PROC / f
+        if p.exists():
+            facts[key] = json.loads(p.read_text(encoding="utf-8"))
     return facts
 
 
@@ -237,12 +258,13 @@ def cover(f: dict) -> list:
         Spacer(1, 42 * mm),
     ]
 
-    lead = f.get("lead_time", {})
     cal = f.get("calibration", {})
     cf = f.get("counterfactual", {})
+    fe = f.get("forecast_error", {})
     out += [
         kpi_row([
-            (f"{lead.get('freeboard_mean', 3.16):.1f} m", "additional flood cushion,<br/>October 2021 replay"),
+            (f"{min(fe.get('mm_m', [1.03])):.1f}–{max(fe.get('mm_m', [2.30])):.1f} m",
+             "flood cushion gained driving from<br/>real ensemble forecasts (§4.4)"),
             (f"{cal.get('r2', 0.9957):.4f}", "r² of the calibrated<br/>level–storage curve"),
             (f"{cf.get('replay_level_mae_m', 0.30):.2f} m", "mean error reproducing<br/>observed reservoir level"),
             ("Rs 0", "software and data cost"),
@@ -256,7 +278,7 @@ def cover(f: dict) -> list:
             "and is a stronger case. Details in §3 and §11.",
             accent=AMBER),
         Spacer(1, 8 * mm),
-        para("Prepared 26 August 2026 · All figures regenerate from public data via "
+        para("Prepared 30 August 2026 · All figures regenerate from public data via "
              "<font face='Courier'>scripts/make_figures.py</font>", "caption"),
     ]
     return out
@@ -351,11 +373,11 @@ def section_solution() -> list:
         Table([[Paragraph(
             "<font face='Courier' size='7.4'>"
             "INGESTION &nbsp;&nbsp;KSEB bulletin · IMD forecast · INCOIS tide · Sentinel-1 SAR · ESP32 nodes<br/>"
-            "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#9660;<br/>"
-            "SIMULATION &nbsp;SCS-CN runoff → mass balance → Muskingum routing → tidal backwater → power<br/>"
-            "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#9660;<br/>"
+            "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|<br/>"
+            "SIMULATION &nbsp;SCS-CN runoff -&gt; mass balance -&gt; Muskingum routing -&gt; tidal backwater -&gt; power<br/>"
+            "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|<br/>"
             "DECISION &nbsp;&nbsp;&nbsp;Policy search over (target level, start time, max rate)<br/>"
-            "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#9660;<br/>"
+            "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|<br/>"
             "INTERFACE &nbsp;&nbsp;3D live twin · what-if · Crisis Commander · Malayalam alerting"
             "</font>", S["cell"])]], colWidths=[CONTENT_W]),
         Spacer(1, 5),
@@ -369,9 +391,9 @@ def section_solution() -> list:
              ["3", "River routing", "What discharge arrives at Aluva, and at what hour?",
               "Muskingum storage routing, auto sub-reached for stability"],
              ["4", "Tidal backwater", "How much can the river safely carry right now?",
-              "Harmonic tide + exponential backwater decay → effective conveyance"],
+              "Harmonic tide + exponential backwater decay, giving effective conveyance"],
              ["5", "Hydropower", "What does this release cost or earn?",
-              "ρgQHη with a turbine hill diagram and time-of-day tariff"]],
+              "Density x gravity x flow x head x efficiency, with a turbine hill diagram and time-of-day tariff"]],
             widths=[9 * mm, 32 * mm, 60 * mm, CONTENT_W - 101 * mm]),
         Spacer(1, 6),
         para(
@@ -388,6 +410,18 @@ def section_results(f: dict) -> list:
     cal = f.get("calibration", {})
     cf = f.get("counterfactual", {})
     lead = f.get("lead_time", {})
+    fe = f.get("forecast_error", {})
+    cc = f.get("cascade_coordination", {})
+    oos = f.get("out_of_sample", {})
+
+    fe_rows = [[f"{h:.0f} h", issued, f"{em:.2f} m ({ep:.0f}%)", f"{mm:.2f} m ({mp:.0f}%)"]
+               for h, issued, em, ep, mm, mp in zip(
+                   fe.get("leads_h", []), fe.get("issue_dates", []),
+                   fe.get("ev_m", []), fe.get("ev_pct", []),
+                   fe.get("mm_m", []), fe.get("mm_pct", []), strict=True)]
+    forecast_block = _forecast_error_block(fe, fe_rows) if fe_rows else []
+    cascade_block = _cascade_block(cc) if cc else []
+
     return [
         PageBreak(),
         para("4 · Results", "h1"), rule(),
@@ -396,19 +430,30 @@ def section_results(f: dict) -> list:
                f"Figure 3 — About 11% of the source dataset is physically impossible (left): live "
                f"storage above the reservoir's stated capacity, storage percentages over 1,000%. "
                f"Fitted on the {cal.get('n', 1836):,} validated rows (right), the level–storage power "
-               f"law gives β = {cal.get('beta', 1.348):.3f}, r² = {cal.get('r2', 0.9957):.4f}, "
+               f"law fits an exponent of {cal.get('beta', 1.348):.3f}, r² = {cal.get('r2', 0.9957):.4f}, "
                f"MAE {cal.get('mae', 17):.0f} Mm³."),
         para(
             "Fitting the same curve on the uncleaned feed gives r² = 0.784 and an MAE of "
             "174 Mm³ — the corrupt block alone displaces the curve by more than the entire "
             "flood cushion being modelled. Data validation was not housekeeping here; it was "
             "the difference between a usable model and a confidently wrong one."),
-        para("4.2 · Replaying October 2021", "h2"),
+        para("4.2 · Replaying October 2021, and an episode the model never saw", "h2"),
         para(
             f"Fed the releases that actually occurred, the twin reproduces the observed Idukki "
             f"level with a mean error of <b>{cf.get('replay_level_mae_m', 0.30):.2f} m</b> "
             f"(maximum {cf.get('replay_level_max_err_m', 0.57):.2f} m) over 20 days. That "
             f"agreement is what earns the right to ask a counterfactual question at all."),
+        para(
+            f"Reproducing one episode is fitting; reproducing a second one the model was never "
+            f"shown is validating. Replayed over "
+            f"{fmt_window(oos.get('window', '2022-08-01 to 2022-08-20'))} \u2014 an "
+            f"episode nothing was "
+            f"tuned on \u2014 the error is "
+            f"<b>{oos.get('mean_absolute_error_m', 0.319):.2f} m</b>, within 5% of October "
+            f"2021's. One wrinkle worth stating: the drift reverses between the two episodes "
+            f"(October 2021 ends {cf.get('replay_final_err_m', 0.52):+.2f} m, August 2022 "
+            f"{oos.get('final_step_error_m', -0.273):+.2f} m), which argues against a single "
+            f"missing loss term and points at event-specific interpolation timing instead."),
         figure("fig5_counterfactual.png",
                "Figure 4 — Observed operation (red) against the policy AquaSync selects (green). "
                f"The policy ends the episode roughly {cf.get('freeboard_gained_m', 3.1):.1f} m lower, "
@@ -434,15 +479,131 @@ def section_results(f: dict) -> list:
         para(
             f"One further result is worth stating because nobody set it: given only the physics "
             f"and the objective, the optimiser converged on a target level of "
-            f"<b>{lead.get('target_level', 728.43):.2f} m</b> at nearly every lead time tested. KSEB's "
-            f"own published rule level for Idukki is <b>728.50 m</b>. The optimiser independently "
-            f"rediscovered the operating rule that already exists, to within 7 cm."),
+            f"<b>{lead.get('target_level', 728.43):.2f} m</b> at nearly every lead time tested — "
+            f"within 7 cm of the <b>728.50 m</b> that KSEB's own 2020 rule curve prescribes for "
+            f"31 August."),
         callout(
-            "Which means the recommendation is not “change the rule”.",
-            "The rule curve is already correct. What is missing is a system that acts on it "
-            "against a forecast, early enough that acting is cheap. That is a considerably "
-            "easier thing to ask a utility to adopt than a new operating philosophy.",
-            accent=BLUE, tint="#eef4fd"),
+            "But “just follow the rule curve” is NOT the recommendation, and the audit record "
+            "says so.",
+            "It is tempting to read the previous paragraph as vindication of the published rule "
+            "curve. The CAG performance audit of Kerala's flood preparedness rules that out. "
+            "Reading its Tables 3.6 and 3.7 directly: actual Idukki spills over 14–18 August 2018 "
+            "totalled <b>467.51 MCM</b>, while the 2020 rule curve would have required "
+            "<b>531.03 MCM</b> across the same window.<br/><br/>"
+            "On the worst days of the worst flood in a century, mechanical compliance with the "
+            "published curve would have put <i>more</i> water into the Periyar, not less. The "
+            "agreement at 728.50 m is a coincidence of date — 31 August is the curve's most "
+            "permissive step — not a validation of it.<br/><br/>"
+            "What the result actually supports is narrower and more defensible: <b>a "
+            "forecast-driven target, recomputed as conditions change, lands near sensible "
+            "operating levels without being told what they are.</b> The value is in the "
+            "recomputation, not in the number.",
+            accent=RED, tint="#fdeef0"),
+        para(
+            "This correction came from the project's own research sweep rather than from a "
+            "reviewer, which is the outcome to aim for. The full evidence, including the "
+            "positions that contradict this project's thesis, is in the companion "
+            "<i>Deep Research Report</i>."),
+    ] + forecast_block + cascade_block
+
+
+def _forecast_error_block(fe: dict, rows: list) -> list:
+    """4.4 - what the counterfactual is worth once the forecast is real."""
+    perfect = fe.get("perfect_m", 3.111)
+    mm_pct = fe.get("mm_pct", [33.1])
+    ev_pct = fe.get("ev_pct", [26.1])
+    return [
+        PageBreak(),
+        para("4.4 \u00b7 What survives once the forecast is real", "h2"),
+        para(
+            "Every number above hands the optimiser the inflow that actually occurred. No "
+            "operator has that. This study re-runs the same October 2021 decision from a "
+            "30-member NOAA GEFS rainfall ensemble issued <i>before</i> the storm: each "
+            "member is bias-corrected against IMD gridded rainfall, pushed through the same "
+            "SCS-CN and Muskingum chain, and given its own policy search. One policy is then "
+            "committed to under that uncertainty and scored against what actually happened."),
+        data_table(
+            ["Lead time", "Ensemble issued", "Expected value", "Minimax regret"],
+            rows, widths=[26 * mm, 40 * mm, (CONTENT_W - 66 * mm) / 2,
+                          (CONTENT_W - 66 * mm) / 2], align_right=(2, 3)),
+        Spacer(1, 6),
+        para(
+            f"Percentages are the share of the {perfect:.2f} m that perfect foresight buys over "
+            f"the same window. <i>Expected value</i> commits to the candidate policy with the "
+            f"lowest mean cost across all 30 members; <i>minimax regret</i> commits to the one "
+            f"whose worst case across the ensemble is least bad.", "caption"),
+        figure("fig6_forecast_error.png",
+               "Figure 6 \u2014 The benefit that survives a real forecast, by lead time and "
+               "decision rule, against the perfect-foresight ceiling."),
+        callout(
+            "Between a quarter and three quarters of the benefit survives \u2014 and the choice "
+            "of decision rule matters as much as the lead time.",
+            f"Driven from a real ensemble the policy retains <b>{min(ev_pct):.0f}\u2013{max(mm_pct):.0f}%</b> "
+            f"of the perfect-foresight gain. <b>Hedging against the worst ensemble member never "
+            f"did worse than betting on the average one, and at 90 h it did more than twice as "
+            f"well ({max(mm_pct):.0f}% against {ev_pct[1]:.0f}%).</b> That makes minimax regret a safe "
+            f"default: it costs nothing on the occasions it does not help. The perfect-foresight "
+            f"figures elsewhere in this document are a ceiling, and should be read as one.",
+            accent=GREEN, tint="#eefbf1"),
+        callout(
+            "What did not survive the third data point.",
+            f"After the 24 h and 90 h runs it looked like the minimax advantage grows with lead "
+            f"time \u2014 a 7-point gap widening to 41, and mechanistically plausible, since more "
+            f"lead time means more ensemble spread and more to gain from hedging. <b>The 120 h "
+            f"run breaks it</b>: the gap collapses to about a point. <b>Three points from one "
+            f"storm are not a decay curve.</b> The likely confound is that the bias correction is "
+            f"a single-event multiplicative factor and it swings between runs "
+            f"({fe.get('bias_min', 1.68):.2f}\u00d7 to {fe.get('bias_max', 3.18):.2f}\u00d7), "
+            f"which alone can move which member the optimiser treats as its worst case. The "
+            f"claim is withdrawn rather than defended, and recorded here because a retraction "
+            f"found internally is worth more than one found by a reviewer.",
+            accent=AMBER),
+    ]
+
+
+def _cascade_block(cc: dict) -> list:
+    """4.5 - the result that argues against the obvious extension."""
+    obs = cc.get("observed_joint_peak_cumecs", 403.4)
+    naive = cc.get("naive_independent_joint_peak_cumecs", 910.9)
+    coord = cc.get("coordinated_joint_peak_cumecs", 828.0)
+    return [
+        PageBreak(),
+        para("4.5 \u00b7 Two dams, and a result that argues against the obvious extension", "h2"),
+        para(
+            f"Everywhere else in this project the two Periyar reservoirs are optimised one at a "
+            f"time. Since the evidence for the problem is that they failed <i>jointly</i> "
+            f"(Figure 2), scheduling them together looked like the single most valuable thing "
+            f"left to add. Routing both releases through the river DAG to their shared "
+            f"confluence over the {cc.get('n_hours', 481)}-hour October 2021 window says "
+            f"otherwise."),
+        figure("fig7_cascade_coordination.png",
+               "Figure 7 \u2014 Joint peak at the confluence under three regimes. These are the "
+               "two dams' contribution only: the ungauged lateral inflow between the dams and "
+               "Aluva is not included, so the absolute values are not total river discharge and "
+               "must not be read against bankfull. The comparison between the three regimes is "
+               "valid; the cumec values on their own are not a flood-risk verdict."),
+        callout(
+            "Optimising each dam for itself is not a neutral simplification \u2014 it is "
+            "actively worse than the uncoordinated baseline.",
+            f"Each dam optimising alone raises the joint peak to <b>{naive:,.0f} cumecs</b> "
+            f"against the <b>{obs:,.0f}</b> that actually occurred \u2014 "
+            f"<b>{abs(cc.get('naive_vs_observed_reduction_pct', -125.8)):.0f}% worse</b>. "
+            f"Idukki's own optimum releases at the top of its rate grid because, scored against "
+            f"the downstream reach <i>alone</i>, that looks entirely safe. It is not safe once "
+            f"Idamalayar's simultaneous release arrives at the same confluence \u2014 a "
+            f"combination neither dam's objective function can see.",
+            accent=RED, tint="#fdeef0"),
+        para(
+            f"<b>And retiming does not fix it.</b> Sweeping both dams' start hours \u2014 the "
+            f"most direct reading of \u201cmake the pulses not superpose\u201d \u2014 recovers "
+            f"only {cc.get('coordination_vs_naive_reduction_pct', 9.1):.0f}% of the gap it "
+            f"opened ({naive:,.0f} to {coord:,.0f} cumecs), nowhere near the observed "
+            f"{obs:,.0f}. Once each dam is already optimised for its own safety at maximum rate, "
+            f"this is not a timing problem; it is an objective-function problem. The "
+            f"correctly-scoped next piece of work is a genuinely joint objective \u2014 each "
+            f"dam's policy scored against the actual combined downstream discharge rather than "
+            f"its own reach in isolation \u2014 not a bigger timing search. That is now the "
+            f"largest open modelling item in the project, and \u00a79 records it as such."),
     ]
 
 
@@ -457,7 +618,8 @@ def section_innovation() -> list:
              ["Timing", "Reactive — alerts once thresholds are crossed",
               "Prescriptive — acts on a forecast, before the surge"],
              ["Scope", "One reservoir in isolation",
-              "The cascade: staggering releases so pulses do not superpose"],
+              "Both Periyar dams routed to their shared confluence — which is how this "
+              "project found that optimising them separately makes the joint peak worse (§4.5)"],
              ["Objectives", "Water level only",
               "Flood, dam safety, generation revenue and gate wear, jointly weighted"],
              ["The sea", "Ignored",
@@ -549,13 +711,13 @@ def section_hardware() -> list:
             ["Tier", "What it adds", "Time", "Rs ", "Cumulative"],
             [["Tools", "Iron, solder, multimeter, strippers — if not owned", "—", "1,480", "1,480"],
              ["<b>V1</b>", "<b>Two-tank HIL rig: ESP32, JSN-SR04T, DS18B20, NEMA 17 gate, "
-                           "YF-S201 flow, pump, acrylic</b>", "<b>1 wk</b>", "<b>6,150</b>", "<b>7,630</b>"],
+                           "YF-S201 flow, pump, acrylic</b>", "<b>1 wk</b>", "<b>6,250</b>", "<b>7,730</b>"],
              ["V2", "Off-grid: LoRa SX1278 (433 MHz), SD logging, INA219 jam detection, solar",
-              "1 wk", "2,300", "9,930"],
+              "1 wk", "2,300", "10,030"],
              ["V3", "Edge AI: ESP32-S3, ESP32-CAM, 24 GHz radar, hydrostatic transmitter, I²S mic",
-              "2 wk", "6,900", "16,830"],
+              "2 wk", "5,900", "15,930"],
              ["V4", "Raspberry Pi offline command post, GPS bathymetry boat",
-              "3 wk", "9,400", "26,230"]],
+              "3 wk", "9,900", "25,830"]],
             widths=[15 * mm, CONTENT_W - 76 * mm, 15 * mm, 18 * mm, 22 * mm],
             align_right=(3, 4)),
         Spacer(1, 6),
@@ -570,7 +732,7 @@ def section_hardware() -> list:
               "Not optional — sound speed drifts 0.6 m/s per °C"],
              ["NEMA 17 + A4988", "42 mm, 1.8°, 4.2 kg·cm, 1/16 microstep", "780",
               "Precise, repeatable sluice gate positioning"],
-             ["YF-S201", "Hall flow, 1–30 L/min, G1/2″", "350", "Closes the mass balance loop"],
+             ["YF-S201", "Hall flow, 1–30 L/min, G1/2 in", "350", "Closes the mass balance loop"],
              ["BMP280", "Barometric, ±0.12 hPa", "150", "Pressure-drop squall pre-detection"],
              ["Limit switches", "SPDT lever × 2", "80",
               "A stepper has no position feedback; these give it a datum"]],
@@ -638,6 +800,10 @@ def section_data() -> list:
 
 def section_limits(f: dict) -> list:
     cf = f.get("counterfactual", {})
+    fe = f.get("forecast_error", {})
+    cc = f.get("cascade_coordination", {})
+    rc = f.get("routing_cal", {})
+    ev, mmx = fe.get("ev_pct", [26.1]), fe.get("mm_pct", [74.0])
     return [
         PageBreak(),
         para("9 · Limitations", "h1"), rule(),
@@ -646,29 +812,43 @@ def section_limits(f: dict) -> list:
             "finding them first is the difference between a limitation and a hole."),
         data_table(
             ["Limitation", "Consequence", "Mitigation"],
-            [["<b>The counterfactual assumes perfect foresight</b>",
-              "The optimiser sees the true inflow series when choosing a policy. Real forecasts "
-              "are wrong. <b>Every benefit figure here is an upper bound.</b>",
-              "Next: re-run driving the policy from ensemble forecasts with realistic error, "
-              "and report the degradation. This is the highest-priority open item"],
+            [["<b>Headline figures assume perfect foresight</b>",
+              f"The optimiser sees the true inflow when choosing a policy, so every "
+              f"perfect-foresight number here is a <b>ceiling</b>. Driven from a real 30-member "
+              f"ensemble the policy retains {min(ev):.0f}\u2013{max(mmx):.0f}% of it (\u00a74.4)",
+              "Measured rather than assumed: quote the forecast-driven range for any "
+              "operational claim. Remaining gap: one storm, three lead times"],
              ["Daily input resolution",
               "Bulletin data is one reading per day, interpolated to hourly. Sub-daily peaks "
               "are smoothed away; peak timing carries roughly ±12 h",
               "CWC 15-minute telemetry; ESP32 nodes for local sub-daily truth"],
-             ["Routing parameters are estimated",
-              "Muskingum K and x come from reach geometry, not gauge pairs. Downstream "
-              "discharge figures are indicative, not measured",
-              "Calibrate against CWC gauge records at Neeleeswaram and Aluva"],
+             ["Routing parameters are anchored, not calibrated",
+              f"K and x are anchored to CWC's published {rc.get('cwc_anchor_k_hours', 8):.0f}-hour "
+              f"Idukki\u2013Neeleeswaram travel time. A direct fit against "
+              f"{rc.get('n_days', 1967):,} days of gauge data failed "
+              f"(r\u00b2 = {rc.get('r_squared', 0.005):.3f}): daily data is ~3\u00d7 coarser "
+              f"than the signal. Downstream discharge is indicative, not measured",
+              "CWC 15-minute telemetry \u2014 the highest-value data upgrade. Until then, never "
+              "quote Aluva discharge as measured"],
              [f"Replay error {cf.get('replay_level_mae_m', 0.30):.2f} m MAE",
               "Roughly 0.5 m of the ~3 m freeboard claim sits inside model error",
               "Quote it as “about 3 m”, never to two decimals"],
              ["No 2D inundation",
               "The twin gives river discharge, not which streets flood",
               "LISFLOOD-FP or a HEC-RAS coupling on a Bhuvan DEM"],
-             ["Single reservoir optimised",
-              "The cascade is characterised but not yet jointly scheduled — the highest-value "
-              "modelling gap",
-              "The routing layer is already a DAG; extend the policy search across nodes"],
+             ["<b>Each dam is optimised against its own reach alone</b>",
+              f"Not merely incomplete \u2014 measured as harmful: optimising the two dams "
+              f"independently raises the joint peak at their confluence "
+              f"{abs(cc.get('naive_vs_observed_reduction_pct', -125.8)):.0f}% above what "
+              f"actually happened, and retiming recovers only "
+              f"{cc.get('coordination_vs_naive_reduction_pct', 9.1):.0f}% (\u00a74.5)",
+              "A joint objective: score each dam's policy on combined downstream discharge, not "
+              "its own reach. <b>The largest open modelling item</b>"],
+             ["No lateral inflow between the dams and Aluva",
+              "The cascade figures are the two dams' contribution only, not total river "
+              "discharge, and must not be read against bankfull thresholds",
+              "RiverNetwork already accepts lateral inflows; no tributary or local-runoff "
+              "series exists in the project's data holdings yet"],
              ["Indicative tariffs",
               "Revenue figures are order-of-magnitude, not audited",
               "Substitute the current KSERC order before quoting rupees to a utility"],
@@ -678,6 +858,44 @@ def section_limits(f: dict) -> list:
               "would have advised, publish the comparison"]],
             widths=[42 * mm, 62 * mm, CONTENT_W - 104 * mm]),
         Spacer(1, 8),
+        para("9.1 · Evidence against this project's thesis", "h2"),
+        para(
+            "A deep-research sweep run against this project found five positions that "
+            "complicate or contradict its argument. They belong here rather than in a footnote, "
+            "because the first domain-literate reviewer will find them anyway."),
+        data_table(
+            ["Challenge", "What it means for AquaSync"],
+            [["<b>The literature does not agree that dams worsened the 2018 flood.</b> CWC's own "
+              "September-2018 study concludes the reservoirs <i>attenuated</i> the peak — Idukki "
+              "2,532 down to 1,500 cumec, about 41%.",
+              "The framing “dam mismanagement caused the flood” is contested by the agency that "
+              "owns the data. State the conflict; do not assert one side."],
+             ["<b>The most-quoted “reservoirs made it worse” study was rejected.</b> Mishra et "
+              "al.'s HESS preprint carries “not accepted for further review”, and its headline "
+              "number differs from the peer-reviewed figure by about 3.5×.",
+              "Do not cite it. Its absence from the argument is a strength."],
+             ["<b>The forecast skill this approach assumes may not exist in this basin.</b> "
+              "Sudheer et al. report that probability of detection for rainfall above 25 mm/day "
+              "at 3–5 day range is poor <i>even with ensembles</i>.",
+              "This is the deepest problem in the project. It is not solved by better "
+              "optimisation, and it bounds what any forecast-driven system can deliver here."],
+             ["<b>Even a perfect optimiser has a modest ceiling.</b> The same authors put "
+              "achievable peak attenuation from advance emptying at <b>16–21%</b>, and find "
+              "downstream flows become insensitive to reservoir state below 50% storage.",
+              "A useful sanity bound. Any claim materially above it needs extraordinary evidence."],
+             ["<b>FIRO took about a decade of shadow operation</b> to change one water control "
+              "manual that had been revised twice in 66 years.",
+              "The adoption timeline in this document is optimistic. Shadow mode is not a phase; "
+              "it is most of the work."]],
+            widths=[74 * mm, CONTENT_W - 74 * mm]),
+        Spacer(1, 8),
+        callout(
+            "The honest summary of all five.",
+            "AquaSync is a decision-support tool whose upper bound is set by monsoon forecast "
+            "skill over the Western Ghats, operating in a domain where the causal claim it rests "
+            "on is genuinely disputed. That is a smaller claim than the one this document opened "
+            "with, and it is the one the evidence supports.",
+            accent=VIOLET, tint="#f4f0fb"),
         callout(
             "The system is advisory, permanently.",
             "AquaSync never operates a gate. If an automated system opens a spillway and "
@@ -696,9 +914,10 @@ def section_roadmap() -> list:
         data_table(
             ["Horizon", "Work", "Why it matters"],
             [["Now – expo",
-              "Forecast-error study; cascade co-optimisation; gauge calibration; V1 rig; "
-              "3D interface",
-              "Turns an upper-bound result into a defensible one"],
+              "Joint cascade objective (\u00a74.5); V1 rig; live backend and Crisis Commander "
+              "mode",
+              "The forecast-error and cascade studies are done and reported in \u00a74; what "
+              "remains is acting on what they found"],
              ["3–6 months",
               "CWC 15-min telemetry; 2D inundation on Bhuvan DEM; Sentinel-1 extent validation; "
               "field-deploy one ESP32 node",
@@ -762,10 +981,14 @@ def section_pitch() -> list:
             "revenue, not less, because the same water goes through the turbines at "
             "better hours instead of over the spillway. The safety-versus-power conflict "
             "everyone assumes is mostly an artefact of acting late.<br/><br/>"
-            "And the operating level the optimiser chose? 728.43 metres. KSEB's own published "
-            "rule level is 728.50. We did not invent a better rule. The rule is already right. "
-            "What is missing is a system that acts on it while acting is still cheap — and "
-            "that is what this is.”", S["callout"])]], colWidths=[CONTENT_W],
+            "And the operating level the optimiser chose? 728.43 metres — within seven "
+            "centimetres of what KSEB's own rule curve prescribes for that date, without ever "
+            "being told it. I want to be careful here, because the CAG audit shows that "
+            "mechanically following that curve through August 2018 would actually have released "
+            "<i>more</i> water, not less. So the point is not that the rule is right. The point "
+            "is that a system recomputing the target against a live forecast arrives somewhere "
+            "sensible on its own — and keeps arriving there as conditions change, which a fixed "
+            "curve cannot do.”", S["callout"])]], colWidths=[CONTENT_W],
             style=TableStyle([
                 ("BACKGROUND", (0, 0), (-1, -1), BG),
                 ("LINEBEFORE", (0, 0), (0, -1), 2.4, BLUE),

@@ -1,0 +1,494 @@
+{
+  "dimension": "Open-source reservoir operation, optimisation and forecast-informed operations (FIRO)",
+  "key_findings": [
+    "THE SINGLE HIGHEST-VALUE FIND: Robust-FIRO's MPCProblem.py (194 lines, cvxpy) is a receding-horizon ensemble MPC whose decision variables map 1:1 onto AquaSync's existing policy search - TOCS = target level, ramp_rate = max rate, u_max = max release. I ported the formulation to Idukki scale myself and VERIFIED it runs: 1459 Mm3 cap, 40-member x 14-day-lead forecast array, 60-day sim, 45 receding-horizon solves in 0.39 s wall (8.8 ms/solve), status 'optimal', using the free CLARABEL solver bundled with cvxpy. ~40 lines of core code. Objective is (1-w)*sum(pos(Sf-TOCS)) + w*sum(neg(Sf-TOCS)) over Sf = S0 + cumsum(Qf - u) across NE ensemble members x NL lead times, with 0<=u<=u_max plus ramp-rate constraints on both current and future release. This closes the perfect-foresight gap - AquaSync's biggest weakness - for 1-2 days of work.",
+    "RTC-Tools is ALIVE and its install burden is far LOWER than its reputation. Verified by actually installing it: `pip install rtc-tools` pulls exactly 9 packages (rtc-tools 2.8.0, casadi 3.7.2, pymoca 0.9.3, rtc-tools-channel-flow 1.3.1, rtc-tools-standard-library 0.1.2, numpy 2.5.2, scipy 1.18.1, defusedxml 0.7.1, antlr4-python3-runtime 4.13.2) on Windows/Python 3.12. NO separate IPOPT build is needed - I enumerated CasADi's plugins and it bundles IPOPT, Bonmin, HiGHS, CBC, Clp and qpOASES (only Knitro and Gurobi absent). The shipped single_reservoir example ran end-to-end in 3.07 s wall, 0.015 s in IPOPT, 25 iterations, 'EXIT: Optimal Solution Found'. The readthedocs Getting Started page never mentions this, which is why RTC-Tools has an undeserved reputation for a heavy solver install.",
+    "BUT the real RTC-Tools adoption cost is Modelica, not dependencies. I checked every example in the repo: ALL optimisation examples import ModelicaMixin, and there is no Python-only model-definition path on the optimisation side. The one 'custom equations in Python' example is a SIMULATION and still ships a .mo file. Porting AquaSync's SCS-CN runoff, Muskingum routing with sub-reaching, harmonic tide model and turbine hill diagram into Modelica + the Deltares.ChannelFlow library is weeks of work and would discard a level-storage law already calibrated to r2=0.9957. VERDICT: do not port. Steal two designs instead - (1) the goal-programming priority ladder, where the 76-line single_reservoir.py expresses volume-range, minimise-release and minimise-release-change as priority 1/2/3 goals rather than a weighted sum; (2) ControlTreeMixin, the scenario-tree formulation for optimising one here-and-now decision across a branching forecast ensemble.",
+    "MOEA is NOT worth adopting for AquaSync's CURRENT 3-parameter search - I benchmarked it head-to-head. On an AquaSync-shaped policy simulation (30 days hourly, 3 objectives: peak outflow, energy, terminal storage) an exhaustive grid of 4,800 evaluations took 2.02 s (0.42 ms/eval) and is complete, deterministic and explainable to a regulator. NSGA-II (pymoo, pop 100 x 48 gen) on the IDENTICAL 4,800-evaluation budget took 2.31 s and returned only an approximate 100-point front. The grid wins outright at 3 variables. Crossover is ~6-7 decision variables: at 0.42 ms/eval a 10-level grid costs 0.42 s at 3 dims, 42 s at 5, 7 min at 6, 70 min at 7, 12 h at 8. Only switch to pymoo if you move to a parameterised rule curve (a 6-point piecewise-linear policy = 12 variables, where a grid is 1e12 evals ~ 13,000 years).",
+    "Borg MOEA is NOT open source and is a licensing trap for anything destined for KSEB. borgmoea.org (verified 200) states verbatim: 'Borg is freely available for academic and non-commercial use. Use this site to learn more about the Borg MOEA and request access to its source code.' Access is gated behind a Google form (~3 business days) with code on a private BitBucket repo; PyBorg inherits the same restriction. This transitively poisons WaterPaths, PySedSim's optimisation path and essentially every published EMODPS reservoir study. Use pymoo (Apache-2.0, 2,946 stars) instead.",
+    "Pywr is genuine and maintained (191 stars, pushed 2026-07-23, 1.31.1 on PyPI 2026-06-08) and I verified it has the pieces AquaSync cares about: HydropowerRecorder, HydropowerTargetParameter, ControlCurveParameter and ControlCurveInterpolatedParameter (rule curves), and Scenario (ensembles). Install: 37 packages in 30 s, clean import on Python 3.12. I built and ran a single-reservoir + hydropower model at Idukki scale from ~20 lines of JSON: 1.38 s load, under 0.01 s to solve 31 daily timesteps. HOWEVER Pywr is fundamentally a linear-programme network allocation model - head-dependent generation is a post-hoc Recorder or an iterative target parameter, not a native nonlinear constraint, so AquaSync's turbine hill diagram and time-of-day tariff have no clean home in it. Adopt the ControlCurve and Scenario CONCEPTS, not the framework. GPL-3.0 is also viral.",
+    "pywr-next / Pywr 2.0 is NOT ready - do not build on it. 12 stars, Rust, 54 open issues, repo description still reads 'An experimental repository exploring ideas for a major revision to Pywr'. Every release is pre-release: v2.0.0-beta1 (2025-10-06) through v2.0.0-beta4 (2026-07-09), with 2.0.0b6 pushed to PyPI 2026-08-25. The project was created 2020-11 and is still beta nearly six years on.",
+    "Reinforcement learning for reservoir operation has NO usable open code - a verified negative that saves real time. I ran four separate GitHub searches; 'reservoir+operation+DDPG' returned ZERO repositories. Best results across all four: wlross/HydroPower (4 stars, dead 2020-06), Fraktal-Norge-AS/HydroRL (2 stars, 2023), vaishsRP/ReinforcementLearning-HydroelectricDam (2 stars), nanu1605/reservoir-rl (0 stars). The most substantial anywhere is baobabsoluciones/flowing-basin at 5 stars. The literature is large (Fill-and-Spill JWRPM 2024, Transformer-DRL, Chao Phraya DDPG) but the code is not there. There is no reservoir-RL equivalent of stable-baselines3. RL is not a credible route for AquaSync now.",
+    "The FIRO programme is real, deployed and documented - but publishes NO code. Lake Mendocino: Final Viability Assessment Dec 2020 (PDF verified 200 at cw3e.ucsd.edu); USACE-approved major deviations in WY2019 and WY2020, with WY2020 (3rd-driest in a 127-year record) yielding a 19% storage increase, >11,000 acre-feet; FIRO is now authorised in the USACE Water Control Manual, which had previously been updated only twice since 1959. Prado Dam: FVA published (PDF verified 200), viable as of 2023, up to 23,000 acre-feet extra recharge in wet years. I fetched the CW3E FIRO portal directly - it lists six programmes (Howard A. Hanson, Prado, Russian River, Seven Oaks, Willamette Valley, Yuba & Feather) and references 'decision support tools' with ZERO repository links. All usable FIRO code is academic: Herman group (UC Davis) and Brodeur (NCSU).",
+    "SDDP.jl is the mature answer to the OTHER half of the foresight problem and is very much alive: 355 stars, 71 forks, last push 2026-08-25, only 7 open issues, INFORMS Journal on Computing paper (10.1287/ijoc.2020.0987). Multistage stochastic dual dynamic programming is the right tool for 'how full should Idukki be entering October' - the seasonal filling-curve decision under inflow uncertainty - which the event-horizon FIRO MPC does not address. Cost is a Julia + JuMP runtime alongside Python; realistic effort 1-2 weeks. Use it as a COMPLEMENT to the cvxpy MPC, not a replacement.",
+    "There is genuinely NO Indian open-source reservoir-operation code to reuse. I searched four ways (IIT/NIH Roorkee tools, India-WRIS, CWC decision-support systems, named Indian reservoirs). No NIH Roorkee or IIT package exists on GitHub - the IIT Roorkee GitHub orgs are student robotics/CS groups. Closest artefacts: Anurag14/Inflow-Prediction-Bhakra (17 stars, MIT, dead 2021-09, LSTM inflow forecasting, arXiv 2109.04255) and behzadasd/Reservoir-Operation-Optimization (20 stars, MATLAB, dead 2019-12). CWC operates inflow forecasts at 128 reservoirs and forecasts at 332 stations but publishes portals, not code. CIS Lab's InfeRes (16 stars, pushed 2026-01) infers reservoir extent/level/storage from satellite imagery - the credible route to AquaSync's missing pre-2020 Idukki record, though that belongs to the data dimension.",
+    "No dedicated open-source 'rule curve optimiser' exists - the universal pattern is simulator + MOEA, which AquaSync effectively already implements. HEC-ResSim (v4.1, April 2026) is the industry standard KSEB engineers would recognise, but it is closed-source, Java/Windows, and explicitly ships NO optimisation framework - optimisation must be done externally. The reusable parameterisation is iRONS' operating_policy.op_piecewiselin_1res: release as a piecewise-linear function of storage fraction with the point coordinates as the decision vector. That specific change is what would justify swapping AquaSync's grid search for NSGA-II."
+  ],
+  "technologies": [
+    {
+      "name": "RTC-Tools 2.8.0 (Deltares / LF Energy)",
+      "maturity": "production",
+      "limitations": "Modelica is effectively mandatory for optimisation - I verified every optimisation example in the repo imports ModelicaMixin and there is no Python-only model API on the optimisation side. Small community: 24 stars, 18 contributors, 61 open issues. Dependency pins lag upstream (requires casadi>=3.6.3,<3.8 while CasADi is at 3.8.0; pymoca==0.9.* while pymoca is at 0.12.0) - not a blocker, install was clean, but you inherit their upgrade cadence. LGPL-3.0.",
+      "fit_for_aquasync": "DO NOT PORT. Install cost is trivial (VERIFIED: 9 packages, one pip command, IPOPT bundled inside CasADi, shipped single_reservoir example solved in 3.07 s) but the model-rewrite cost is weeks and would throw away a level-storage law already calibrated to r2=0.9957. DO borrow two designs: (1) the goal-programming priority ladder - 76-line single_reservoir.py expresses volume-range, minimise-release and minimise-release-change as priority 1/2/3 goals, a cleaner statement of the flood-vs-energy tradeoff than a weighted sum; (2) ControlTreeMixin, the scenario-tree formulation for optimising across a forecast ensemble.",
+      "recent_updates": "Contributed by Deltares to LF Energy in 2025 and migrated GitLab->GitHub; now community-governed (CHARTER.md, GOVERNANCE.md in repo, verified present). 2.8.0 released 2026-07-08; repo pushed 2026-08-26 (same day checked). Deltares offers commercial support for water applications, PortfolioEnergy for energy/BESS. Solver-agnostic: CBC, HiGHS, Ipopt open; Gurobi, CPLEX, Knitro commercial."
+    },
+    {
+      "name": "Pywr 1.31.1",
+      "maturity": "production",
+      "limitations": "An LP network allocation model at heart. Head-dependent hydropower is a post-hoc Recorder or an iteratively-solved HydropowerTargetParameter, not a native nonlinear constraint - so a turbine hill diagram and time-of-day tariff cannot be first-class objectives. GPL-3.0 (viral) matters if AquaSync ships to KSEB. 145 open issues. Timestep granularity is oriented to daily water-resources planning, not hourly gate operations.",
+      "fit_for_aquasync": "Adopt the concepts, not the framework. VERIFIED present and importable: ControlCurveParameter / ControlCurveInterpolatedParameter (exactly the rule-curve abstraction AquaSync lacks) and Scenario (the ensemble-member abstraction). VERIFIED performance: ~20 lines of JSON, 1.38 s load, <0.01 s to solve 31 daily steps at Idukki scale. Switching AquaSync's core to Pywr would be a net loss; copying its ControlCurve idea is a net win.",
+      "recent_updates": "191 stars, last push 2026-07-23. 1.30.0 (2026-03-17), 1.31.0 (2026-05-21), 1.31.1 (2026-06-08). Install verified: 37 packages in 30 s, clean import on Python 3.12. Paper: Tomlinson, Arnott & Harou (2020) EMS, DOI 10.1016/j.envsoft.2020.104635 (verified 200 - note the widely-cited 10.1016/j.envsoft.2019.104635 is WRONG and 404s)."
+    },
+    {
+      "name": "pywr-next / Pywr 2.0 (Rust)",
+      "maturity": "research",
+      "limitations": "Explicitly experimental. 12 stars, 54 open issues, all releases pre-release (v2.0.0-beta1 2025-10-06 through beta4 2026-07-09; 2.0.0b6 on PyPI 2026-08-25). Repo description still says 'exploring ideas for a major revision'. No stable API, no migration guide from 1.x.",
+      "fit_for_aquasync": "Do not build on it. Anything written against it today will break. Revisit no earlier than a 2.0.0 final release.",
+      "recent_updates": "Very active (pushed 2026-08-26) but that is churn on an unstable API, not stabilisation. Created 2020-11 - nearly six years and still beta."
+    },
+    {
+      "name": "Robust-FIRO ensemble MPC (cvxpy) - Taylor & Herman, UC Davis",
+      "maturity": "research",
+      "limitations": "Paper-support code, not a library: 1 star, no packaging, no tests, hard-coded to Oroville, last push 2025-03. MPCProblem.py does `import mosek` at module level (MOSEK is commercial) and contains a solver-dispatch bug - `if solver=='MOSEK': ...` then `if solver=='CLARABEL': ... else: ...` rather than elif, so a MOSEK run solves the problem twice. Full reproduction needs a 32 MB Zenodo archive (10.5281/zenodo.15041287) that returns 403 to curl. You are copying a formulation, not installing a package.",
+      "fit_for_aquasync": "HIGHEST-VALUE ITEM IN THIS DIMENSION. Directly closes the perfect-foresight gap. I ported create_cvx() to Idukki scale and VERIFIED it: 1459 Mm3 cap, 40-member x 14-day-lead forecast, 60-day receding-horizon sim, 45 solves in 0.39 s (8.8 ms/solve), status 'optimal', with the free CLARABEL solver shipped inside cvxpy (installed solvers confirmed: CLARABEL, SCS, SCIPY, HIGHS, OSQP - MOSEK NOT needed). Core ~40 lines. Parameters map 1:1 to AquaSync's existing search: TOCS = target level, ramp_rate = max rate, u_max = max release, weight w = flood/drawdown dial. Effort: 1-2 days to a working ensemble-MPC replacement for the perfect-foresight optimiser, given an inflow ensemble of shape (time, members, lead).",
+      "recent_updates": "Companion repos from the same group: SSJRB-FIRO-Publishing (2024, ships an explicit perfect_forecast.py baseline plus train_firo.py risk-threshold policy search and LOOCV validation) and zpb4/syn-forecast_stochastic (pushed 2026-08-19, synthetic ensemble generation + Oroville FIRO model) - the latter is how to manufacture ensemble forecasts when no operational HEFS feed exists, which is exactly AquaSync's situation in Kerala."
+    },
+    {
+      "name": "pymoo 0.6.2",
+      "maturity": "production",
+      "limitations": "For AquaSync's CURRENT 3-parameter policy space it buys nothing - I benchmarked it and the exhaustive grid matched or beat it (4,800 evals: grid 2.02 s and complete, NSGA-II 2.31 s and approximate). Stochastic results need seed management and repeat runs before a front is defensible to a regulator, whereas a grid is reproducible by construction. Adds numpy/scipy/moocore/autograd/cma/matplotlib/alive_progress.",
+      "fit_for_aquasync": "Adopt ONLY if dimensionality rises - a piecewise-linear or RBF rule curve (10-20 parameters), or joint Idukki-Idamalayar coordination. Crossover ~6-7 decision variables (10-level grid at the measured 0.42 ms/eval: 42 s at 5 dims, 7 min at 6, 70 min at 7, 12 h at 8). Apache-2.0 makes it the safe choice over GPL Platypus and gated Borg.",
+      "recent_updates": "2,946 stars, 478 forks, last push 2026-07-07, 0.6.2 on PyPI 2026-06-28, 0 open issues. Install verified: pymoo + platypus-opt together in 1 min 13 s."
+    },
+    {
+      "name": "Platypus (Project-Platypus) 1.4.1",
+      "maturity": "production",
+      "limitations": "GPL-3.0 - viral, a real consideration for a KSEB/KSDMA deliverable. Last PyPI release is 1.4.1 from 2024-10-07 while the repo was pushed 2026-08-03, so ~22 months of unreleased commits sit between pip users and the repo. Fewer algorithms and far less documentation than pymoo.",
+      "fit_for_aquasync": "No reason to prefer it over pymoo unless you specifically need PyBorg (itself gated by the Borg licence) or you run Pywr's [opt] extra, which depends on it. iRONS also pins platypus-opt in environment.yml.",
+      "recent_updates": "654 stars, 166 forks, only 3 open issues - low-maintenance but healthy. Docs at platypus.readthedocs.io verified live."
+    },
+    {
+      "name": "DEAP 1.4.4",
+      "maturity": "production",
+      "limitations": "Lower-level than pymoo - you assemble toolboxes, operators and statistics yourself. No first-class multi-objective conveniences, no reference-direction machinery for NSGA-III, no visualisation. LGPL-3.0. 281 open issues.",
+      "fit_for_aquasync": "Skip. It appears in this dimension only because HydroCNHS uses it for calibration. If you want an EA, pymoo gets you there faster.",
+      "recent_updates": "6,436 stars (largest of any tool here) and 1,164 forks, last push 2026-04-17, 1.4.4 on PyPI 2026-04-17. Deps are just numpy and moocore."
+    },
+    {
+      "name": "SDDP.jl",
+      "maturity": "production",
+      "limitations": "Julia + JuMP, so it introduces a second language runtime alongside AquaSync's Python. Multistage SDDP is conceptually demanding - the problem must be convex and stagewise-independent (or Markovian), forcing a linear or piecewise-linear reservoir representation. Not suited to the sub-daily flood-event horizon.",
+      "fit_for_aquasync": "The right tool for the SEASONAL half of the foresight problem the FIRO MPC does not touch: 'what storage should Idukki target entering October, given monsoon inflow uncertainty and the tariff calendar'. Complement, not replacement. Realistic effort 1-2 weeks including learning Julia/JuMP. LAMPSPUC/HydroPowerModels.jl (12 stars, MIT, pushed 2026-08-26) is a hydro-thermal wrapper on top if you later couple to grid dispatch.",
+      "recent_updates": "355 stars, 71 forks, last push 2026-08-25, only 7 open issues. Docs at sddp.dev verified live. INFORMS J. Computing paper 10.1287/ijoc.2020.0987 (2021)."
+    },
+    {
+      "name": "iRONS toolbox (Bristol - Peñuela & Pianosi)",
+      "maturity": "emerging",
+      "limitations": "Small and effectively feature-frozen: 11 stars, 10 forks, MIT. environment.yml pins python=3.9, numpy<2.0, pandas<2.0, matplotlib<3.5 - will not install into a modern environment unrelaxed. res_sys_sim.py is 13 KB and operating_policy.py 12.6 KB, i.e. roughly the same scope as AquaSync's ~600 lines with a far less calibrated reservoir representation (generic HBV rainfall-runoff, no tide, no Muskingum, no turbine hill diagram).",
+      "fit_for_aquasync": "Do NOT adopt wholesale - AquaSync is already ahead of it. Cherry-pick three things: (1) operating_policy.op_piecewiselin_1res, the piecewise-linear release-vs-storage-fraction parameterisation that is the natural decision vector if you move to NSGA-II; (2) download_forecast.py + bias_correction.py, which pull and bias-correct seasonal ensemble forecasts via the Copernicus CDS API - a ready-made ensemble source for the FIRO MPC; (3) the Binder-hosted notebooks, the single best artefact for explaining forecast-informed operation to a KSEB or KSDMA audience.",
+      "recent_updates": "Last push 2026-04-22 (still touched). Paper: Peñuela, Hutton & Pianosi (2021), Environmental Modelling & Software 145:105188, DOI 10.1016/j.envsoft.2021.105188 verified 200."
+    },
+    {
+      "name": "do-mpc 5.1.1",
+      "maturity": "production",
+      "limitations": "Built for continuous-time NONLINEAR process control with moving-horizon estimation - substantially more machinery than a reservoir mass balance needs. LGPL-3.0. Last release 2025-10-31 (~10 months stale), 94 open issues. Pulls CasADi, and torch + onnx + asyncua in the [full] extra.",
+      "fit_for_aquasync": "Overkill today. For a linear storage balance with box and ramp constraints, the cvxpy formulation I verified (8.8 ms/solve) is roughly a tenth of the machinery. do-mpc only becomes interesting if you later want the head-dependent turbine curve as a NONLINEAR constraint inside the MPC - at which point it, or RTC-Tools, is the natural upgrade.",
+      "recent_updates": "1,443 stars, 222 forks - by far the most-used MPC toolbox in this list, but not water-specific."
+    },
+    {
+      "name": "HydroCNHS 1.2.0",
+      "maturity": "research",
+      "limitations": "22 stars, 2 forks, last push 2025-03-02. The repo MOVED from philip928lin to cylin928 and the widely-cited docs URL philip928lin.github.io/HydroCNHS/ now returns 404 (live one is cylin928.github.io/HydroCNHS/). Only 4 PyPI releases ever, last 2024-11. Hydrology options are GWLF / ABCD / HYMOD - lumped conceptual models aimed at temperate US basins, not a monsoon-driven Western Ghats catchment.",
+      "fit_for_aquasync": "No. AquaSync's SCS-CN with antecedent-moisture shift is the more defensible choice for Kerala, and the Dam/RiverDiv/Conveying/InSitu agent APIs solve a coupled-human-systems problem AquaSync does not have. The only transferable piece is its DEAP-based parallel calibration and uncertainty harness, and that is easier to rebuild than to adopt.",
+      "recent_updates": "Paper: Lin, Yang & Wi (2022), J. Water Resour. Plann. Manage., DOI 10.1061/(ASCE)WR.1943-5452.0001630 (returns 403 to curl - ASCE blocks automated clients)."
+    },
+    {
+      "name": "WaterPaths",
+      "maturity": "research",
+      "limitations": "EFFECTIVELY UNMAINTAINED: last push 2022-01-04, over four and a half years stale. 23 stars, 11 forks, C++, no licence file detected by the GitHub API. To use it in optimisation mode you must RECOMPILE against Borg and drive it with mpirun - which re-imports the Borg non-commercial restriction plus an MPI toolchain.",
+      "fit_for_aquasync": "No. It solves a genuinely different problem: multi-decade, multi-utility water-supply infrastructure INVESTMENT pathways under deep uncertainty, driven by risk-of-failure triggers. AquaSync schedules hourly hydropower and flood releases. Almost nothing transfers except the risk-of-failure trigger concept, which is a paragraph of reading rather than a dependency.",
+      "recent_updates": "None. Paper: Trindade et al. (2020) EMS, DOI 10.1016/j.envsoft.2020.104772 (verified 200). The reedgroup.github.io WaterPaths training page circulating online is DEAD (404)."
+    },
+    {
+      "name": "PySedSim",
+      "maturity": "research",
+      "limitations": "DEAD: last push 2020-07-22. Python 2 / early-Python-3 era code, not on PyPI under that name. Purpose-built for reservoir SEDIMENT management, dam siting and design alternatives - flushing, sluicing, density-current venting.",
+      "fit_for_aquasync": "No. AquaSync has no sediment objective and no siting question. Listed so the next person does not spend a day on it. Its immm-sfa.github.io docs URL is also dead (404).",
+      "recent_updates": "None since 2020. Paper: Wild et al. (2021) EMS, DOI 10.1016/j.envsoft.2020.104947 (verified 200)."
+    },
+    {
+      "name": "M3O (Multi-Objective Optimal Operations)",
+      "maturity": "research",
+      "limitations": "MATLAB - a hard commercial-licence blocker. GPL-2.0, 44 stars, DEAD since 2019-10-18. The associated CIS Lab Python port, M3Opy, is an EMPTY stub repo with 0 stars and no description.",
+      "fit_for_aquasync": "Not runnable, but valuable as a READING reference: it is the canonical side-by-side implementation of deterministic DP, stochastic DP, implicit stochastic optimisation, sampling SDP, fitted Q-iteration, EMODPS (RBF direct policy search) and MPC for exactly this problem class. Read M3O to choose an algorithm; do not try to run or port it.",
+      "recent_updates": "None. EMODPS (Giuliani et al.) remains the standard academic framing for reservoir direct policy search, but every published implementation depends on the gated Borg MOEA."
+    },
+    {
+      "name": "Borg MOEA / PyBorg",
+      "maturity": "production",
+      "limitations": "NOT OPEN SOURCE. borgmoea.org states verbatim: 'Borg is freely available for academic and non-commercial use... request access to its source code.' Access is via a Google form with ~3 business days turnaround, code on a private BitBucket repo. PyBorg (pure Python on top of Platypus) inherits the restriction and is explicitly described as a learning tool, less efficient than the C version. The community wrapper borg4platypus is 1 star, GPL-3.0, dead since 2019-02.",
+      "fit_for_aquasync": "Avoid. If AquaSync is ever commercial, or delivered to KSEB/KSDMA as an operational product, the non-commercial clause is a genuine legal problem - and its presence underneath WaterPaths, PySedSim and most EMODPS papers is the main reason those are not adoptable either. pymoo (Apache-2.0) gets you 95% of the capability with none of the risk.",
+      "recent_updates": "Site and request form both live (verified 200), so the programme continues - but the licensing posture has not changed."
+    }
+  ],
+  "sources": [
+    {
+      "name": "rtc-tools/rtc-tools (GitHub)",
+      "url": "https://github.com/rtc-tools/rtc-tools",
+      "kind": "repo",
+      "what_it_provides": "The RTC-Tools framework: goal programming, ensemble/scenario-tree optimisation (ControlTreeMixin), Modelica-based system modelling on CasADi. 16,410 lines of Python in src/. 15 shipped examples including single_reservoir, ensemble, pumped_hydropower_system, cascading_channels. Solver-agnostic (CBC, HiGHS, Ipopt open; Gurobi, CPLEX, Knitro commercial).",
+      "relevance": "high - closest thing to a production-grade open reservoir MPC framework; its goal-programming ladder and ControlTreeMixin directly address AquaSync's flood-vs-energy tradeoff and perfect-foresight gap",
+      "http_status": "200",
+      "license": "LGPL-3.0",
+      "stars": "24",
+      "last_activity": "2026-08-26 (pushed same day checked); 1,496 commits, 18 contributors, 61 open issues",
+      "download_hint": "git clone --depth 1 https://github.com/rtc-tools/rtc-tools.git   (note: github.com/Deltares/rtc-tools, also 200, 301-redirects here). Governance page: https://lfenergy.org/projects/rtc-tools/ (200) - Deltares contributed it to LF Energy in 2025.",
+      "caveat": "24 stars understates it (LF Energy project with Deltares commercial backing) but does mean a thin community for troubleshooting. I verified EVERY optimisation example imports ModelicaMixin - there is no Python-only optimisation model API."
+    },
+    {
+      "name": "rtc-tools on PyPI",
+      "url": "https://pypi.org/project/rtc-tools/",
+      "kind": "tool",
+      "what_it_provides": "Version 2.8.0 (2026-07-08), requires-python >=3.10, 88 releases. Declared deps: casadi!=3.6.6,<3.8,>=3.6.3, defusedxml>=0.7.0, numpy>=1.21.2, pymoca==0.9.*, rtc-tools-channel-flow>=1.2.0, rtc-tools-standard-library>=0.1.2, scipy>=1.7.2.",
+      "relevance": "high - I used this to MEASURE the real dependency burden rather than guessing at it",
+      "http_status": "200",
+      "license": "LGPL-3.0",
+      "last_activity": "2.8.0 on 2026-07-08; 2.7.3 on 2026-01-20; 2.8.0rc1 on 2026-06-30",
+      "download_hint": "pip install rtc-tools   (VERIFIED: installs exactly 9 packages - rtc-tools 2.8.0, casadi 3.7.2, pymoca 0.9.3, rtc-tools-channel-flow 1.3.1, rtc-tools-standard-library 0.1.2, numpy 2.5.2, scipy 1.18.1, defusedxml 0.7.1, antlr4-python3-runtime 4.13.2 - Windows/Python 3.12). Shipped single_reservoir example then ran in 3.07 s wall, 0.015 s in IPOPT.",
+      "caveat": "Pins casadi<3.8 while CasADi is at 3.8.0, and pymoca==0.9.* while pymoca is at 0.12.0. Install still clean. The readthedocs Getting Started page (also 200) never mentions solvers - I established empirically that CasADi bundles IPOPT, Bonmin, HiGHS, CBC, Clp and qpOASES, which is why no separate solver build is needed."
+    },
+    {
+      "name": "Robust-FIRO (Taylor & Herman, UC Davis)",
+      "url": "https://github.com/wltaylor/Robust-FIRO",
+      "kind": "repo",
+      "what_it_provides": "MPCProblem.py - a 194-line cvxpy receding-horizon ensemble MPC for reservoir flood control. Also train_EFO.py (risk-threshold Ensemble Forecast Operations policy search), model.py (13 KB simple mass-balance reservoir), ecrps_functions.py (ensemble CRPS forecast verification), and a Cumulative Method baseline. Deps: numpy, pandas, xarray, scipy, cvxpy.",
+      "relevance": "high - THE most useful artefact in this dimension; the concrete answer to the perfect-foresight weakness, and its parameters (TOCS, ramp_rate, u_max) map 1:1 onto AquaSync's existing (target level, start hour, max rate) search",
+      "http_status": "200",
+      "license": "MIT",
+      "stars": "1",
+      "last_activity": "2025-03-18",
+      "download_hint": "curl -L https://raw.githubusercontent.com/wltaylor/Robust-FIRO/main/MPCProblem.py   (the whole formulation is in create_cvx(), ~30 lines)",
+      "caveat": "Paper-support code, not a library: 1 star, no packaging, no tests, hard-coded to Oroville. `import mosek` at module level, and a solver-dispatch bug (if/if-else instead of elif) means a MOSEK run solves twice. I VERIFIED it works without MOSEK: ported to Idukki scale (1459 Mm3, 40 members x 14-day lead), 45 solves in 0.39 s at 8.8 ms/solve, status 'optimal', on free CLARABEL. Full reproduction needs Zenodo 10.5281/zenodo.15041287, which returns 403 to curl."
+    },
+    {
+      "name": "SSJRB-FIRO-Publishing (Taylor & Herman)",
+      "url": "https://github.com/wltaylor/SSJRB-FIRO-Publishing",
+      "kind": "repo",
+      "what_it_provides": "Multi-reservoir FIRO across the Sacramento-San Joaquin River Basin. Contains perfect_forecast.py (an explicit perfect-foresight baseline - exactly AquaSync's current assumption, isolated so the gap can be measured), train_firo.py (risk-threshold policy training), simulate_baseline_tocs.py, simulate_loocv.py and loocv.py (leave-one-out cross-validation of forecast-informed policies).",
+      "relevance": "high - the perfect_forecast.py vs simulate_firo.py pairing is the exact experimental design AquaSync needs to quantify how much its optimiser loses once foresight is removed",
+      "http_status": "200",
+      "license": "MIT",
+      "stars": "1",
+      "last_activity": "2024-05-20",
+      "caveat": "1 star, research code, California-specific data. Value is the experimental design and LOOCV validation pattern, not runnable-as-is software."
+    },
+    {
+      "name": "zpb4/syn-forecast_stochastic (Brodeur)",
+      "url": "https://github.com/zpb4/syn-forecast_stochastic",
+      "kind": "repo",
+      "what_it_provides": "Synthetic hydrology and synthetic ensemble-forecast generation plus a FIRO model for Lake Oroville, supporting a manuscript on FIRO under climate extremes and evolving forecast skill.",
+      "relevance": "high - AquaSync has NO operational ensemble forecast feed for Kerala; this is the method for manufacturing statistically realistic synthetic forecast ensembles from a historical record, the missing input to the FIRO MPC",
+      "http_status": "200",
+      "license": "MIT",
+      "stars": "1",
+      "last_activity": "2026-08-19 (most recently touched FIRO repo found)",
+      "caveat": "1 star, 196 KB. Companion R repo zpb4/FIRO_synthetic-ensemble-forecasts (verified 200, 0 stars, no licence, 2024-01) implements the earlier WRR method. Research code both ways."
+    },
+    {
+      "name": "Lake Mendocino FIRO Final Viability Assessment (Dec 2020)",
+      "url": "https://cw3e.ucsd.edu/FIRO_docs/LakeMendocino_FIRO_FVA.pdf",
+      "kind": "standard",
+      "what_it_provides": "The primary published FVA for the flagship deployed FIRO programme; basis for USACE approving FIRO-based operations at Coyote Valley Dam. Produced by Sonoma Water + CW3E/Scripps with federal, state and local partners.",
+      "relevance": "high - the authoritative precedent for arguing forecast-informed operation to a regulator like KSEB/KSDMA, and it documents the institutional pathway (virtual trials -> major deviations -> water control manual update) directly analogous to what AquaSync needs in Kerala",
+      "http_status": "200",
+      "last_activity": "December 2020",
+      "download_hint": "curl -L -o LakeMendocino_FIRO_FVA.pdf https://cw3e.ucsd.edu/FIRO_docs/LakeMendocino_FIRO_FVA.pdf . One-page summary also verified 200: https://cw3e.ucsd.edu/FIRO_docs/LakeMendocino_FIRO_FVA_OnePageSummary.pdf",
+      "caveat": "The commonly-cited eScholarship mirror (escholarship.org/uc/item/3b63q04n) returns 403 to curl - use this CW3E PDF. Contains no code. Outcomes: WY2019/WY2020 major deviations; WY2020 gave a 19% storage increase (>11,000 acre-feet); FIRO now authorised in the USACE Water Control Manual."
+    },
+    {
+      "name": "Prado Dam FIRO Final Viability Assessment",
+      "url": "https://cw3e.ucsd.edu/FIRO_docs/Prado/FIRO_Prado_FVA.pdf",
+      "kind": "standard",
+      "what_it_provides": "The second completed FVA. Prado FIRO confirmed viable (2023), implementation ongoing including a water control manual update; reported benefit up to 23,000 acre-feet of additional recharge in wet years.",
+      "relevance": "medium - second precedent, and structurally different from Mendocino (groundwater recharge rather than water supply), useful for showing FIRO generalises across objectives",
+      "http_status": "200",
+      "download_hint": "Companion work plan also verified 200: https://cw3e.ucsd.edu/FIRO_docs/Prado_Dam_work_plan.pdf",
+      "caveat": "No code. Policy/engineering document only."
+    },
+    {
+      "name": "CW3E FIRO programme portal",
+      "url": "https://cw3e.ucsd.edu/firo/",
+      "kind": "doc",
+      "what_it_provides": "Index of the six FIRO programmes: Howard A. Hanson Dam, Prado Dam, Russian River Watershed, Seven Oaks Dam, Willamette Valley, Yuba & Feather Watersheds. Russian River is the one described as delivering demonstrated water supply and environmental flow benefit while maintaining or increasing flood risk management.",
+      "relevance": "medium - authoritative scope of the real deployed programme",
+      "http_status": "200",
+      "download_hint": "Russian River programme page also verified 200: https://cw3e.ucsd.edu/firo_russian_river",
+      "caveat": "I fetched and read it: it references 'decision support tools' and 'forecast verification methods' but publishes NO repository links, no PDF links to individual assessments, and no technical implementation detail. Contact given is kvm@ucsd.edu. Do not expect official FIRO source code to exist."
+    },
+    {
+      "name": "pywr/pywr (GitHub)",
+      "url": "https://github.com/pywr/pywr",
+      "kind": "repo",
+      "what_it_provides": "Generalised network resource-allocation model in Python/Cython. VERIFIED to include HydropowerRecorder, HydropowerTargetParameter, ControlCurveParameter, ControlCurveInterpolatedParameter and Scenario.",
+      "relevance": "high - the ControlCurve (rule curve) and Scenario (ensemble) abstractions are exactly the two concepts AquaSync is missing, even though the framework itself is a poor fit",
+      "http_status": "200",
+      "license": "GPL-3.0",
+      "stars": "191",
+      "last_activity": "2026-07-23; 1.31.1 on PyPI 2026-06-08; 145 open issues",
+      "download_hint": "pip install pywr   (VERIFIED: 37 packages in 30 s, clean import on Python 3.12; a 20-line JSON single-reservoir + hydropower model at Idukki scale loaded in 1.38 s and solved 31 daily steps in <0.01 s). Docs https://pywr.github.io/pywr/ (200). Paper DOI 10.1016/j.envsoft.2020.104635 (200).",
+      "caveat": "Linear-programme core - head-dependent hydropower is a post-hoc Recorder or iterative target parameter, not a native nonlinear constraint. GPL-3.0 is viral, which matters if AquaSync ships to KSEB. The widely-cited paper DOI 10.1016/j.envsoft.2019.104635 is WRONG and 404s; the correct one uses the 2020 segment."
+    },
+    {
+      "name": "pywr/pywr-next (Pywr 2.0, Rust)",
+      "url": "https://github.com/pywr/pywr-next",
+      "kind": "repo",
+      "what_it_provides": "Rust rewrite of the Pywr compute core with a Python binding layer, retaining the Parameter system from Pywr 1.x.",
+      "relevance": "low - not adoptable; included so the next person does not mistake activity for readiness",
+      "http_status": "200",
+      "license": "MIT",
+      "stars": "12",
+      "last_activity": "2026-08-26 (very active), but all releases pre-release: v2.0.0-beta1 2025-10-06 through v2.0.0-beta4 2026-07-09; 2.0.0b6 to PyPI 2026-08-25; 54 open issues",
+      "caveat": "Repo description still reads 'An experimental repository exploring ideas for a major revision'. Created 2020-11, nearly six years old and still beta. Building on it now guarantees rework."
+    },
+    {
+      "name": "Pywr-DRB",
+      "url": "https://github.com/Pywr-DRB/Pywr-DRB",
+      "kind": "repo",
+      "what_it_provides": "A real, maintained basin-scale reservoir-operations application built on Pywr: Delaware River Basin, NYC reservoir system, transbasin diversions, minimum-flow targets and regulatory rules (1954 Supreme Court Decree Montague target).",
+      "relevance": "high - the best worked example of encoding real institutional operating rules in an open framework, which is precisely the problem AquaSync faces with KSEB's Idukki rule curve",
+      "http_status": "200",
+      "license": "MIT",
+      "stars": "12",
+      "last_activity": "2026-08-04",
+      "download_hint": "Docs https://pywr-drb.github.io/Pywr-DRB/ (200). Paper: Hamilton, Amestoy & Reed (2024) EMS 181:106185, DOI 10.1016/j.envsoft.2024.106185 (200).",
+      "caveat": "Only 12 stars and heavily US-regulatory-specific. Read it for the modelling patterns (how a legal flow target becomes a constraint), not to reuse code."
+    },
+    {
+      "name": "iRONS toolbox",
+      "url": "https://github.com/iRONStoolbox/iRONStoolbox",
+      "kind": "repo",
+      "what_it_provides": "Python functions for reservoir simulation, forecasting and optimisation plus interactive Jupyter Notebooks (Knowledge transfer / Implementation / Case studies). Modules: res_sys_sim.py (13 KB), operating_policy.py (12.6 KB, includes op_piecewiselin_1res - piecewise-linear release vs storage fraction), download_forecast.py (Copernicus CDS seasonal forecasts), bias_correction.py, HBV_sim.py, HBV_calibration.py.",
+      "relevance": "high - not as a framework to adopt (AquaSync already exceeds it) but as three donor parts: the piecewise-linear policy parameterisation, CDS forecast download + bias correction, and the best teaching notebooks for explaining FIRO to KSEB",
+      "http_status": "200",
+      "license": "MIT",
+      "stars": "11",
+      "last_activity": "2026-04-22",
+      "download_hint": "curl -L https://raw.githubusercontent.com/iRONStoolbox/iRONStoolbox/master/iRONS/Software/operating_policy.py . Project site https://ironstoolbox.github.io/ (200) offers Binder. Paper DOI 10.1016/j.envsoft.2021.105188 (200).",
+      "caveat": "environment.yml pins python=3.9, numpy<2.0, pandas<2.0, matplotlib<3.5 - will not install into a modern env unrelaxed. Scope is comparable to AquaSync's ~600 lines and less calibrated (generic HBV, no tide, no Muskingum, no hill diagram). Depends on platypus-opt for optimisation."
+    },
+    {
+      "name": "pymoo",
+      "url": "https://github.com/anyoptimization/pymoo",
+      "kind": "repo",
+      "what_it_provides": "NSGA-II, NSGA-III, R-NSGA-III, MOEA/D, GA, DE, CMA-ES, PSO with a clean Problem/Algorithm API, reference directions and decomposition methods. Deps: numpy, scipy, moocore, autograd, cma, matplotlib, alive_progress, Deprecated.",
+      "relevance": "medium - the correct MOEA choice IF AquaSync raises policy dimensionality past ~6 variables; I benchmarked it and it buys nothing at the current 3",
+      "http_status": "200",
+      "license": "Apache-2.0",
+      "stars": "2946",
+      "last_activity": "2026-07-07; 0.6.2 on PyPI 2026-06-28; 0 open issues",
+      "download_hint": "pip install pymoo   (VERIFIED: pymoo + platypus-opt together in 1 min 13 s. NSGA-II ran 4,800 evaluations of an AquaSync-shaped 3-objective policy sim in 2.31 s vs 2.02 s for the equivalent exhaustive grid). Docs https://pymoo.org/ and https://pymoo.org/algorithms/moo/nsga2.html both 200.",
+      "caveat": "Apache-2.0 makes it the only MOEA here with no licensing friction. But at 3 decision variables it is strictly worse than the grid AquaSync already runs - stochastic, approximate, and needing seed management before a front is defensible."
+    },
+    {
+      "name": "Platypus (Project-Platypus)",
+      "url": "https://github.com/Project-Platypus/Platypus",
+      "kind": "repo",
+      "what_it_provides": "Python multi-objective optimisation library (NSGA-II, epsilon-NSGA-II and others). The substrate PyBorg is built on, and the optional dependency for Pywr's [opt] extra and for iRONS.",
+      "relevance": "low - pymoo is the better default; listed because Pywr and iRONS both reference it",
+      "http_status": "200",
+      "license": "GPL-3.0",
+      "stars": "654",
+      "last_activity": "repo pushed 2026-08-03 but last PyPI release is 1.4.1 from 2024-10-07 - roughly 22 months of unreleased commits",
+      "download_hint": "pip install platypus-opt. Docs https://platypus.readthedocs.io/en/latest/ (200).",
+      "caveat": "GPL-3.0 is viral. The 22-month release gap means pip users run materially older code than the repo. Only 3 open issues."
+    },
+    {
+      "name": "DEAP",
+      "url": "https://github.com/DEAP/deap",
+      "kind": "repo",
+      "what_it_provides": "Distributed Evolutionary Algorithms in Python - low-level EC toolkit (toolbox, operators, statistics, multiprocessing). Deps are just numpy and moocore.",
+      "relevance": "low - too low-level for this job; relevant only because HydroCNHS uses it for calibration",
+      "http_status": "200",
+      "license": "LGPL-3.0",
+      "stars": "6436",
+      "last_activity": "2026-04-17; 1.4.4 on PyPI 2026-04-17; 281 open issues",
+      "download_hint": "pip install deap. Docs https://deap.readthedocs.io/en/master/ (200).",
+      "caveat": "Most-starred tool in this dimension but the least suited - you build the MOO machinery yourself. Skip in favour of pymoo."
+    },
+    {
+      "name": "MOEA Framework",
+      "url": "https://github.com/MOEAFramework/MOEAFramework",
+      "kind": "repo",
+      "what_it_provides": "Java framework for multi-objective optimisation with 80+ test problems and, more importantly, algorithm DIAGNOSTICS - runtime metrics, hypervolume, generational distance, attainment surfaces.",
+      "relevance": "low - only worth it if you must defend an MOEA's convergence quantitatively; adds a JVM dependency",
+      "http_status": "200",
+      "license": "NOASSERTION (custom/other per GitHub API)",
+      "stars": "361",
+      "last_activity": "2026-01-21",
+      "download_hint": "Project site https://moeaframework.org (200)",
+      "caveat": "Java. The Reed group uses it purely for post-processing MOEA runtime dynamics (see their MM Borg Training posts), not as a modelling tool."
+    },
+    {
+      "name": "Borg MOEA project site",
+      "url": "http://borgmoea.org/",
+      "kind": "tool",
+      "what_it_provides": "Auto-adaptive multi-operator search, dynamic population sizing, epsilon-dominance archiving. ANSI C, runs on Unix/Linux/Windows/Mac. The de-facto standard MOEA in the water-resources literature.",
+      "relevance": "high as a WARNING - it underpins WaterPaths, PySedSim optimisation and most EMODPS reservoir studies, so knowing it is not open source explains why that whole family is unadoptable",
+      "http_status": "200",
+      "license": "NOT open source - site text verbatim: 'Borg is freely available for academic and non-commercial use... request access to its source code'",
+      "last_activity": "site live; request form live",
+      "download_hint": "Access request form (verified 200): https://docs.google.com/forms/d/e/1FAIpQLSfuBBDJyEVw6D8PLvwx9hmOqpmw7MCyjpeOMVbxGXzxZkG2wg/viewform - email with private BitBucket link within ~3 business days",
+      "caveat": "The non-commercial clause is a genuine legal blocker if AquaSync is ever delivered as an operational product to KSEB/KSDMA. PyBorg inherits it. Community wrapper jackjackk/borg4platypus is 1 star, GPL-3.0, dead since 2019-02."
+    },
+    {
+      "name": "SDDP.jl",
+      "url": "https://github.com/odow/SDDP.jl",
+      "kind": "repo",
+      "what_it_provides": "Multistage stochastic dual dynamic programming as a JuMP extension - policy graphs, Markovian and stagewise-independent uncertainty, risk measures (AV@R), and simulation of trained policies.",
+      "relevance": "high - the mature tool for the SEASONAL foresight problem (target storage entering the monsoon recession) that the event-horizon FIRO MPC does not address",
+      "http_status": "200",
+      "license": "NOASSERTION per GitHub API (MPL-2.0 in practice - verify before shipping)",
+      "stars": "355",
+      "last_activity": "2026-08-25; 71 forks; only 7 open issues",
+      "download_hint": "Julia: `] add SDDP`. Docs https://sddp.dev/stable/ (200). Paper DOI 10.1287/ijoc.2020.0987 (INFORMS J. Computing 2021).",
+      "caveat": "Introduces a Julia runtime alongside Python. Requires a convex, stagewise-independent problem statement, so the reservoir must be linear or piecewise-linear. The doi.org link returns 403 to curl (INFORMS blocks it) though the DOI is correct."
+    },
+    {
+      "name": "do-mpc",
+      "url": "https://github.com/do-mpc/do-mpc",
+      "kind": "repo",
+      "what_it_provides": "General nonlinear MPC and moving-horizon estimation toolbox on CasADi/IPOPT, including robust multi-stage NMPC.",
+      "relevance": "low today, medium later - overkill for a linear reservoir balance, but the natural upgrade if you later want the head-dependent turbine curve as a nonlinear constraint INSIDE the MPC",
+      "http_status": "200",
+      "license": "LGPL-3.0",
+      "stars": "1443",
+      "last_activity": "2025-10-31 (~10 months stale); 5.1.1 on PyPI same date; 94 open issues",
+      "download_hint": "pip install do-mpc  (deps: casadi>=3.6.0, scipy, numpy, matplotlib, pandas; [full] adds onnx, torch>2.0.0, asyncua). Docs https://www.do-mpc.com/ (200).",
+      "caveat": "Not water-specific. For AquaSync's linear mass balance with box + ramp constraints, the 40-line cvxpy formulation I verified (8.8 ms/solve) is roughly a tenth of the machinery."
+    },
+    {
+      "name": "HydroCNHS",
+      "url": "https://github.com/cylin928/HydroCNHS",
+      "kind": "repo",
+      "what_it_provides": "Semi-distributed hydrological model for coupled natural-human systems with Dam, RiverDiv, Conveying and InSitu agent APIs, plus a DEAP-based parallel calibration and uncertainty harness. Hydrology options: GWLF, ABCD, HYMOD.",
+      "relevance": "low - the agent-based coupling solves a problem AquaSync does not have, and its hydrology suits temperate US basins rather than a monsoon Western Ghats catchment",
+      "http_status": "200",
+      "license": "BSD-3-Clause",
+      "stars": "22",
+      "last_activity": "2025-03-02; hydrocnhs 1.2.0 on PyPI 2024-11-03 (only 4 releases ever)",
+      "download_hint": "pip install hydrocnhs (deps: deap, joblib, matplotlib, numpy, pandas, pyyaml, ruamel-yaml, scikit-learn, scipy, tqdm). LIVE docs: https://cylin928.github.io/HydroCNHS/ (200).",
+      "caveat": "IMPORTANT: the repo moved from philip928lin to cylin928 and the widely-cited docs URL https://philip928lin.github.io/HydroCNHS/ now returns 404. Paper DOI 10.1061/(ASCE)WR.1943-5452.0001630 returns 403 to curl (ASCE blocks automated clients)."
+    },
+    {
+      "name": "WaterPaths",
+      "url": "https://github.com/bernardoct/WaterPaths",
+      "kind": "repo",
+      "what_it_provides": "C++ stochastic simulation of multi-utility water supply portfolios with dynamic risk-of-failure triggers for infrastructure investment pathways under deep uncertainty.",
+      "relevance": "low - wrong problem (multi-decade investment planning, not release scheduling) and effectively abandoned",
+      "http_status": "200",
+      "license": "none detected by GitHub API",
+      "stars": "23",
+      "last_activity": "2022-01-04 - over 4.5 years stale",
+      "download_hint": "Paper: Trindade et al. (2020) EMS, https://doi.org/10.1016/j.envsoft.2020.104772 (200)",
+      "caveat": "Optimisation mode requires recompiling against Borg (non-commercial licence) plus mpirun. The reedgroup.github.io/Training/WaterPaths_Training.html tutorial link circulating online is DEAD (404)."
+    },
+    {
+      "name": "PySedSim",
+      "url": "https://github.com/FeralFlows/pysedsim",
+      "kind": "repo",
+      "what_it_provides": "Daily-timestep river basin simulation of flow, sediment and hydropower for evaluating dam siting, design and sediment-management operations, with MOEA coupling for operating-policy discovery.",
+      "relevance": "low - sediment-focused, dead, and AquaSync has no sediment objective",
+      "http_status": "200",
+      "license": "BSD-2-Clause",
+      "stars": "18",
+      "last_activity": "2020-07-22",
+      "download_hint": "Paper: Wild et al. (2021) EMS, https://doi.org/10.1016/j.envsoft.2020.104947 (200)",
+      "caveat": "Python 2 / early-Python-3 era. Not on PyPI. The immm-sfa.github.io/pysedsim docs URL is DEAD (404). Listed as a verified negative."
+    },
+    {
+      "name": "M3O - Multi-Objective Optimal Operations",
+      "url": "https://github.com/mxgiuliani00/M3O-Multi-Objective-Optimal-Operations",
+      "kind": "repo",
+      "what_it_provides": "MATLAB toolbox implementing, side by side, deterministic DP, stochastic DP, implicit stochastic optimisation, sampling SDP, fitted Q-iteration, EMODPS (evolutionary multi-objective direct policy search with RBF policies) and MPC for multipurpose reservoirs.",
+      "relevance": "medium as a READING reference - the canonical algorithm menu for exactly this problem class; zero value as runnable code",
+      "http_status": "200",
+      "license": "GPL-2.0",
+      "stars": "44",
+      "last_activity": "2019-10-18 - dead for nearly seven years",
+      "caveat": "MATLAB (commercial-licence blocker). The CIS Lab Python port Critical-Infrastructure-Systems-Lab/M3Opy is an EMPTY stub with 0 stars and no description. Every published EMODPS implementation additionally depends on the gated Borg MOEA."
+    },
+    {
+      "name": "Critical Infrastructure Systems Lab - InfeRes",
+      "url": "https://github.com/Critical-Infrastructure-Systems-Lab/InfeRes",
+      "kind": "repo",
+      "what_it_provides": "Python package that infers reservoir water extent, level and storage volume from satellite imagery.",
+      "relevance": "high but for a DIFFERENT gap - the credible route to AquaSync's missing pre-2020 Idukki/Idamalayar operational record, which no operational dataset provides",
+      "http_status": "200",
+      "stars": "16",
+      "last_activity": "2026-01-31",
+      "caveat": "Flagged because it surfaced during this search; it belongs to the data dimension, not optimisation. Remote-sensing-derived levels carry their own error budget and will not approach a 0.30 m replay MAE."
+    },
+    {
+      "name": "Critical Infrastructure Systems Lab - VICResOpt",
+      "url": "https://github.com/Critical-Infrastructure-Systems-Lab/VICResOpt",
+      "kind": "repo",
+      "what_it_provides": "Optimisation of reservoir rule curves and operating rules embedded inside the VIC hydrologic model, with an NSGA-II driver. Companion to VICRes (verified 200, 27 stars, pushed 2026-03-15), which adds reservoir storage and operations to VIC.",
+      "relevance": "low-medium - the only maintained-adjacent example of rule-curve optimisation coupled to a distributed hydrologic model, but it commits you to the VIC ecosystem (C, gridded, computationally heavy)",
+      "http_status": "200",
+      "license": "none detected by GitHub API",
+      "stars": "35",
+      "last_activity": "2023-08-08",
+      "caveat": "Adopting it means adopting VIC, a far heavier hydrologic engine than AquaSync's SCS-CN, which would not improve a basin already replayed to 0.30 m MAE. Applied to the Mekong, not India."
+    },
+    {
+      "name": "Inflow-Prediction-Bhakra",
+      "url": "https://github.com/Anurag14/Inflow-Prediction-Bhakra",
+      "kind": "repo",
+      "what_it_provides": "LSTM inflow forecasting and a bidirectional storage-capacity/elevation calculator for Bhakra reservoir, Satluj basin, Northern India.",
+      "relevance": "low - the closest thing to Indian reservoir-operation code that exists on GitHub, which is itself the finding",
+      "http_status": "200",
+      "license": "MIT",
+      "stars": "17",
+      "last_activity": "2021-09-10",
+      "download_hint": "Paper: https://arxiv.org/abs/2109.04255",
+      "caveat": "Dead since 2021, single-reservoir, forecasting only (no operation optimisation). Reported to substantiate the verified negative that no Indian institutional open-source reservoir-operation package exists. The only other Indian-adjacent repo found, behzadasd/Reservoir-Operation-Optimization (200, 20 stars), is MATLAB and dead since 2019-12."
+    },
+    {
+      "name": "Reed Group software index (Cornell)",
+      "url": "https://reed.cee.cornell.edu/software/",
+      "kind": "doc",
+      "what_it_provides": "Authoritative curated index of the water-resources MOEA ecosystem: Borg MOEA, MOEA Framework, OpenMORDM, Hymod & HBV, Project Platypus, PySedSim, SALib, WaterPaths, Pywr-DRB, statemodify.",
+      "relevance": "medium - the fastest way to see the whole Reed/Cornell ecosystem and confirm nothing was missed",
+      "http_status": "200",
+      "last_activity": "actively curated; lists Pywr-DRB and statemodify (2024)",
+      "caveat": "Marks everything 'Active' including WaterPaths (last push 2022-01) and PySedSim (2020-07), so its status labels are NOT reliable - verify each repo's pushed_at yourself, as I did."
+    },
+    {
+      "name": "Water Programming blog (Reed group)",
+      "url": "https://waterprogramming.wordpress.com/",
+      "kind": "doc",
+      "what_it_provides": "Long-running practitioner blog on MOEA diagnostics, Borg/PyBorg setup, MOEA Framework post-processing, many-objective reservoir optimisation and HydroCNHS walkthroughs. The practical how-to layer the papers omit.",
+      "relevance": "medium - the PyBorg setup post is where the licensing gate is spelled out plainly, and the MOEA diagnostics posts are the standard reference for defending a Pareto front",
+      "http_status": "200",
+      "last_activity": "ongoing; posts verified through 2024",
+      "download_hint": "PyBorg setup post: https://waterprogramming.wordpress.com/2021/08/13/introduction-to-pyborg-basic-setup-and-running/ (200). Lab manual mirror: https://reedgroup.github.io/Software/BorgMOEA.html (200)."
+    },
+    {
+      "name": "baobabsoluciones/flowing-basin",
+      "url": "https://github.com/baobabsoluciones/flowing-basin",
+      "kind": "repo",
+      "what_it_provides": "Intraday multi-reservoir hydropower economic optimisation comparing RL against MILP and heuristic baselines - code behind 'Deep Reinforcement Learning for Intraday Multireservoir Hydropower Management'.",
+      "relevance": "low - the single most substantial RL-for-reservoirs repo I could find, and it has 5 stars, which IS the finding about RL maturity in this field",
+      "http_status": "200",
+      "license": "MIT",
+      "stars": "5",
+      "last_activity": "2025-02-17",
+      "caveat": "5 stars, 1 fork, no repo description. Reported to substantiate the verified negative that RL for reservoir operation has no production-grade open implementation - do not plan AquaSync work around RL. Fill-and-Spill (arXiv 2403.04195, verified 200) publishes no repository at all."
+    }
+  ],
+  "dead_ends": [
+    "Borg MOEA source code cannot be obtained by download at all. borgmoea.org gates it behind a Google form ('request access to its source code', ~3 business days, private BitBucket) and licenses it for 'academic and non-commercial use' only. This transitively poisons WaterPaths (needs a Borg recompile for optimisation mode), PySedSim's optimisation path, PyBorg, and essentially every published EMODPS reservoir study. Do not plan any AquaSync deliverable around it.",
+    "Reinforcement learning for reservoir operation - four separate GitHub searches produced nothing usable. The query 'reservoir+operation+DDPG' returned ZERO repositories. Best results anywhere: wlross/HydroPower (4 stars, dead 2020-06), Fraktal-Norge-AS/HydroRL (2 stars, 2023), vaishsRP/ReinforcementLearning-HydroelectricDam (2 stars), nanu1605/reservoir-rl (0 stars), Sarmadzandi multi-agent (4 stars, 2024). The most substantial, baobabsoluciones/flowing-basin, has 5 stars. The Fill-and-Spill paper (arXiv 2403.04195, JWRPM 150(7)) publishes no repository link. There is no reservoir-RL equivalent of stable-baselines3 - papers vastly outnumber code.",
+    "WaterPaths - do not invest. Last push 2022-01-04 (4.5 years stale), 23 stars, C++, no licence file, and it solves multi-decade multi-utility water-supply INVESTMENT pathways under deep uncertainty rather than release scheduling. Optimisation mode additionally requires recompiling against Borg plus an MPI toolchain. Its widely-linked training page (reedgroup.github.io/Training/WaterPaths_Training.html) is also dead (404).",
+    "PySedSim - dead since 2020-07-22, Python 2 era, not on PyPI, and sediment/dam-siting focused. AquaSync has no sediment objective. Its docs site (immm-sfa.github.io/pysedsim) 404s. Not worth an afternoon.",
+    "M3O - MATLAB, GPL-2.0, dead since 2019. Its CIS Lab Python port, Critical-Infrastructure-Systems-Lab/M3Opy, is an EMPTY stub: 0 stars, no description, no language detected. Read M3O for the algorithm menu; do not attempt to run or port it.",
+    "Indian institutional reservoir-operation software does not exist as open source. Four search angles (IIT/NIH Roorkee tools, India-WRIS, CWC decision-support systems, named Indian reservoirs) found no NIH Roorkee or IIT hydrological package on GitHub - github.com/IIT-Roorkee and the other IIT Roorkee orgs are student robotics/CS/vision groups. India-WRIS and CWC publish data portals and PDFs, not code. The only Indian reservoir repos are one-off paper artefacts: Anurag14/Inflow-Prediction-Bhakra (17 stars, dead 2021-09) and behzadasd/Reservoir-Operation-Optimization (20 stars, MATLAB, dead 2019-12).",
+    "The FIRO programme itself publishes no software. I fetched cw3e.ucsd.edu/firo/ directly: it lists six programmes and mentions 'decision support tools' and 'forecast verification methods' but contains ZERO repository links and no technical implementation detail (contact given is kvm@ucsd.edu). Do not go looking for an official FIRO codebase - all reusable code is academic (Herman group at UC Davis, Brodeur at NCSU).",
+    "pywr-next / Pywr 2.0 - still explicitly experimental after nearly six years (repo created 2020-11). All four GitHub releases are pre-release betas and the description still warns it is exploratory. 12 stars, 54 open issues. Building on it now guarantees rework.",
+    "swmm_mpc - dead since 2019-09 and SWMM/EPA stormwater-specific (urban drainage, pumps and orifices), not reservoir operation. It surfaces in every 'MPC water' search but does not transfer. HEC-ResSim is likewise a dead end for reuse: closed-source, Java/Windows, and its own documentation states it has no optimisation framework (v4.1 released April 2026).",
+    "Several authoritative pages block automated verification and should not be cited as links: hec.usace.army.mil (HEC-ResSim) returns curl status 000 - connection refused to non-browser clients; escholarship.org, ascelibrary.org, sciencedirect.com, agupubs.onlinelibrary.wiley.com, iwaponline.com, mdpi.com and zenodo.org all return 403 to curl. Cite the DOI or a publisher-independent copy instead. Note doi.org itself returns 403 for ASCE (10.1061/...), INFORMS (10.1287/...) and MDPI (10.3390/...) prefixes while Elsevier DOIs (10.1016/...) resolve 200 - so a 403 on doi.org is not evidence the DOI is wrong."
+  ],
+  "_dimension_key": "reservoir-optimisation",
+  "_stage": "research",
+  "_run": "wf_009a6299-c5b"
+}

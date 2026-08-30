@@ -1,0 +1,16 @@
+{
+  "scenario": "periyar_oct_2021",
+  "window": "2021-10-08 to 2021-10-28",
+  "n_hours": 481,
+  "mean_absolute_error_m": 0.303,
+  "max_absolute_error_m": 0.571,
+  "max_absolute_error_at_hour": 448,
+  "final_step_error_m": 0.517,
+  "error_biased_positive": true,
+  "observed_peak_level_m": 730.99,
+  "simulated_peak_level_m": 731.544,
+  "observed_min_level_m": 727.72,
+  "simulated_min_level_m": 727.72,
+  "spillway_active_hours": 216,
+  "spillway_peak_cumecs": 105.0
+}

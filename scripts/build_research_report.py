@@ -35,7 +35,7 @@ from __future__ import annotations
 
 import json
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from reportlab.lib.pagesizes import A4
@@ -64,11 +64,11 @@ from _pdfkit import (  # noqa: E402
     PAGE_H,
     RED,
     RULE_C,
-    S,
     TINT_AMBER,
     TINT_BLUE,
     TINT_RED,
     VIOLET,
+    S,
     badge,
     bullets,
     callout,
@@ -197,7 +197,7 @@ def cover(data: dict, acq: dict) -> list:
                "Every claimed source survived that pass."),
             accent=AMBER, tint=TINT_AMBER),
         Spacer(1, 7 * mm),
-        para(f"Generated {datetime.now(timezone.utc).strftime('%d %B %Y')} · "
+        para(f"Generated {datetime.now(UTC).strftime('%d %B %Y')} · "
              "Regenerate with <font face='Courier'>scripts/build_research_report.py</font> · "
              "Local index at <font face='Courier'>research/index/README.md</font>", "caption"),
     ]
@@ -311,7 +311,7 @@ def dimension_section(d: dict, number: int) -> list:
         for s in confirmed:
             meta = []
             if s.get("stars") and str(s["stars"]) not in ("", "-", "unknown"):
-                meta.append(f"{s['stars']}★")
+                meta.append(f"{s['stars']} stars")
             if s.get("last_activity") and s["last_activity"] != "unknown":
                 meta.append(str(s["last_activity"])[:10])
             if s.get("license") and s["license"] not in ("", "unknown", "none"):

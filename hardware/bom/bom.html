@@ -1,0 +1,831 @@
+<title>AquaSync Hardware BOM</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<style>
+  :root {
+    --bg: #f7f6f2;
+    --surface: #ffffff;
+    --surface-2: #efece3;
+    --ink: #1b2430;
+    --ink-muted: #5c6675;
+    --border: #ded9cc;
+    --accent: #b75c2e;
+    --accent-ink: #fff7ef;
+    --accent-soft: #f2e3d8;
+    --teal: #1f6f6b;
+    --teal-soft: #e2efec;
+    --danger: #a5342a;
+    --shadow: 0 1px 2px rgba(27,36,48,0.06), 0 8px 24px -12px rgba(27,36,48,0.12);
+    color-scheme: light;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #12161c;
+      --surface: #1a2029;
+      --surface-2: #212833;
+      --ink: #e7e4dc;
+      --ink-muted: #98a0ac;
+      --border: #2b323d;
+      --accent: #e08a54;
+      --accent-ink: #1a120c;
+      --accent-soft: #35271d;
+      --teal: #5db3ac;
+      --teal-soft: #1c2f2d;
+      --danger: #e37066;
+      --shadow: 0 1px 2px rgba(0,0,0,0.4), 0 8px 24px -12px rgba(0,0,0,0.6);
+      color-scheme: dark;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #12161c;
+    --surface: #1a2029;
+    --surface-2: #212833;
+    --ink: #e7e4dc;
+    --ink-muted: #98a0ac;
+    --border: #2b323d;
+    --accent: #e08a54;
+    --accent-ink: #1a120c;
+    --accent-soft: #35271d;
+    --teal: #5db3ac;
+    --teal-soft: #1c2f2d;
+    --danger: #e37066;
+    --shadow: 0 1px 2px rgba(0,0,0,0.4), 0 8px 24px -12px rgba(0,0,0,0.6);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    font-size: 15.5px;
+    line-height: 1.55;
+    margin: 0;
+    padding: 0 0 6rem;
+  }
+
+  h1, h2, h3 {
+    font-family: "IBM Plex Sans Condensed", "IBM Plex Sans", sans-serif;
+    font-weight: 700;
+    text-wrap: balance;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    margin: 0;
+  }
+
+  .mono {
+    font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+  }
+
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  a:focus-visible, button:focus-visible, summary:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 3px;
+  }
+
+  /* ---------------------------------------------------------- shell */
+
+  .shell {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+    display: grid;
+    grid-template-columns: 200px minmax(0, 1fr);
+    gap: 2.5rem;
+  }
+
+  @media (max-width: 880px) {
+    .shell { grid-template-columns: 1fr; }
+  }
+
+  /* ---------------------------------------------------------- header */
+
+  .masthead {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .masthead-inner {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 2.75rem 1.5rem 2rem;
+  }
+
+  .eyebrow {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  h1.title {
+    font-size: clamp(2rem, 4.2vw, 2.9rem);
+    line-height: 1.05;
+    margin-top: 0.4rem;
+  }
+
+  .subhead {
+    color: var(--ink-muted);
+    max-width: 62ch;
+    margin-top: 0.85rem;
+    font-size: 1.02rem;
+  }
+
+  .price-note {
+    margin-top: 1.1rem;
+    font-size: 0.85rem;
+    color: var(--ink-muted);
+  }
+  .price-note strong { color: var(--ink); }
+
+  /* ---------------------------------------------------------- nav */
+
+  nav.tiernav {
+    position: sticky;
+    top: 1.5rem;
+    align-self: start;
+    padding-top: 2.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  @media (max-width: 880px) {
+    nav.tiernav {
+      position: static;
+      flex-direction: row;
+      flex-wrap: wrap;
+      padding-top: 1.5rem;
+      gap: 0.4rem;
+    }
+  }
+
+  nav.tiernav a {
+    color: var(--ink-muted);
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.83rem;
+    padding: 0.4rem 0.6rem;
+    border-radius: 6px;
+    border-left: 2px solid transparent;
+  }
+  nav.tiernav a:hover {
+    color: var(--ink);
+    text-decoration: none;
+    background: var(--surface-2);
+  }
+  @media (max-width: 880px) {
+    nav.tiernav a { border-left: none; border: 1px solid var(--border); }
+  }
+
+  /* ---------------------------------------------------------- main */
+
+  main { padding-top: 2.5rem; min-width: 0; }
+
+  section { margin-bottom: 3.2rem; scroll-margin-top: 1.5rem; }
+
+  section > h2 {
+    font-size: 1.5rem;
+    display: flex;
+    align-items: baseline;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+  }
+
+  .tier-chip {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 0.15rem 0.5rem;
+    border-radius: 5px;
+    background: var(--teal-soft);
+    color: var(--teal);
+  }
+
+  .tier-cost {
+    font-family: "IBM Plex Mono", monospace;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-muted);
+    font-size: 0.95rem;
+    font-weight: 500;
+  }
+
+  .tier-desc {
+    color: var(--ink-muted);
+    max-width: 68ch;
+    margin: 0.6rem 0 1.3rem;
+  }
+  .tier-desc strong { color: var(--ink); }
+
+  /* ---------------------------------------------------------- callouts */
+
+  .callout {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    padding: 1rem 1.15rem;
+    margin: 1rem 0;
+    font-size: 0.95rem;
+  }
+  .callout.teal { border-left-color: var(--teal); }
+  .callout p { margin: 0; }
+  .callout p + p { margin-top: 0.5rem; }
+  .callout strong { color: var(--ink); }
+
+  /* ---------------------------------------------------------- tables */
+
+  .tbl-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+  }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 640px;
+  }
+
+  th, td {
+    padding: 0.62rem 0.85rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+
+  thead th {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    background: var(--surface-2);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: var(--surface-2); }
+
+  tbody tr.total-row td {
+    border-top: 2px solid var(--ink);
+    border-bottom: none;
+    font-weight: 600;
+    background: var(--surface-2);
+  }
+
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  td.spec, td.part { font-size: 0.92rem; }
+  td.part { font-weight: 500; }
+  td.spec { font-family: "IBM Plex Mono", monospace; color: var(--ink-muted); font-size: 0.85rem; }
+  td.note { color: var(--ink-muted); font-size: 0.85rem; max-width: 26ch; }
+  td.note strong { color: var(--ink); font-weight: 600; }
+  td.price { font-family: "IBM Plex Mono", monospace; }
+
+  .buy-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.78rem;
+    font-weight: 500;
+    white-space: nowrap;
+    padding: 0.2rem 0.55rem;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--ink);
+  }
+  .buy-link:hover { border-color: var(--accent); color: var(--accent); text-decoration: none; }
+  .buy-link .arrow { color: var(--accent); }
+  .buy-link.local { color: var(--ink-muted); font-style: italic; border-style: dashed; }
+
+  /* ---------------------------------------------------------- vendor grid */
+
+  .vendor-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 0.85rem;
+  }
+
+  .vendor-card {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    border-radius: 10px;
+    padding: 0.95rem 1.05rem;
+  }
+
+  .vendor-card h3 {
+    font-size: 1rem;
+    font-family: "IBM Plex Sans", sans-serif;
+    font-weight: 600;
+  }
+
+  .vendor-card p {
+    color: var(--ink-muted);
+    font-size: 0.85rem;
+    margin: 0.35rem 0 0.6rem;
+  }
+
+  .vendor-card code {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.76rem;
+    color: var(--teal);
+    background: var(--teal-soft);
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    word-break: break-all;
+  }
+
+  /* ---------------------------------------------------------- budget ladder */
+
+  .ladder {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    margin: 1.2rem 0;
+  }
+
+  .ladder-row {
+    display: grid;
+    grid-template-columns: 70px 1fr 90px;
+    align-items: center;
+    gap: 0.85rem;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.85rem;
+  }
+
+  .ladder-track {
+    height: 22px;
+    background: var(--surface-2);
+    border-radius: 5px;
+    overflow: hidden;
+    display: flex;
+    border: 1px solid var(--border);
+  }
+
+  .ladder-fill {
+    height: 100%;
+    background: var(--accent);
+    opacity: 0.35;
+  }
+  .ladder-fill.current { opacity: 1; }
+
+  .ladder-amount { text-align: right; font-variant-numeric: tabular-nums; color: var(--ink-muted); }
+
+  /* ---------------------------------------------------------- decision table */
+
+  .decision-table td, .decision-table th { font-size: 0.9rem; }
+  .decision-table td:first-child { color: var(--ink-muted); width: 34%; }
+
+  /* ---------------------------------------------------------- wiring */
+
+  .pin-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 0.6rem;
+  }
+
+  .pin-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 0.75rem;
+    padding: 0.55rem 0.8rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    font-size: 0.86rem;
+  }
+
+  .pin-fn { color: var(--ink-muted); }
+  .pin-val {
+    font-family: "IBM Plex Mono", monospace;
+    font-weight: 600;
+    color: var(--accent);
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  /* ---------------------------------------------------------- compare table */
+
+  .compare-table th:first-child { background: var(--surface); }
+
+  /* ---------------------------------------------------------- footer */
+
+  footer {
+    max-width: 1180px;
+    margin: 3rem auto 0;
+    padding: 1.5rem;
+    border-top: 1px solid var(--border);
+    color: var(--ink-muted);
+    font-size: 0.82rem;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  @media print {
+    nav.tiernav, .buy-link { display: none; }
+    body { background: #fff; color: #000; }
+    .shell { grid-template-columns: 1fr; }
+  }
+</style>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div class="eyebrow">AquaSync &middot; Periyar digital twin</div>
+    <h1 class="title">Hardware bill of materials</h1>
+    <p class="subhead">
+      Four build tiers, from a one-week tabletop rig to an offline command
+      post with autonomous bathymetry. <strong style="color:var(--ink)">V1 is
+      the only tier required</strong> for a working demonstration &mdash;
+      V2&ndash;V4 are optional depth, and every one of them is a way to lose
+      if it isn't finished and rehearsed.
+    </p>
+    <p class="price-note">
+      Prices are indicative <strong>INR, August 2026</strong>, from Indian
+      vendor listings &mdash; treat them as &plusmn;25% for budgeting. Every
+      row links to a live vendor search built from the part's exact spec, not
+      a product page URL that will have rotted by the time you read this.
+    </p>
+  </div>
+</header>
+
+<div class="shell">
+  <nav class="tiernav" aria-label="Jump to section">
+    <a href="#decide">Choosing a tier</a>
+    <a href="#vendors">Vendors</a>
+    <a href="#v1">V1 &middot; Scale rig</a>
+    <a href="#v2">V2 &middot; Off-grid</a>
+    <a href="#v3">V3 &middot; Edge AI</a>
+    <a href="#v4">V4 &middot; Bathymetry</a>
+    <a href="#budget">Cumulative budget</a>
+    <a href="#field">Field reference</a>
+  </nav>
+
+  <main>
+
+    <section id="decide">
+      <h2>Choosing a tier</h2>
+      <p class="tier-desc">
+        <strong>The default answer is V1 + V2, and stop.</strong> The
+        strongest version of this project is a flawless V1 rig driving a
+        twin validated against real 2021 dam data, presented by someone who
+        understands every line of it &mdash; not a table of half-working V3
+        and V4 hardware with no time left to rehearse.
+      </p>
+      <div class="tbl-wrap">
+        <table class="decision-table">
+          <thead><tr><th>Situation</th><th>Build</th></tr></thead>
+          <tbody>
+            <tr><td>Solo, or under 4 weeks</td><td><strong>V1 only.</strong> Put every remaining hour into the twin and the demo.</td></tr>
+            <tr><td>Solo with 6+ weeks</td><td><strong>V1 + V2.</strong> Off-grid failover is a complete story on its own.</td></tr>
+            <tr><td>3&ndash;4 people, 8+ weeks, one dedicated to hardware</td><td>V1 + V2 + <em>one</em> V3 item &mdash; the hydrostatic transmitter, for genuine sensor fusion</td></tr>
+            <tr><td>Everything already works and is rehearsed</td><td>V4</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="tier-desc" style="margin-top:0.9rem;">
+        Order V1 first and start building while V2 ships. Indian vendor
+        delivery is 3&ndash;5 days; do not sequence the build so that a
+        &#8377;90 part blocks a demo.
+      </p>
+    </section>
+
+    <section id="vendors">
+      <h2>Vendors</h2>
+      <p class="tier-desc">
+        Component links throughout this page point to a live search, not a
+        product page &mdash; product URLs on Indian electronics sites churn
+        constantly; part numbers do not. In the planning material that
+        seeded this project, the same Amazon ASIN turned up as a breadboard,
+        a jumper-wire set, a DHT22, a resistor kit <em>and</em> a
+        multimeter &mdash; none of that has been carried forward.
+      </p>
+      <div class="vendor-grid" id="vendor-grid"></div>
+    </section>
+
+    <section id="v1"></section>
+    <section id="v2"></section>
+    <section id="v3"></section>
+    <section id="v4"></section>
+
+    <section id="budget">
+      <h2>Cumulative budget</h2>
+      <div class="ladder" id="ladder"></div>
+      <p class="tier-desc">
+        Software, data, and hosting: <strong>&#8377;0.</strong> Every
+        dependency is open source and every data source is free. Not
+        itemised above: filament if 3D-printing the gate (&asymp;&#8377;300
+        of PETG), poster printing (&#8377;300&ndash;500 for A1), and a spare
+        ESP32, which you will need.
+      </p>
+    </section>
+
+    <section id="field">
+      <h2>Field reference &mdash; a real deployed design, not a tier to buy</h2>
+      <div class="callout teal">
+        <p>
+          Found 28 August 2026 while checking ICFOSS's (Kerala's state FOSS
+          body) GitLab for prior art. Not another BOM tier &mdash; a
+          <strong>working, MIT-licensed, non-contact water-level station</strong>
+          that has actually been built and documented, worth reading before
+          extending V1 toward a real field deployment rather than a tabletop
+          demo.
+        </p>
+        <p>
+          <a href="https://gitlab.com/icfoss/OpenIoT/c1_dev_lorawan_automatic_level_monitoring_station" target="_blank" rel="noopener" class="mono">icfoss/OpenIoT/c1_dev_lorawan_automatic_level_monitoring_station &rarr;</a>
+        </p>
+      </div>
+
+      <div class="tbl-wrap">
+        <table class="compare-table">
+          <thead><tr><th></th><th>This project's V1</th><th>ICFOSS's design</th></tr></thead>
+          <tbody>
+            <tr><td>Level sensor</td><td>JSN-SR04T ultrasonic, 25&ndash;450 cm</td><td>Vega Puls C11 radar, 8 m range, non-contact</td></tr>
+            <tr><td>Telemetry</td><td>Wi-Fi (ESP32)</td><td>LoRaWAN (C1-Dev board, Murata CMWX1ZZABZ-091)</td></tr>
+            <tr><td>Power</td><td>Mains adapter</td><td>100 W solar + 50 Ah Li-ion, MPPT charge controller</td></tr>
+            <tr><td>Payload</td><td>Level + temperature</td><td>Level, 16-reading history, rate of change, solar/battery voltage &amp; current</td></tr>
+            <tr><td>Range</td><td>Tabletop, tethered</td><td>Field-deployable, kilometres via LoRaWAN</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p class="tier-desc" style="margin-top:1rem;">
+        The two designs solve different problems on purpose &mdash; V1
+        above is built to be cheap, buildable in a week, and demonstrate the
+        <em>twin</em>, not the <em>sensor network</em>. But it is exactly
+        the kind of hardware the project's routing-calibration work names as
+        the fix for the biggest data-layer gap: real reservoirs report on a
+        daily bulletin, and calibrating river travel time against that daily
+        record failed specifically because it cannot resolve an 8-hour
+        travel time. A radar station reporting every few minutes over
+        LoRaWAN &mdash; at Idukki or a downstream gauge &mdash; is a
+        plausible real answer, not a V1 expo prop.
+      </p>
+      <p class="tier-desc">
+        ICFOSS's OpenIoT group has related designs worth the same look:
+        <code class="mono" style="font-size:0.82rem;">Water_Quality_Monitoring_Device</code>
+        and
+        <code class="mono" style="font-size:0.82rem;">Aquasentinals</code>
+        (same STM32 + LoRaWAN + ChirpStack + Grafana stack, pH/dissolved
+        oxygen/temperature sensors), and
+        <code class="mono" style="font-size:0.82rem;">flood-monitoring-technopark</code>
+        &mdash; a deployed reference for the alerting and dashboard side,
+        LoRaWAN sensors on the Thettiyar canal at Technopark with
+        threshold-based SMS/email alerts.
+      </p>
+    </section>
+
+  </main>
+</div>
+
+<footer>
+  <span>AquaSync &middot; hardware/bom/README.md, rendered</span>
+  <span>Prices indicative INR, August 2026 &middot; &plusmn;25%</span>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+
+  var VENDORS = {
+    robu:    { name: "Robu.in",         url: function (p) { return "https://robu.in/?s=" + encodeURIComponent(p); },
+               pattern: "robu.in/?s=<part>",
+               blurb: "Sensors, ESP32/Pi boards, motors — genuine parts, fast" },
+    think:   { name: "ThinkRobotics",   url: function (p) { return "https://thinkrobotics.com/search?q=" + encodeURIComponent(p); },
+               pattern: "thinkrobotics.com/search?q=<part>",
+               blurb: "Modules, cameras, Pi accessories" },
+    ecomp:   { name: "ElectronicsComp", url: function (p) { return "https://www.electronicscomp.com/catalogsearch/result/?q=" + encodeURIComponent(p); },
+               pattern: "electronicscomp.com/catalogsearch/result/?q=<part>",
+               blurb: "Passives, ICs, cheap basics" },
+    amazon:  { name: "Amazon.in",       url: function (p) { return "https://www.amazon.in/s?k=" + encodeURIComponent(p); },
+               pattern: "amazon.in/s?k=<part>",
+               blurb: "Cables, batteries, enclosures, tanks" },
+    local:   { name: "Local market",    url: null,
+               pattern: "no fixed URL",
+               blurb: "SP Road Bengaluru, Broadway Kochi — acrylic, plumbing, tools: cheaper and immediate" }
+  };
+
+  function money(n) { return "₹" + n.toLocaleString("en-IN"); }
+
+  function buyLink(item) {
+    var v = VENDORS[item.vendor];
+    if (!v.url) return '<span class="buy-link local">' + v.name + "</span>";
+    return '<a class="buy-link" href="' + v.url(item.part) + '" target="_blank" rel="noopener">' +
+           v.name + ' <span class="arrow">&rarr;</span></a>';
+  }
+
+  function renderTierTable(items) {
+    var rows = items.map(function (it, i) {
+      var total = it.qty * it.price;
+      return "<tr>" +
+        '<td class="num mono">' + (i + 1) + "</td>" +
+        '<td class="part">' + it.part + "</td>" +
+        '<td class="spec">' + it.spec + "</td>" +
+        '<td class="num mono">' + it.qty + "</td>" +
+        '<td class="num price">' + money(it.price) + "</td>" +
+        '<td class="num price">' + money(total) + "</td>" +
+        "<td>" + buyLink(it) + "</td>" +
+        '<td class="note">' + (it.note || "&mdash;") + "</td>" +
+        "</tr>";
+    }).join("");
+    var grand = items.reduce(function (s, it) { return s + it.qty * it.price; }, 0);
+    return '<div class="tbl-wrap"><table><thead><tr>' +
+      "<th>#</th><th>Component</th><th>Specification</th>" +
+      '<th class="num">Qty</th><th class="num">&#8377; ea</th><th class="num">&#8377;</th>' +
+      "<th>Source</th><th>Notes</th>" +
+      "</tr></thead><tbody>" + rows +
+      '<tr class="total-row"><td colspan="5"></td><td class="num price">' + money(grand) +
+      '</td><td colspan="2"></td></tr>' +
+      "</tbody></table></div>";
+  }
+
+  function renderSimpleTable(items, opts) {
+    opts = opts || {};
+    var rows = items.map(function (it) {
+      return "<tr>" +
+        '<td class="part">' + it.part + "</td>" +
+        (opts.spec ? '<td class="spec">' + (it.spec || "") + "</td>" : "") +
+        '<td class="num mono">' + it.qty + "</td>" +
+        '<td class="num price">' + money(it.price) + "</td>" +
+        '<td class="num price">' + money(it.qty * it.price) + "</td>" +
+        "<td>" + buyLink(it) + "</td>" +
+        (opts.note ? '<td class="note">' + (it.note || "&mdash;") + "</td>" : "") +
+        "</tr>";
+    }).join("");
+    var grand = items.reduce(function (s, it) { return s + it.qty * it.price; }, 0);
+    return '<div class="tbl-wrap"><table><thead><tr>' +
+      "<th>Component</th>" + (opts.spec ? "<th>Specification</th>" : "") +
+      '<th class="num">Qty</th><th class="num">&#8377; ea</th><th class="num">&#8377;</th><th>Source</th>' +
+      (opts.note ? "<th>Notes</th>" : "") +
+      "</tr></thead><tbody>" + rows +
+      '<tr class="total-row"><td colspan="' + (opts.spec ? 4 : 3) + '"></td><td class="num price">' + money(grand) +
+      "</td><td></td>" + (opts.note ? "<td></td>" : "") +
+      "</tr></tbody></table></div>";
+  }
+
+  // ---------------------------------------------------------------- data
+
+  var V1 = [
+    { part: "ESP32-WROOM-32 DevKit", spec: "38-pin, dual-core 240 MHz, Wi-Fi + BT", qty: 1, price: 450, vendor: "robu", note: "Get the <strong>38-pin</strong>, not 30-pin — you need the extra ADC pins" },
+    { part: "JSN-SR04T v3.0", spec: "Waterproof ultrasonic, 25–450 cm, ±1 cm", qty: 1, price: 550, vendor: "robu", note: "Separate transducer on a cable; survives splash" },
+    { part: "HC-SR04", spec: "Ultrasonic 2–400 cm", qty: 1, price: 90, vendor: "robu", note: "Second tank, dry location" },
+    { part: "DS18B20 waterproof probe", spec: "1-Wire, −55…125°C, ±0.5°C", qty: 1, price: 180, vendor: "robu", note: "<strong>Not optional</strong> — sound speed drifts 0.6 m/s per °C" },
+    { part: "BMP280", spec: "Barometric, 300–1100 hPa, ±0.12 hPa", qty: 1, price: 150, vendor: "robu", note: "Squall pre-detection" },
+    { part: "NEMA 17 stepper", spec: "42×42 mm, 1.8°, 4.2 kg·cm", qty: 1, price: 650, vendor: "robu", note: "Sluice gate" },
+    { part: "A4988 driver + heatsink", spec: "1/16 microstep, 2 A", qty: 1, price: 130, vendor: "robu", note: "DRV8825 also fine" },
+    { part: "YF-S201", spec: "Hall flow sensor, 1–30 L/min, G1/2\"", qty: 1, price: 350, vendor: "robu", note: "Outflow measurement" },
+    { part: "12 V submersible pump", spec: "800–1000 L/h", qty: 1, price: 300, vendor: "amazon", note: "Simulates inflow" },
+    { part: "12 V 5 A adapter", spec: "Barrel jack", qty: 1, price: 450, vendor: "amazon", note: "Steppers are hungry" },
+    { part: "LM2596 buck converter", spec: "12 V→5 V, 3 A, adjustable", qty: 1, price: 120, vendor: "ecomp", note: "<strong>Set to 5.0 V</strong> before connecting the ESP32" },
+    { part: "Micro limit switches", spec: "SPDT lever", qty: 2, price: 40, vendor: "ecomp", note: "Gate end-stops; stepper has no position feedback" },
+    { part: "Acrylic sheet, 3 mm", spec: "2 × (600×450 mm)", qty: 2, price: 450, vendor: "local", note: "Two tanks + gate" },
+    { part: "Acrylic solvent cement", spec: "Dichloromethane, 50 ml", qty: 1, price: 200, vendor: "local", note: "Local plastics shop" },
+    { part: "Silicone tubing + fittings", spec: "8 mm ID, 2 m, elbows, clamps", qty: 1, price: 350, vendor: "amazon", note: "" },
+    { part: "Perfboard + headers", spec: "10×15 cm, assorted headers", qty: 1, price: 200, vendor: "ecomp", note: "" },
+    { part: "Jumper wires", spec: "M-M / M-F / F-F, 120 pc", qty: 1, price: 200, vendor: "ecomp", note: "" },
+    { part: "Breadboard", spec: "830 point", qty: 1, price: 150, vendor: "ecomp", note: "" },
+    { part: "Micro-USB data cable", spec: "Data, not charge-only", qty: 2, price: 100, vendor: "amazon", note: "Charge-only cables cost hours of debugging" },
+    { part: "IP65 enclosure", spec: "150×100×60 mm", qty: 1, price: 350, vendor: "amazon", note: "" },
+    { part: "Assorted R/C kit", spec: "1/4 W resistors, ceramics", qty: 1, price: 200, vendor: "ecomp", note: "4.7 kΩ needed for DS18B20 pull-up" }
+  ];
+
+  var TOOLS = [
+    { part: "Soldering iron, 25–40 W", qty: 1, price: 400, vendor: "amazon" },
+    { part: "Solder wire, 0.8 mm 100 g", qty: 1, price: 180, vendor: "amazon" },
+    { part: "Digital multimeter", qty: 1, price: 450, vendor: "amazon" },
+    { part: "Wire stripper", qty: 1, price: 200, vendor: "amazon" },
+    { part: "Hot glue gun", qty: 1, price: 250, vendor: "amazon" }
+  ];
+
+  var PINMAP = [
+    { fn: "Reservoir level trig", part: "JSN-SR04T", pin: "GPIO 5" },
+    { fn: "Reservoir level echo", part: "JSN-SR04T", pin: "GPIO 18 *" },
+    { fn: "Tailwater trig / echo", part: "HC-SR04", pin: "GPIO 17 / 16 *" },
+    { fn: "Water temperature", part: "DS18B20", pin: "GPIO 4" },
+    { fn: "Barometric (I²C)", part: "BMP280", pin: "SDA 21 / SCL 22" },
+    { fn: "Gate step / dir / enable", part: "A4988", pin: "GPIO 19 / 25 / 23" },
+    { fn: "Gate limit switches", part: "SPDT ×2", pin: "GPIO 34, 35" },
+    { fn: "Flow sensor", part: "YF-S201", pin: "GPIO 27 *" },
+    { fn: "Pump relay", part: "Relay/MOSFET", pin: "GPIO 26" }
+  ];
+
+  var V2 = [
+    { part: "SX1278 LoRa (Ra-02)", spec: "433 MHz, SPI, ~5 km LoS", qty: 2, price: 450, vendor: "robu" },
+    { part: "433 MHz spring antenna", spec: "SMA / IPEX", qty: 2, price: 100, vendor: "robu" },
+    { part: "MicroSD card module", spec: "SPI, with 8 GB card", qty: 1, price: 250, vendor: "robu" },
+    { part: "INA219", spec: "I²C current/voltage, ±3.2 A", qty: 1, price: 220, vendor: "robu" },
+    { part: "18650 cells + holder", spec: "3.7 V 2600 mAh, protected", qty: 2, price: 180, vendor: "robu" },
+    { part: "TP4056 + protection", spec: "USB-C, 1 A", qty: 1, price: 90, vendor: "robu" },
+    { part: "Active buzzer", spec: "5 V piezo", qty: 1, price: 60, vendor: "ecomp" },
+    { part: "10 W solar panel", spec: "12 V polycrystalline", qty: 1, price: 220, vendor: "amazon" }
+  ];
+
+  var V3 = [
+    { part: "ESP32-S3 DevKitC-1", spec: "N16R8, vector ops", qty: 1, price: 900, vendor: "robu", note: "TFLite Micro at usable speed" },
+    { part: "ESP32-CAM + OV2640", spec: "2 MP", qty: 1, price: 600, vendor: "robu", note: "Reads a painted gauge; LSPIV surface velocity" },
+    { part: "ESP32-CAM-MB shield", spec: "CH340 programmer", qty: 1, price: 250, vendor: "robu", note: "Saves genuine pain" },
+    { part: "HLK-LD2410C", spec: "24 GHz FMCW radar", qty: 1, price: 450, vendor: "robu", note: "Immune to fog, foam, spray, temperature" },
+    { part: "Hydrostatic level transmitter", spec: "0–1 m, 4–20 mA or 0–5 V", qty: 1, price: 1800, vendor: "robu", note: "Independent physics → real sensor fusion" },
+    { part: "INMP441", spec: "I²S MEMS mic, 24-bit", qty: 1, price: 250, vendor: "robu", note: "Cavitation FFT" },
+    { part: "HX711 + 5 kg load cell", spec: "24-bit ADC", qty: 1, price: 300, vendor: "robu", note: "Trash-rack blockage via differential head" },
+    { part: "MPU6050", spec: "6-axis IMU", qty: 1, price: 250, vendor: "robu", note: "Gate vibration signature" },
+    { part: "Micro hydro generator", spec: "F50-12V Pelton", qty: 1, price: 450, vendor: "amazon", note: "Self-powering during storms" },
+    { part: "4–20 mA receiver", spec: "250 Ω precision + op-amp", qty: 1, price: 150, vendor: "ecomp", note: "For the transmitter" },
+    { part: "3S BMS", spec: "12 V Li-ion protection", qty: 1, price: 150, vendor: "robu", note: "" },
+    { part: "Misc PCB / connectors", spec: "", qty: 1, price: 350, vendor: "ecomp", note: "" }
+  ];
+
+  var V4 = [
+    { part: "Raspberry Pi 4B", spec: "2 GB", qty: 1, price: 3800, vendor: "think" },
+    { part: "Pi case + fan + PSU", spec: "official", qty: 1, price: 900, vendor: "think" },
+    { part: "MicroSD 32 GB", spec: "A1 Class 10", qty: 1, price: 450, vendor: "amazon" },
+    { part: "NEO-6M GPS + antenna", spec: "UART", qty: 1, price: 700, vendor: "robu" },
+    { part: "RC boat hull", spec: "40–50 cm", qty: 1, price: 900, vendor: "amazon" },
+    { part: "Brushed motor + prop + shaft", spec: "380/540 class", qty: 1, price: 500, vendor: "amazon" },
+    { part: "L298N", spec: "Dual H-bridge", qty: 1, price: 200, vendor: "robu" },
+    { part: "MG996R", spec: "Metal-gear servo, rudder", qty: 1, price: 400, vendor: "robu" },
+    { part: "LiPo 2S 2200 mAh", spec: "7.4 V", qty: 1, price: 900, vendor: "amazon" },
+    { part: "LiPo balance charger", spec: "2S–3S + LiPo-safe bag", qty: 1, price: 650, vendor: "amazon" },
+    { part: "Waterproofing", spec: "Conformal coat, glands, silicone", qty: 1, price: 500, vendor: "amazon" }
+  ];
+
+  // Every tier cost below is SUMMED from the line items above, never
+  // retyped — a stated total that quietly drifted from its own rows is
+  // exactly the bug this page found in the source document (V1, V3 and
+  // V4 were each wrong by ₹100–1,000). One source of truth, here.
+  function sumOf(items) { return items.reduce(function (s, it) { return s + it.qty * it.price; }, 0); }
+
+  var COST = { tools: sumOf(TOOLS), v1: sumOf(V1), v2: sumOf(V2), v3: sumOf(V3), v4: sumOf(V4) };
+
+  var BUDGET = (function () {
+    var rows = [
+      { label: "Tools", add: COST.tools, weeks: "—" },
+      { label: "V1", add: COST.v1, weeks: "1 wk" },
+      { label: "V2", add: COST.v2, weeks: "2 wk" },
+      { label: "V3", add: COST.v3, weeks: "4 wk" },
+      { label: "V4", add: COST.v4, weeks: "7 wk" }
+    ];
+    var running = 0;
+    rows.forEach(function (r) { running += r.add; r.total = running; });
+    return rows;
+  })();
+
+  // ------------------------------------------------------------ render
+
+  document.getElementById("vendor-grid").innerHTML = Object.keys(VENDORS).map(function (k) {
+    var v = VENDORS[k];
+    return '<div class="vendor-card"><h3>' + v.name + "</h3><p>" + v.blurb + "</p>" +
+      "<code>" + v.pattern + "</code></div>";
+  }).join("");
+
+  document.getElementById("v1").innerHTML =
+    "<h2>V1 <span class=\"tier-chip\">Required</span> <span class=\"tier-cost\">" + money(COST.v1) + " &middot; 1 week</span></h2>" +
+    '<p class="tier-desc">The complete physical demonstrator: a two-tank recirculating model with a motorised sluice gate, level sensing, and live telemetry to the twin. <strong>This alone is a strong expo build.</strong></p>' +
+    renderTierTable(V1) +
+    '<h3 style="font-size:1.05rem;margin:1.6rem 0 0.6rem;">Also needed, if you don’t already own them</h3>' +
+    renderSimpleTable(TOOLS, {}) +
+    '<h3 style="font-size:1.05rem;margin:1.6rem 0 0.6rem;">Wiring — ESP32 pin map</h3>' +
+    '<div class="pin-grid">' + PINMAP.map(function (p) {
+      return '<div class="pin-row"><span class="pin-fn">' + p.fn + " <span class=\"mono\" style=\"opacity:0.7\">(" + p.part + ")</span></span><span class=\"pin-val\">" + p.pin + "</span></div>";
+    }).join("") + "</div>" +
+    '<div class="callout" style="margin-top:1rem;"><p><strong>Two traps worth flagging.</strong> Ultrasonic echo pins output 5&nbsp;V and the ESP32 is 3.3&nbsp;V tolerant only — a divider (marked *) is not optional. GPIO&nbsp;34/35 are input-only with no internal pull-ups, so limit switches need external ones. GPIO&nbsp;21 is shared with I²C SDA, so the stepper’s <em>dir</em> line moves to GPIO&nbsp;25.</p></div>';
+
+  document.getElementById("v2").innerHTML =
+    "<h2>V2 <span class=\"tier-chip\">Optional</span> <span class=\"tier-cost\">+" + money(COST.v2) + " &middot; +1 week</span></h2>" +
+    '<p class="tier-desc">Proves the system survives the conditions it is built for. <strong>The highest-value optional tier</strong> — "what happens when the network dies?" is the question this answers, and the one an IoT judge will ask.</p>' +
+    renderSimpleTable(V2, {}) +
+    '<div class="callout" style="margin-top:1rem;"><p><strong>433 MHz is the legal ISM band in India.</strong> The 868 MHz modules widely recommended online are the European allocation — use 433 MHz.</p><p>INA219 earns its place: motor current is how you detect a jammed gate. A stepper that misses steps against an obstruction draws a current signature you can see, and a digital twin that cannot tell whether its actuator actually moved is not a twin.</p></div>';
+
+  document.getElementById("v3").innerHTML =
+    "<h2>V3 <span class=\"tier-chip\">Optional</span> <span class=\"tier-cost\">+" + money(COST.v3) + " &middot; +2 weeks</span></h2>" +
+    '<p class="tier-desc">Edge AI and better sensing.</p>' +
+    renderTierTable(V3) +
+    '<div class="callout" style="margin-top:1rem;"><p>The hydrostatic transmitter is the single most defensible purchase in this tier. Two sensors measuring the same quantity through <em>different physics</em> (time-of-flight vs. water-column pressure) is what makes fault detection possible — two ultrasonic sensors that agree tell you nothing, since they fail the same way at the same time.</p></div>';
+
+  document.getElementById("v4").innerHTML =
+    "<h2>V4 <span class=\"tier-chip\">Optional</span> <span class=\"tier-cost\">+" + money(COST.v4) + " &middot; +3 weeks</span></h2>" +
+    '<p class="tier-desc">Offline command post and bathymetry. Ambitious — do not start this unless V1–V3 are finished and rehearsed.</p>' +
+    renderSimpleTable(V4, {});
+
+  var maxTotal = BUDGET[BUDGET.length - 1].total;
+  document.getElementById("ladder").innerHTML = BUDGET.map(function (b, i) {
+    var pct = Math.round((b.total / maxTotal) * 100);
+    return '<div class="ladder-row"><span class="mono">' + b.label + '</span>' +
+      '<span class="ladder-track"><span class="ladder-fill' + (i === BUDGET.length - 1 ? " current" : "") + '" style="width:' + pct + '%"></span></span>' +
+      '<span class="ladder-amount">' + money(b.total) + " <span style=\"opacity:0.6\">(" + b.weeks + ")</span></span></div>";
+  }).join("");
+})();
+</script>

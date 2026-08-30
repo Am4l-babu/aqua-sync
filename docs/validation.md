@@ -6,8 +6,9 @@ A model that has not been validated against something it was not fitted to is
 a hypothesis. This document tracks the distance between those two states, and
 is honest about how far there is still to go.
 
-**Status as of 26 August 2026:** the reservoir model is calibrated and
-replay-validated. The routing and runoff models are **not yet validated**, and
+**Status as of 28 August 2026:** the reservoir model is calibrated and
+replay-validated **on two independent episodes**, not just the one it was
+tuned against. The routing and runoff models are **not yet validated**, and
 the headline counterfactual assumes **perfect foresight**. Read §4 before
 quoting anything.
 
@@ -82,6 +83,47 @@ days is small enough to work with and large enough to be worth explaining.
 figure sits inside model error. Quote it as *"about 3 m"*, never to two
 decimal places.
 
+### 2b · Out-of-sample: does it hold up on an episode it has never seen?
+
+**Question:** the calibration above (β, evaporation, spillway physics) was
+fitted or checked against October 2021 data. Does the same untouched model
+reproduce a *different* episode - August 2022 - to a comparable accuracy?
+This is the difference between *calibrated* and *validated*.
+
+**Method:** identical to §2, replayed against `idukki_aug_2022`
+(`twin/scenarios.py`), 1–20 August 2022, 457 hourly steps. Observed inflow
+and releases in, no fitting to the level series. Genuine spillway release in
+this window (191 h active, peak 409 cumecs), so it also exercises the
+spillway-discharge physics that October 2021 barely touched (105 cumecs
+peak).
+
+| Metric | October 2021 (fitted-to) | August 2022 (out-of-sample) |
+|---|---|---|
+| Mean absolute error | 0.303 m | **0.319 m** |
+| Maximum absolute error | 0.571 m | **0.744 m** |
+| Final-step error | +0.517 m (grows positive) | **-0.273 m (does not)** |
+| Spillway active | 216 h, 105 cumecs peak | 191 h, 409 cumecs peak |
+
+**Finding:** mean error on the unseen episode (0.319 m) is within 5% of the
+episode the model was checked against (0.303 m) - the accuracy is not an
+artefact of October 2021 specifically. That is the headline result, and it
+is genuinely evidence of generalisation, not overfitting.
+
+The maximum error is worse (0.744 vs 0.571 m, at hour 120 - early in the
+window, not during the spillway event), which the higher spillway discharge
+is a plausible but unconfirmed cause of. More useful: **the sign of the
+drift flips.** October 2021 drifts high and keeps climbing (final error
++0.517 m); August 2022 drifts low and ends there (-0.273 m). A single
+unmodelled loss term (evaporation, an unreported outlet) would produce the
+*same-sign* drift on both episodes. It does not, which weakens the "missing
+loss term" explanation offered in §2 and points instead toward
+event-specific error - most plausibly the daily-to-hourly interpolation
+mistiming each storm's actual sub-daily inflow pulse differently, since that
+error's sign depends on the shape of the individual event, not on a
+constant physical process.
+
+Reproduce: `python scripts/out_of_sample_replay.py --scenario idukki_aug_2022`.
+
 ---
 
 ## 3 · Counterfactual and lead time
@@ -140,30 +182,172 @@ Reproduce: `python scripts/lead_time_study.py`.
 
 Ordered by how much they undercut current claims.
 
-### 🔴 Perfect foresight
+### 🟢 Perfect foresight - all three lead times in, 28 Aug 2026
 
-The optimiser sees the **true** inflow series when choosing a policy. Real
-forecasts are wrong, and Western Ghats rainfall forecasts are wrong in
-specific, biased ways.
+The optimiser in §3 sees the **true** inflow series when choosing a policy.
+Every benefit figure above is an upper bound until this is closed.
 
-**Every benefit figure above is therefore an upper bound.** Nothing in this
-document should be presented as an achievable operational result until the
-forecast-error study is done.
+**Method:** `python scripts/forecast_error_study.py`. Fetch the 30-member
+NOAA GEFS ensemble issued before the 17 October 2021 storm, bias-correct
+against IMD RF25 gridded rainfall (a single multiplicative factor - see
+caveat below), push each member through the SCS-CN + unit-hydrograph chain
+to get 30 candidate inflow trajectories, search a `DrawdownPolicy` per
+member, score the full 30x30 candidate-vs-member cross-matrix over the
+*same* window as the perfect-foresight baseline, and commit to ONE policy
+under a declared rule. Verify that policy against what actually happened.
 
-Planned: drive the policy search from perturbed forecasts with realistic error
-growth (±20% at 24 h widening to ±60% at 120 h), run an ensemble, and report
-how much of the ~3 m survives.
+**Results, the full 24 / 90 / 120 h set ROADMAP.md asked for:**
 
-### 🔴 River routing
+| Lead time | Decision rule | Freeboard gained | % of perfect foresight |
+|---|---|---|---|
+| 24 h (issued 15 Oct 18z) | perfect foresight | 3.11 m | 100% |
+| 24 h | expected-value | 0.81 m | **26%** |
+| 24 h | minimax-regret | 1.03 m | **33%** |
+| 90 h (issued 13 Oct 00z) | perfect foresight | 3.11 m | 100% |
+| 90 h | expected-value | 1.03 m | **33%** |
+| 90 h | minimax-regret | 2.30 m | **74%** |
+| 120 h (issued 11 Oct 18z) | perfect foresight | 3.11 m | 100% |
+| 120 h | expected-value | 1.03 m | **33%** |
+| 120 h | minimax-regret | 1.07 m | **34%** |
 
-Muskingum K and x come from reach geometry and an assumed flood-wave
-celerity — **not from gauge data.** `MuskingumReach.calibrate()` implements
-the fit and is unit-tested against synthetic data, but has never been run
-against a real gauge pair.
+**One finding survives all three points. A second one was written after two
+points, looked mechanistically sensible, and had to be retracted when the
+third arrived - keeping that retraction visible is more useful than
+deleting it.**
 
-Consequence: **downstream discharge figures are indicative, not measured.** Do
-not quote a predicted discharge at Aluva as though it were validated. Needs
-CWC gauge records at Neeleeswaram and Aluva.
+1. **Survives: minimax-regret never underperforms expected-value, and at
+   90 h it did dramatically better (74% vs 33%).** Committing to whichever
+   ensemble member looks best on average picks a policy tuned to a
+   light-rain story that under-releases when the real storm hits;
+   committing to the policy that survives its own worst member is a safe
+   default across all three lead times - it costs nothing when the gap is
+   small (120 h: 33 vs 34%) and pays off hugely when it is large (90 h).
+2. **Retracted: "the minimax advantage grows with lead time."** After 24 h
+   (7-point gap) and 90 h (41-point gap) this looked like a real trend -
+   more lead time, more ensemble spread, more to gain from hedging. The
+   120 h run breaks it outright: the gap collapses back to 1 point (33 vs
+   34%), statistically indistinguishable from 24 h's. **Three points from
+   one storm do not make a decay curve.** The most likely confound is the
+   bias-correction factor itself, which swings between runs for reasons
+   that have nothing to do with lead time (1.68x at 24 h, 3.18x at 90 h,
+   2.64x at 120 h, from a single-event multiplicative correction) - that
+   swing alone can change which ensemble member the optimiser treats as
+   the worst case, and with it whether the minimax pick happens to be
+   strong or unremarkable. A genuine skill-decay curve needs many storms
+   averaged together, not one storm sampled at three lead times; that is
+   real future work, not something these three runs already answer. This
+   is the same discipline the methodological note in §3 already insists
+   on: a trend measured with too small a sample is not a finding, it is
+   sample noise wearing a trend's clothes.
+
+**A bug was caught and fixed between the first and second pass at the 24 h
+and 90 h leads, and it is worth narrating rather than quietly overwriting
+the earlier numbers.** The first version of the script fetched GEFS
+rainfall only out to the forecast horizon, but let the optimiser's
+evaluation window run to the scenario's full default end (2021-10-28)
+regardless - so every hour past the fetched horizon was silently
+zero-padded. Real observed inflow in that gap is 130-240 cumecs, not
+near-zero (checked directly against the KSEB bulletin), so the padding
+fabricated over a week of fictitious near-drought and distorted every
+policy ranking that used it. The fix truncates the evaluation window to
+exactly `[scenario start, issue time + horizon]` for every run, so no hour
+in any comparison is fabricated; 120 h was only ever run post-fix. The
+qualitative finding that survives (minimax never underperforms
+expected-value) held before and after the fix; the specific claim that did
+not survive (growing advantage) was retracted for an unrelated reason - a
+third data point, not the bug.
+
+**Other honest caveats, most serious first:**
+
+1. **The bias correction is large and single-event, and its run-to-run
+   variability (1.68x / 3.18x / 2.64x) is itself the leading suspect for
+   why the minimax gap does not follow a clean trend** (see finding 2
+   above). Every factor rescales one storm, not a trained correction, and
+   none should be assumed to generalise. A proper fix needs the correction
+   fit across many storms, which is future work.
+2. **Catchment geometry for the unit hydrograph - updated 28 Aug 2026,
+   after these three runs.** It was an order-of-magnitude guess (35 km
+   channel, 3.6% slope) when the table above was produced.
+   `scripts/catchment_geometry.py` has since replaced it with an actual
+   watershed delineation off a public 30 m DEM: 66.3 km, 0.87% slope, net
+   of the Mullaperiyar Dam's upstream diversion to the Vaigai basin (Tamil
+   Nadu) - a tunnel a DEM cannot see, found and corrected for by
+   delineating Mullaperiyar's own catchment and subtracting it. The
+   corrected net area (570.3 km2) landing within 12% of the CAG-sourced
+   650.0 km2 is what makes the channel numbers trustworthy. **The 24/90/120h
+   results in the table above predate this fix and were run against the
+   old geometry - they have not been re-run.** Given the channel is ~2x
+   longer and ~4x gentler than assumed, the catchment's concentration time
+   is materially longer than these results assumed (next point) - the
+   direction of the likely effect is a smoother, later-arriving inflow
+   pulse, but the actual retention numbers have not been recomputed.
+3. **GEFS's native 3-hourly resolution turns out to resolve Idukki's
+   concentration time fine, once the geometry above is corrected** - this
+   reverses what this caveat said when it was written. Kirpich's estimate
+   was ~2.7 h from the old guessed geometry, which a 3-hourly product
+   genuinely cannot resolve; with the DEM-derived geometry it is ~6.8 h to
+   peak (~18 h base time), comfortably spanning several GEFS steps. The
+   disaggregation concern this caveat originally raised is now minor for
+   volume and much less serious for timing than stated in the runs above.
+4. **One storm.** All three lead times replay the same October 2021 event.
+   Everything in findings 1 and 2 above is a property of this one storm's
+   ensemble, not yet shown to generalise to another.
+
+Reproduce: `python scripts/forecast_error_study.py --issue-date 2021-10-15
+--hh 18 --horizon-h 102` (24 h), `--issue-date 2021-10-13 --hh 00
+--horizon-h 168` (90 h), or `--issue-date 2021-10-11 --hh 18 --horizon-h
+198` (120 h). Results: `data/processed/forecast_error_study_2021-10-1{5_18,3_00,1_18}z.json`.
+
+### 🔴 River routing - calibration attempted and blocked, 28 Aug 2026
+
+Muskingum K and x for periyar_upper + periyar_lower are anchored to CWC's
+published 8-hour Idukki-to-Neeleeswaram travel time (December 2018
+report) - not pure geometry, but also not a gauge-pair fit: CWC derived it
+from a MIKE-11 model run "only for 2018."
+
+**`python scripts/routing_calibration.py` was run against real data for
+the first time** - combined Idukki + Idamalayar daily release (KSEB
+bulletin, 2020-08-13 onward) as inflow, CWC's Neeleeswaram daily discharge
+record (2001-2025) as outflow, `MuskingumReach.calibrate()` (implemented,
+previously only unit-tested against synthetic data) doing the fit over the
+1,967-day overlap.
+
+**Result: the fit failed, and it failed for a diagnosable, useful reason.**
+K = 263 h, x = 0.50 (the edge of the allowed range, not an interior
+optimum), r² = 0.005 - essentially no signal. **The CWC anchor is
+unchanged; this negative result does not replace it, and nothing in
+`constants.py` was touched.**
+
+Why it failed: the fit needs a timestep resolving the quantity it is
+trying to measure, and daily data (dt = 24 h) is roughly 3x coarser than
+the 8-hour travel time itself. By the time a day's combined release shows
+up in that day's Neeleeswaram reading, the flood wave has already fully
+transited the reach - there is no timing signal left in daily-vs-daily
+data for a Muskingum fit to find. This is not a bug or a tuning choice
+(the interpolation of the 217 missing Neeleeswaram days, the averaging of
+140 duplicate-date readings, and the `x` search grid were all checked and
+are not the cause) - it is a genuine resolution mismatch between the data
+available and the parameter being estimated.
+
+**This also rules out the tempting workaround.** GUARDIAN rating curves
+(`research/sources/datasets/guardian_rating_curves.xlsx`) could convert
+the CWC hourly water-level record at Neeleeswaram into hourly discharge,
+raising the *outflow* side to a resolution well below 8 hours. It would
+not help: KSEB's own bulletin is daily, so the *inflow* side would still
+be linear interpolation of a daily reading, carrying no genuine sub-day
+variation to correlate against. The bottleneck is the release record, not
+the gauge record, and `docs/data-sources.md` already names the fix: **the
+CWC 15-minute telemetry feed, "the single highest-value upgrade to the
+data layer."** This calibration attempt is independent confirmation of
+that claim, with a number attached (r² = 0.005) rather than just an
+assertion.
+
+Consequence, unchanged from before this attempt: **downstream discharge
+figures are indicative, not measured.** Do not quote a predicted discharge
+at Aluva as though it were validated.
+
+Reproduce: `python scripts/routing_calibration.py`. Result:
+`data/processed/routing_calibration_neeleeswaram.json`.
 
 ### 🟠 Rainfall–runoff
 
@@ -174,13 +358,6 @@ soil group C, not calibrated.
 
 This does not affect the replay results — those use *observed* inflow directly
 — but it does gate any genuinely forward-looking forecast.
-
-### 🟠 Out-of-sample scenario
-
-Everything above is October 2021. The August 2022 scenario is defined in
-`twin/scenarios.py` and has not been run. Until it has, the model is
-*calibrated*, not *validated*, and the distinction is one a domain-literate
-judge will make.
 
 ### 🟡 Tide
 

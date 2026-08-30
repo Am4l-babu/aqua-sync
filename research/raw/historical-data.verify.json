@@ -1,0 +1,339 @@
+{
+  "dimension": "Historical Kerala / India reservoir and flood data, especially pre-2020",
+  "confirmed_sources": [
+    {
+      "name": "National Water Data Portal (NWDP) CKAN API",
+      "url": "https://nwdp.nwic.gov.in/api/3/action/package_list",
+      "kind": "open API (CKAN 2.11.3)",
+      "what_it_provides": "package_list returns exactly 555 packages; status_show reports ckan_version 2.11.3, site_title 'National Water Data Portal'. package_show?id=<slug-or-uuid> returns direct, unauthenticated resource CSV URLs. Resource downloads honour HTTP Range (206), so partial reads work. The CWC discharge package is licensed 'Other (Open)', org 'CWC', metadata_modified 2026-08-26 (today).",
+      "relevance": "Highest. This is the door to genuine pre-2020 Periyar gauge data and is absent from the AquaSync loader. No key, no registration, no rate limiting observed.",
+      "http_status": "200",
+      "content_matches_claim": "yes - I re-ran package_list (555 packages, success:true) and status_show (CKAN 2.11.3). Every endpoint the sweep listed works as described.",
+      "download_hint": "curl -s 'https://nwdp.nwic.gov.in/api/3/action/package_show?id=<slug>' | jq '.result.resources[] | {name,url,size}'",
+      "license": "Other (Open)",
+      "last_activity": "metadata_modified 2026-08-26"
+    },
+    {
+      "name": "CWC Kerala daily river discharge 2001-2025 (NWDP resource)",
+      "url": "https://nwdp.nwic.gov.in/dataset/08fa3fd0-7861-471d-a295-27c1b239d1fa/resource/c3cbe74d-2442-4496-aab2-21e8b5faa12e/download/river_discharge_manual_daily_cwc_kl_2001_2025.csv",
+      "kind": "CSV bulk download (63 MB pair with the 1950-2000 file)",
+      "what_it_provides": "I downloaded it: 39,425,558 bytes, 217,538 rows, 40 Kerala CWC stations, 30,833 Periyar rows - all exact. Three Periyar gauges confirmed with coordinates: NEELEESWARAM (10.18361, 76.49556) n=8478, 284 in 2018; VANDIPERIYAR (9.57333, 77.09056) n=14837, 568 in 2018, two readings/day at 08:00 and 08:30; ARANGALI (10.28611, 76.32222) n=7518, 173 in 2018. Columns as claimed, including 'Data Acquisition Time' (DD-MM-YYYY HH:MM) and 'Manual Daily River Water Discharge (m3/sec)'.",
+      "relevance": "Highest - closes part of gap #1. Neeleeswaram is the exact CWC G&D site AquaSync routes to above Aluva, and the CWC 2018 report and Sudheer et al. both use it as their validation point (their 'L2').",
+      "http_status": "200",
+      "content_matches_claim": "yes - byte count, row count, station count, Periyar row count and all three per-gauge counts reproduced exactly.",
+      "caveat": "The Aug-2018 gap is real but LARGER than reported: Neeleeswaram has 18 of 31 days, missing days 5, 12, 16-22 AND 24-27 (13 days, not the 7 claimed). Last pre-gap reading 6166.426 m3/s on 15-08-2018 09:15, next 924.282 on 23-08-2018 - both exact. All-time top-5 reproduced exactly. Treat River/Basin/Tributary columns with suspicion here as in the rainfall file.",
+      "download_hint": "Direct curl, no auth; the same package also carries a Kerala 2026-2030 CSV (802,126 bytes) for the live tail."
+    },
+    {
+      "name": "CWC Kerala daily river discharge 1950-2000 (NWDP resource)",
+      "url": "https://nwdp.nwic.gov.in/dataset/08fa3fd0-7861-471d-a295-27c1b239d1fa/resource/7132d8ae-3174-408d-8ef3-37aa00752787/download/riverdischarge_manual_daily_cwc_kl_1950_2000.csv",
+      "kind": "CSV bulk download",
+      "what_it_provides": "Downloaded: 23,703,774 bytes, 134,069 rows, 21 stations, 19,588 Periyar rows - all exact. NEELEESWARAM n=10,884 starting 1971; ARANGALI n=8,276 from 1978; VANDIPERIYAR n=428 (year 2000 only). Combined with the 2001-2025 file this gives Neeleeswaram 19,362 daily values spanning 1971-2025.",
+      "relevance": "High - this is the deep historical record, half a century of daily Periyar discharge at the site AquaSync cares about. Ideal for flood-frequency context and for Muskingum sanity-checking against long-record behaviour.",
+      "http_status": "200",
+      "content_matches_claim": "partly - byte count, row count and all three per-gauge counts are exact, but one sub-claim is WRONG.",
+      "caveat": "CORRECTION: the sweep claimed Neeleeswaram goes to '730/yr from 1978 as two readings per day'. It does not. Per-year counts are 291 (1971) then 365/366 EVERY year 1972-2000 with no exception - this file is strictly one reading per day. The twice-daily pattern only begins in the 2001-2025 file. Also VANDIPERIYAR here is 2000-only, not a long record."
+    },
+    {
+      "name": "Kerala SW manual daily rainfall (NWDP resource, mislabelled 1991-2020)",
+      "url": "https://nwdp.nwic.gov.in/dataset/c379c7dd-755c-4a0d-9de1-236ea29a229d/resource/d04d417e-4a5e-43f4-8bc8-3508eb2a952f/download/rainfall_manual_daily_kerala-sw_kl_1991_2020.csv",
+      "kind": "CSV bulk download",
+      "what_it_provides": "Downloaded: 24,200,224 bytes, 151,429 rows - exact. Real year span is 2000-2020, NOT 1991 as the filename says. 2018 holds 8,435 station-days; IDUKKI district 7,462 rows; ERNAKULAM 366 - all exact. BOYCE ESTATE (9.56472, 76.91056) 2000-2020, 176 days in 2018; Vannapuram (9.93611, 76.46333) 2002-2020, 189 days in 2018. Neriyamangalam and Boothathankettu exist for 2011 only. Confirmed.",
+      "relevance": "Moderate - useful gauge rainfall for SCS-CN antecedent moisture, but see the caveat before treating any of it as catchment rainfall.",
+      "http_status": "200",
+      "content_matches_claim": "partly - every number is exact, but the geographic interpretation is over-stated.",
+      "caveat": "TWO corrections. (1) The sweep calls BOYCE ESTATE and Vannapuram 'long-record catchment stations'. They are Idukki DISTRICT stations, not Idukki reservoir CATCHMENT stations. BOYCE ESTATE is in Peerumade tehsil (9.565N) on the southern/western slope; Vannapuram is tagged Thodupuzha tehsil but its stored longitude 76.463E sits well west of Thodupuzha town (~76.72E), so its coordinate is itself suspect. Filtering the file to the actual Periyar headwater box (9.6-10.2N, 76.85-77.35E) yields only Vandanmedu (n=248) and Chinnar (n=168) - both short records. (2) The 'River column is garbage' warning is fully justified: the single most common river label on these Kerala stations is 'Brahmaputra' (27,735 rows), followed by Tapi, Luni and Narmada. Trust lat/lon and station name only."
+    },
+    {
+      "name": "NWDP Kerala Surface Water Dept river discharge - VERIFIED NEGATIVE, label is false",
+      "url": "https://nwdp.nwic.gov.in/dataset/river-discharge-manual-dailly-kerala-surface-water-department",
+      "kind": "negative result / trap to avoid",
+      "what_it_provides": "Advertised in CKAN as 'River Discharge Kerala_SW Kerala (2001 - 2025) Manual Daily'. I downloaded the resource: 765,060 bytes, 4,904 rows, every single row from calendar year 2011, 23 stations, ZERO Periyar rows. The companion '2026-2030' resource is 237 bytes (empty).",
+      "relevance": "High as a warning. This is exactly the kind of confidently-mislabelled dataset that produced the earlier planning failures. Do not wire it in on the strength of its title.",
+      "http_status": "200",
+      "content_matches_claim": "yes - reproduced exactly: 4,904 rows, all 2011, 23 stations, 0 Periyar. The sweep's negative finding is correct and valuable.",
+      "download_hint": "Resource CSV: https://nwdp.nwic.gov.in/dataset/f0a64d82-85da-4167-b6b9-bdd25bd5134c/resource/2e11c8e9-318c-48c5-950f-5e8303f731e5/download/river_discharge_manual_daily_kerala_sw_kl_2001_2025.csv"
+    },
+    {
+      "name": "RAT 3.0 Kerala live dashboard (CWRDM + UW SASWE + NASA)",
+      "url": "http://210.212.226.241:8080/RAT_Kerala_CWRDM/",
+      "kind": "static-file dashboard, no auth",
+      "what_it_provides": "Page confirms the six product families exactly as claimed: Inflow, Outflow, Surface Area, Storage Change, Area-Elevation Curve, Evaporation. Footer reads 'Maintained by CWRDM in collaboration with SASWE Labs, University of Washington'. URL pattern /assets/RAT_results/{product}/{dam}.csv works. Beyond idukki and idamalayaar I confirmed kakki, banasurasagar, mullaperiyar, pazhassi, neyyar and malampuzha all return 200 with ~100 KB CSVs.",
+      "relevance": "High. Mullaperiyar in particular matters - Suresh et al. show it regulates what actually reaches Idukki, which is a real structural gap in a mass-balance twin that treats Idukki inflow as natural.",
+      "http_status": "200",
+      "content_matches_claim": "yes - product list and static-CSV access model confirmed; dam coverage is broader than the two the sweep named.",
+      "caveat": "Plain HTTP on a bare IP (no TLS, no DNS name), so it can move without notice - though cwrdm.kerala.gov.in links to this exact URL, so it is officially sanctioned rather than scraped. The page carries a live banner: 'Note: Data is still being populated'. I could not enumerate the full 19-reservoir slug list from script.js (it is built dynamically); the 19 figure is corroborated instead by Table 1 of the Suresh et al. manuscript."
+    },
+    {
+      "name": "RAT Kerala - Idukki and Idamalayar daily inflow CSVs",
+      "url": "http://210.212.226.241:8080/RAT_Kerala_CWRDM/assets/RAT_results/inflow/idukki.csv",
+      "kind": "CSV time series",
+      "what_it_provides": "Downloaded: 100,264 bytes, 3,410 rows, columns date,streamflow, 2015-10-24 to 2025-02-22. I checked continuity programmatically - ZERO non-one-day steps, genuinely unbroken. August 2018 complete at 31/31 days. Idamalayar twin at /inflow/idamalayaar.csv is 100,426 bytes, also 3,410 rows over the identical span, also unbroken.",
+      "relevance": "High for continuity, but read the caveat before using it as truth for 2018.",
+      "http_status": "200",
+      "content_matches_claim": "yes - row count, span, unbroken continuity and the 2018 comparison all reproduced exactly.",
+      "caveat": "The sweep's honesty here is warranted and I confirmed the specific numbers: RAT's 2018 Idukki peak is 1104.56 m3/s on 2018-08-18, against CWC's observed 2532 cumec at 22:00 on 15-08-2018 - 2.3x too low and 3 days late. Idamalayar peaks 909.11 on 2018-08-17. This is modelled VIC output, not observation. The source paper states plainly: 'Inflow peaks are found to be underpredicted in the case of Idukki, Idamalayaar, and Kakki, requiring bias correction.' Note the dam slug is idamalayaar with a double-a."
+    },
+    {
+      "name": "RAT Kerala - Idukki and Idamalayar area-elevation curves",
+      "url": "http://210.212.226.241:8080/RAT_Kerala_CWRDM/assets/RAT_results/aec/idukki.csv",
+      "kind": "CSV lookup table",
+      "what_it_provides": "Idukki: 626 rows at 1 m steps, 551-1176 m, columns elevation,area. Verified values 50.015 km2 @730 m, 51.098 @731, 52.125 @732, 53.201 @733. Idamalayar (aec/idamalayaar.csv): 588 rows, 62-649 m, 30.159 @167, 30.414 @168, 30.666 @169 (FRL).",
+      "relevance": "High and directly actionable - an independent area-elevation curve to cross-check AquaSync's level-storage power law (r2=0.9957) and to derive a physically-grounded evaporation area rather than a fitted one.",
+      "http_status": "200",
+      "content_matches_claim": "yes - row counts, elevation ranges and every quoted area value reproduced to three decimals.",
+      "caveat": "Satellite/DEM-derived, not a KSEB survey curve. The Suresh et al. paper validates AEC shape against KSEB observed curves only for Idamalayaar and Kakki (its Figure 12), not for Idukki."
+    },
+    {
+      "name": "RAT Kerala - Idukki TMS-OS surface area and storage change",
+      "url": "http://210.212.226.241:8080/RAT_Kerala_CWRDM/assets/RAT_results/sarea_tmsos/idukki.csv",
+      "kind": "CSV time series",
+      "what_it_provides": "657 rows, 2017-07-29 to 2025-02-21, columns date,'area (km2)', with 85 observations in 2018. Paired /dels/idukki.csv is also 657 rows with columns date,'dS (m3)'. Both confirmed by download.",
+      "relevance": "Moderate - an independent, observation-based (not modelled) handle on 2018 storage change, which is the one RAT product not contaminated by VIC inflow bias.",
+      "http_status": "200",
+      "content_matches_claim": "yes - row counts, span, 2018 observation count and both column sets reproduced exactly."
+    },
+    {
+      "name": "CWC Reservoir Level & Storage Bulletin archive",
+      "url": "https://cwc.gov.in/en/reservoir-level-storage-bulletin",
+      "kind": "PDF archive, paginated",
+      "what_it_provides": "I scraped pages 0-25 and extracted 528 distinct PDF links. Per-year counts: 2015:36, 2016:51, 2017:51, 2018:48, 2019:50, 2020:52, 2021:50, 2022:50, 2023:43, 2024:46, 2025:15. Weekly Thursday bulletins listing 161 major reservoirs including Idukki and Idamalayar.",
+      "relevance": "Highest for gap #1 - this is the only real, official, numeric 2018 Idukki level+storage record that is actually retrievable today.",
+      "http_status": "200",
+      "content_matches_claim": "partly - archive works and pagination is as described, but the coverage framing needs a correction.",
+      "caveat": "The archive effectively BEGINS in 2015. Pre-2015 is one or two stray PDFs per year (2001:1, 2002:1, ... 2012:2), not a weekly series. So this gives weekly resolution 2015-2025 and cannot supply pre-2015 reservoir history. I also confirmed the 2018 gap claim precisely: of the 52 Thursdays in 2018, 45 are downloadable and 7 are absent - 03-29 (though the 28-03 bulletin covers that week), 05-10, 08-09, 08-16, 09-27, 10-18, 12-27. The two flood weeks are among them."
+    },
+    {
+      "name": "CWC weekly bulletin, 02 August 2018 (worked example)",
+      "url": "https://cwc.gov.in/sites/default/files/02.08.2018cwcbull_1.pdf",
+      "kind": "PDF, 7 pages",
+      "what_it_provides": "539,052 bytes, exact. I extracted the rows verbatim: '*82 IDUKKI 732.43 730.25 1.460 1.338 01-08-2018 92 23 41 - 780' and, as a bonus the sweep did not mention, '*81 IDAMALAYAR 169.00 167.03 1.018 0.961 01-08-2018 94 30 45 33 75'. Sister bulletins confirmed by download and extraction: 23.08.2018 -> Idukki 731.69 m / 1.417 BCM / 97%; 30.08.2018 -> Idukki 730.50 m / 1.352 BCM / 93%.",
+      "relevance": "Highest. A free, official cross-check on AquaSync's hard-coded constants, and the only numeric 2018 Idukki level series obtainable without an email to KSEB.",
+      "http_status": "200",
+      "content_matches_claim": "yes - byte count exact and the Idukki row matches character-for-character, as do both sister bulletins.",
+      "caveat": "BONUS FINDING: the Idamalayar row independently confirms AquaSync's second reservoir too - FRL 169.00 m, live capacity 1.018 BCM, installed 75 MW, all matching the project constants. Note the bulletin's reading date lags its filename date in the 02.08 issue (reading 01-08-2018) but not in the 23.08/30.08 issues."
+    },
+    {
+      "name": "CWC 'Kerala Floods of August 2018' study report (hosted by KSDMA)",
+      "url": "https://sdma.kerala.gov.in/wp-content/uploads/2020/08/CWC-Report-on-Kerala-Floods.pdf",
+      "kind": "PDF, 48 pages",
+      "what_it_provides": "6,003,314 bytes and 48 pages, both exact. I extracted and confirmed every quantitative claim: Idukki peak inflow 2532 cumec at 22:00 on 15-08-2018; corresponding release 1614 cumec (1500 spill + 114 powerhouse); 'inflows started rising from 18:00 hrs on 14 August 2018 when the level in the reservoir was 730.88 m'; FRL 732.43 m reached 01:00 on 17-08-2018; attenuation 2532 -> 1500 cumec (~41%); three-day totals 345 MCM spill + 30 MCM powerhouse against 435 MCM inflow (hence 60 MCM absorbed); Neeleswaram observed peak ~8800 cumec on 16 August at 15:00; Idamalayar live storage 1018 MCM, level 168.06 m on 08-08-2018, FRL 169.0, MWL 170.3, dedicated flood space 'about 60 MCM only'; Idamalayar peak release 1272 cumec; design floods 5013 (Idukki) and 3012 (Idamalayar) cumec.",
+      "relevance": "Highest. This is the primary source for the flagship 2018 case study, and it is reference 4 of the Current Science paper - which I verified in that paper's bibliography.",
+      "http_status": "200",
+      "content_matches_claim": "yes - all 14 quantitative claims verified verbatim against extracted text. Nothing over-stated.",
+      "caveat": "Corroborates the gauge-failure story precisely: CWC states the 8800 cumec peak occurred on 16 August at 15:00, and the NWDP CWC gauge file has no Neeleeswaram reading at all on 16 August. The peak in the official narrative was never captured by the manual gauge."
+    },
+    {
+      "name": "CWC 2018 report Fig.4 - the 6-hourly Idukki hydrograph, recoverable as vector geometry",
+      "url": "https://sdma.kerala.gov.in/wp-content/uploads/2020/08/CWC-Report-on-Kerala-Floods.pdf",
+      "kind": "vector chart embedded in PDF (page 13)",
+      "what_it_provides": "I located Fig.4 'Inflow, Outflow and Water Level: Idukki Reservoir' on page index 12 (page 13) and inspected it with PyMuPDF: 2,571 vector path items on that page. The axis tick labels are live PDF text - 31 date labels running 09-08-18 through 18-08-18, plus the value-axis labels 500/1000/1500/2000/2500/3000 and 729.50/730.00/730.50/731.00/731.50/732.00/732.50/733.00. Annotation text 2532, 1614, 1615, 114, 115, 730.80, 730.88, 732.43, 750 also sits in the text layer.",
+      "relevance": "Highest for the 2018 gap. This is the closest thing to a sub-daily 2018 Idukki inflow/outflow/level series that exists in public - and it is genuinely digitisable rather than a flat scan.",
+      "http_status": "200",
+      "content_matches_claim": "yes - and stronger than claimed. The sweep asserted the chart is vector; I confirmed 2,571 path items plus a full set of calibratable axis labels in text, which is exactly what a path-extraction digitisation needs.",
+      "caveat": "The page ALSO contains 20 raster images, so it is a mixed page - a path extractor must separate the plotted series from raster decoration. Fig.5 (Idamalayar) and Fig.9 (Kakki) have the same structure. The equivalent Current Science Fig.6a has no data table anywhere in its 15 pages."
+    },
+    {
+      "name": "Sudheer et al. 2019, 'Role of dams on the floods of August 2018 in Periyar River Basin, Kerala', Current Science 116(5):780-794",
+      "url": "https://www.currentscience.ac.in/Volumes/116/05/0780.pdf",
+      "kind": "peer-reviewed paper, free full PDF",
+      "what_it_provides": "4,413,605 bytes, 15 pages, both exact. Authors confirmed (K. P. Sudheer, S. Murty Bhallamudi, Balaji Narasimhan, Jobin Thomas, V. M. Bindhu, Vamsikrishna Vema, Cicily Kurian - IIT Madras / Purdue). Verified verbatim: HEC-HMS simulated Idukki peak inflow 2763 m3/s on 15 August 2018 at 20:00 h vs measured 2532; simulated max release 1860 vs measured 1614 (15 August 22:00); at L2 - explicitly defined as 'the gauge site (Neeleswaram) ... maintained by CWC' - simulated 9965 vs observed 8800 m3/s; virgin no-dam run 8224 at L1 and 11,990 at L2; 'only 16-21% peak attenuation'. Reference 4 confirmed as 'CWC, Kerala Floods of August 2018'.",
+      "relevance": "Highest. A published, independent HEC-HMS reconstruction of the exact basin AquaSync models, and its counterfactual bounds the honest ceiling on what any optimiser can claim.",
+      "http_status": "200",
+      "content_matches_claim": "yes - every number verified in the extracted text, including the '20:00' timestamp that attaches to the simulated inflow peak.",
+      "caveat": "Table 1 extracts with SHIFTED COLUMNS - dam names do not line up with their type/year/length/height values in extracted text (e.g. 'Anayirangal' loses its Type field, and one row's name is missing entirely). Read Table 1 visually from the PDF, do not parse it. I count 14-15 dam rows depending on how the broken row is treated, so the sweep's '14 dams' is approximately but not reliably right."
+    },
+    {
+      "name": "Suresh et al. 2024 (Remote Sensing of Environment) - free accepted manuscript on NASA NTRS",
+      "url": "https://ntrs.nasa.gov/api/citations/20240007715/downloads/Manuscript_RSE_Revised_03262024_clean.pdf",
+      "kind": "accepted manuscript PDF, 56 pages, open",
+      "what_it_provides": "3,714,034 bytes, 56 pages, both exact. Free copy of the paywalled RSE paper (Crossref confirms DOI 10.1016/j.rse.2024.114149, RSE vol 307 art 114149, 2024-06, 21 citations). Verified: Table 1 lists 19 Kerala reservoirs; Idukki at 9.845/76.968 with 60 km2 FRL area and Idamalayaar at 10.222/76.706 with 28.3 km2. Table 4 inflow validation: Idukki r=0.63, RMSE 217.94 cumecs, nRMSE 12.45%; Idamalayaar r=0.81, RMSE 135.29. Table 5 (Idukki May-Oct 2018 vs KSEB observed): VIC natural r=0.80, RMSE 170.3, MAE 115.1, KGE 0.59, NSE 0.603; Regulated inflow r=0.84, RMSE 153.17, MAE 102.32, KGE 0.63, NSE 0.68.",
+      "relevance": "Highest. It is both the published skill statement for the RAT CSVs AquaSync would ingest, and the documentary proof that KSEB shares in-situ 2018 data with researchers.",
+      "http_status": "200",
+      "content_matches_claim": "yes - byte count, page count and every one of the ten skill statistics verified verbatim.",
+      "caveat": "KSEB provenance confirmed verbatim at two places: 'in-situ inflow data obtained from the KSEB for Idamalayaar reservoir' and the Table 5 caption 'with respect to Observed inflow from KSEB for the period of May - October 2018'; also 'outflow data of the reservoirs are obtained from KSEB for validation'. Acknowledgements name CWRDM and KSEB. Like the Current Science paper, its tables extract with SHIFTED COLUMNS - the Sl.No/name column is offset by one row against the coordinate column, so read Table 1 visually."
+    },
+    {
+      "name": "Minocha et al. 2024, 'Reservoir Assessment Tool version 3.0', Geoscientific Model Development 17:3137-3156",
+      "url": "https://gmd.copernicus.org/articles/17/3137/2024/",
+      "kind": "open-access journal article",
+      "what_it_provides": "Crossref-verified: published 2024-04-23, GMD vol 17 pages 3137-3156, 6 citations. Abstract confirmed on-page: RAT is 'a data-driven software platform that integrates satellite remote sensing with hydrological models, enabling the estimation of key reservoir parameters such as inflow, outflow, surface area, evaporation, and storage changes', with v1.0 covering 1598 reservoirs and v3.0 introduced for scalability.",
+      "relevance": "Moderate - the methods reference you cite when using any RAT-Kerala CSV, and the place to understand what the VIC/MetSim/TMS-OS chain actually produces.",
+      "http_status": "200",
+      "content_matches_claim": "yes - publication date, volume/pages, citation count and the product list in the abstract all confirmed.",
+      "license": "Creative Commons (Copernicus open access)"
+    },
+    {
+      "name": "UW-SASWE/RAT (Reservoir Assessment Tool source)",
+      "url": "https://github.com/UW-SASWE/RAT",
+      "kind": "GitHub repository (Python)",
+      "what_it_provides": "GitHub API confirms: full_name UW-SASWE/RAT, 26 stars, 6 forks, created 2022-05-12, pushed 2026-01-13, not archived, GPL-3.0, 27,764 KB, description 'Reservoir Assessment Tool'. This is the implementation behind the RAT-Kerala CSVs.",
+      "relevance": "Moderate - only worth pulling if AquaSync wants to re-run RAT with bias correction rather than consume the published CSVs. Actively maintained.",
+      "http_status": "200",
+      "content_matches_claim": "yes - repo exists and is active; the sweep gave no metrics for it, so nothing to contradict.",
+      "stars": "26",
+      "license": "GPL-3.0",
+      "last_activity": "pushed_at 2026-01-13"
+    },
+    {
+      "name": "IMD 0.25-degree daily gridded rainfall - direct POST endpoint",
+      "url": "https://www.imdpune.gov.in/cmpg/Griddata/RF25.php",
+      "kind": "unauthenticated POST download endpoint",
+      "what_it_provides": "I ran the POST live with RF25=2018: HTTP 200, 25,431,832 bytes, exact. Magic bytes 'CDF\\x01' (NetCDF classic), numrecs 365. Parsed with scipy: LONGITUDE(135), LATITUDE(129), TIME(365, 'days since 1900-12-31 00:00:00'), RAINFALL(365,129,135) in mm; lat 6.5-38.5, lon 66.5-100.0. Nearest cell to Idukki is 9.75N/77.0E, where I read 203.5 mm on 9 Aug, 153.3 on 15 Aug, 201.8 on 16 Aug, annual total 4048.9 mm (Aug 2018 total 1152.8 mm).",
+      "relevance": "Highest for forcing. One unauthenticated line gives basin rainfall for any year 1901-2024, which is the natural driver for the SCS-CN module and the only free path to pre-2020 catchment rainfall at consistent quality.",
+      "http_status": "200",
+      "content_matches_claim": "yes - this is the most impressively exact claim in the sweep. Byte count, grid dimensions, units, extent and all four rainfall values reproduced to the decimal.",
+      "download_hint": "curl -X POST -d \"RF25=2018\" https://www.imdpune.gov.in/cmpg/Griddata/RF25.php -o RF25_2018.nc",
+      "caveat": "0.25 deg is ~28 km - a single cell spans much of the Idukki catchment, so this is basin-scale forcing, not sub-catchment. 2018 is a 365-day year so day index maps directly."
+    },
+    {
+      "name": "IMD gridded rainfall NetCDF landing page",
+      "url": "https://www.imdpune.gov.in/cmpg/Griddata/Rainfall_25_NetCDF.html",
+      "kind": "HTML form / documentation page",
+      "what_it_provides": "Confirmed: form action is 'RF25.php' with select name 'RF25', and the dropdown carries 126 options - 'Select' plus every year from 2025 down to 1901. Page text states 'Long Period (1901-2024) Daily Gridded Rainfall Data Set Over India', 'unit of rainfall is in millimeter (mm)', 'Data available for 124 years, 1901 to 2024', 'arranged in 135x129 grid points', 'first data in the record is at 6.5N & 66.5E'. Contact cmagpune@gmail.com confirmed.",
+      "relevance": "Low on its own but it documents the POST contract and the grid layout, so it is the citation for the endpoint above.",
+      "http_status": "200",
+      "content_matches_claim": "yes - form action, grid description, units, coverage statement and the contact email all confirmed on-page.",
+      "caveat": "Minor: the dropdown actually offers 2025 as well, one year beyond the documented 1901-2024 span."
+    },
+    {
+      "name": "imdlib (Python client for IMD gridded data)",
+      "url": "https://pypi.org/project/imdlib/",
+      "kind": "PyPI package",
+      "what_it_provides": "PyPI JSON confirms version 0.1.21, MIT licence, requires_python >=3.0, summary 'A tool for handling and downloading IMD gridded data', 28 releases, latest upload 2025-12-04. Home page github.com/iamsaswata/.",
+      "relevance": "Moderate convenience - wraps the IMD download and parses both the NetCDF and legacy binary GRD variants into xarray, saving you from hand-rolling the CDF-1 reader.",
+      "http_status": "200",
+      "content_matches_claim": "yes - version 0.1.21 and MIT licence both confirmed via the PyPI JSON API.",
+      "license": "MIT",
+      "last_activity": "latest release uploaded 2025-12-04"
+    },
+    {
+      "name": "GUARDIAN: ExtendinG SUb-DAily River Discharge data over INdia (Scientific Data, 2024)",
+      "url": "https://doi.org/10.1038/s41597-024-03923-8",
+      "kind": "peer-reviewed data descriptor",
+      "what_it_provides": "Crossref-verified: 'ExtendinG SUb-DAily River Discharge data over INdia (GUARDIAN)', Scientific Data vol 11, published 2024-10-18, 5 citations. Describes hourly monsoon / sub-daily non-monsoon discharge for 210 CWC stations from 2020 onward, derived from CWC flood-portal water-surface elevation via station rating curves.",
+      "relevance": "High for gap #2 (Muskingum K/x calibration) and only that. It starts in 2020, so it does nothing for the 2018 gap - the sweep is honest about this.",
+      "http_status": "200",
+      "content_matches_claim": "yes - title, journal, date and citation count all confirmed via Crossref.",
+      "caveat": "The sweep says '210 CWC stations'; the rating-curve file I downloaded contains exactly 210 data rows, which corroborates it."
+    },
+    {
+      "name": "GUARDIAN data on figshare (data.rar + rating curves)",
+      "url": "https://doi.org/10.6084/m9.figshare.27004282",
+      "kind": "figshare data deposit",
+      "what_it_provides": "figshare API (article 27004282) confirms: title matches, published 2024-10-19, DOI 10.6084/m9.figshare.27004282.v1, two files - data.rar 577,023,190 bytes and RC.xlsx 53,652 bytes. I downloaded RC.xlsx: 211-row sheet (210 gauges + header), 22 columns. All three Periyar gauges present with coefficients reproduced exactly: NEELEESWARAM monsoon cubic-poly p1=10.6979 p2=198.7671 p3=33.5397, NSE 0.7654, RMSE 170.685, N=2273; non-monsoon p1=6.7636 p2=228.9940 p3=-36.1573, NSE 0.7861, RMSE 127.513, N=6552. ARANGALI monsoon NSE 0.9218, RMSE 42.10. VANDIPERIYAR uses the alternate (algo=2) power-law form, monsoon NSE 0.9476, RMSE 4.04.",
+      "relevance": "High for gap #2. Hourly Neeleeswaram discharge from 2020 overlaps the amith-vp KSEB release feed (2020-08-13 onward), giving a directly usable inflow/outflow pair for fitting Muskingum K and x against real gauge data instead of geometry estimates.",
+      "http_status": "202 via doi.org resolver; figshare API 200; RC.xlsx download 200",
+      "content_matches_claim": "yes - file sizes, publication date and every rating-curve coefficient reproduced exactly from the workbook.",
+      "caveat": "COORDINATE CONFLICT I found that the sweep missed. GUARDIAN places VANDIPERIYAR at (9.1525, 77.1525), which is in Tamil Nadu, roughly 47 km from where NWDP/CWC places it (9.57333, 77.09056, the correct location of Vandiperiyar town, Kerala). NEELEESWARAM and ARANGALI coordinates agree EXACTLY between the two sources, which isolates Vandiperiyar as the erroneous record. Use the NWDP coordinates. Also the bulk file is a 577 MB .rar, so you need unrar and a real download budget; the licence field is null on figshare.",
+      "download_hint": "RC.xlsx direct: https://ndownloader.figshare.com/files/49150798 (53,652 bytes). data.rar: https://ndownloader.figshare.com/files/49150774"
+    },
+    {
+      "name": "GHI: Geospatial dataset for hydrologic analyses in India (ESSD 15:4389, 2023)",
+      "url": "https://essd.copernicus.org/articles/15/4389/2023/",
+      "kind": "open-access data descriptor + dataset",
+      "what_it_provides": "Crossref-verified 2023-10-05, ESSD vol 15 pages 4389-4415, 17 citations. Abstract confirmed on-page: of CWC's 645 Peninsular-India stations, Group 1 = 213 (reliable metadata + adequate daily streamflow), Group 2 = 259, Group 3 = 173 rejected; the 472 stations in groups 1+2 get catchment boundaries and time series spanning 71 water years (1950-2020).",
+      "relevance": "High - and more directly relevant than the sweep realised (see caveat). Gives quality-controlled catchment boundaries for the very gauge AquaSync routes to.",
+      "http_status": "200",
+      "content_matches_claim": "yes - all four station counts and the 71-water-year span confirmed verbatim.",
+      "caveat": "UPGRADE, not a correction: the sweep says GHI merely 'mentions the Periyar River'. In fact GHI uses NEELEESWARAM ON THE PERIYAR as its worked example of station location verification - its Fig. 5 shows the CWC coordinate against the town of Neeleeswaram 4 km to the west, in the WFR South basin. That is a published, independent QC of the exact gauge coordinate AquaSync depends on."
+    },
+    {
+      "name": "CAMELS-IND (ESSD 17:461, 2025)",
+      "url": "https://essd.copernicus.org/articles/17/461/2025/",
+      "kind": "open-access data descriptor + dataset",
+      "what_it_provides": "Crossref-verified 2025-02-05, ESSD vol 17 pages 461-491, 23 citations. Abstract confirmed on-page verbatim: 472 catchments in Peninsular India of which 228 have observed streamflow for over 30% of 1980-2020; 19 meteorological forcing variables daily over 41 years; 211 catchment attributes; LSTM-predicted streamflow for all 472; built on the 472 GHI gauge stations and catchment boundaries; sourced from India-WRIS.",
+      "relevance": "Moderate - a ready-made benchmark and a source of catchment attributes (including dam count and dam volume) for 1980-2020, i.e. genuinely pre-2020.",
+      "http_status": "200",
+      "content_matches_claim": "yes - the 472/228 split, the 1980-2020 span, the 19 forcings, the LSTM series and the GHI lineage are all confirmed in the abstract.",
+      "caveat": "The paper's own TITLE says '228 catchments' while the abstract says 472 with 228 gauged - the sweep's framing is correct but be aware the two numbers mean different things. IMPORTANT UNVERIFIED POINT: I did NOT confirm that any Periyar or west-flowing Kerala catchment is actually among the 472. Check the station list before assuming AquaSync's basin is covered."
+    },
+    {
+      "name": "Mishra et al., 'The Kerala flood of 2018: combined impact of extreme rainfall and reservoir storage' (HESS Discussions preprint)",
+      "url": "https://hess.copernicus.org/preprints/hess-2018-480/",
+      "kind": "preprint - NOT peer-reviewed, see caveat",
+      "what_it_provides": "Preprint page and full PDF (1,301,376 bytes) both retrieved. Content claims confirmed verbatim: 'Six out of seven major reservoirs were at more than 90% of their full capacity on August 8, 2018'; rainfall at 1-15 day durations upstream of Idukki, Kakki and Periyar reservoirs 'had the return period of more than 500 years'; and the figure caption 'Reservoir storage for 2018 is available from January 1 to August 8, 2018, from Water Resources Information System (WRIS)'.",
+      "relevance": "Moderate - its real value is the pointer in the caveat, not its conclusions.",
+      "http_status": "200",
+      "content_matches_claim": "partly - every content claim is verbatim correct, but the sweep omitted the single most important fact about this document.",
+      "caveat": "STATUS PROBLEM the sweep did not report: the page states 'The manuscript was not accepted for further review after discussion.' This is a REJECTED preprint, not a published paper. Do not cite its >500-year return period as established - especially since the peer-reviewed Current Science paper says the PRB received a 145-YEAR return period rainfall, a large contradiction. USEFUL LEAD instead: the paper says it pulled storage for all seven major Kerala reservoirs from India-WRIS for 2007-2018, and reports Idukki at 92.5% of FRL on 8 Aug 2018 - which agrees with the CWC bulletin's 92% on 01-08-2018."
+    },
+    {
+      "name": "India-WRIS API contract, recovered from WRIS_India_data_extractor source",
+      "url": "https://github.com/DVTanna369/WRIS_India_data_extractor",
+      "kind": "GitHub repository (Flask app) - value is the documented contract",
+      "what_it_provides": "GitHub API confirms the repo exists: created 2025-08-27, pushed 2025-09-01, not archived, 58 KB. I read main_app/routes.py, api_client.py and helpers.py and confirmed EVERY endpoint claimed, at the stated paths: POST /DataSet/DataSetList; POST /masterState/StateList; POST /masterDistrict/getDistrictbyState; POST /basin/getMasterBasin; POST /masterTributary/getMasterTributary; POST /masterAgency/AgencyListInAnyCase; and data calls to /Dataset/{Name} and /Dataset/Basin/{Name}. Also confirmed in source: Content-Type application/x-www-form-urlencoded, Origin and Referer https://indiawris.gov.in/dataSet/, body size 1000 with download:true, and the special-cased names 'RainFall' and 'River%20WaterLevel'.",
+      "relevance": "Potentially high (India-WRIS is where Mishra et al. got 2007-2018 Idukki storage, and where CAMELS-IND/GHI source their gauges) but currently BLOCKED - see caveat.",
+      "http_status": "200 (GitHub repo); indiawris.gov.in itself = 000, connection timeout",
+      "content_matches_claim": "partly - the API contract is transcribed faithfully and I verified it line by line against the source, but the upstream service could not be reached at all.",
+      "caveat": "TWO problems the sweep did not flag. (1) indiawris.gov.in (164.100.85.36) is UNREACHABLE from here - DNS resolves but TCP connect to port 443 times out after ~21 s, on the base URL and on every endpoint. So 'no API key, no registration' is untested in practice; the contract is documentation, not a working route. It may be geofenced or down - retry from an Indian network before building on it. (2) The repo is a 0-star, 0-fork, 58 KB personal project with NO LICENSE FILE, created Aug 2025 and untouched since Sept 2025. Treat it as an informal reference, not a dependency.",
+      "stars": "0",
+      "license": "none declared",
+      "last_activity": "pushed_at 2025-09-01"
+    },
+    {
+      "name": "amith-vp/Kerala-Dam-Water-Levels (already in AquaSync - refreshed metrics)",
+      "url": "https://github.com/amith-vp/Kerala-Dam-Water-Levels",
+      "kind": "GitHub repository (scraped JSON feed)",
+      "what_it_provides": "GitHub API confirms exactly as claimed: 54 stars, 8 forks, pushed_at 2026-08-26T08:05:16Z (today), size 112,128 KB, created 2024-07-02, not archived. Description: 'Repository of Live and Historical Data of Water Levels of Dams in Kerala, Automatically Updated with GitHub Actions'.",
+      "relevance": "Already integrated. Its value in this sweep is as the 2020-onward partner for GUARDIAN hourly Neeleeswaram discharge in Muskingum calibration.",
+      "http_status": "200",
+      "content_matches_claim": "yes - stars, push timestamp and repo size match the sweep's figures exactly.",
+      "caveat": "Nothing here contradicts the established project facts: this feed still covers 2020-08-13 to 2026-08-26 only and contains no 2018 data, and the 2020-09-25 to 2021-04-30 corruption window is unaffected by anything in this sweep. NOTE: the repo declares NO LICENSE, which matters if AquaSync redistributes the data.",
+      "stars": "54",
+      "license": "none declared",
+      "last_activity": "pushed_at 2026-08-26T08:05:16Z"
+    },
+    {
+      "name": "GloLakes: water storage dynamics for 27,000 lakes (ESSD 16:201, 2024)",
+      "url": "https://essd.copernicus.org/articles/16/201/2024/",
+      "kind": "open-access data descriptor + dataset",
+      "what_it_provides": "Crossref-verified: 'GloLakes: water storage dynamics for 27 000 lakes globally from 1984 to present derived from satellite altimetry and optical imaging', ESSD vol 16 pages 201-218, published 2024-01-11, 46 citations - the most-cited storage dataset in this sweep.",
+      "relevance": "Moderate and speculative for AquaSync - global rather than Kerala-specific, but it is the one candidate here that could yield an independent 2018 Idukki storage series from altimetry.",
+      "http_status": "200",
+      "content_matches_claim": "yes - title, span, methods and the 46-citation count confirmed via Crossref.",
+      "caveat": "UNVERIFIED: I did not confirm that Idukki or Idamalayar are among the 27,000 lakes, nor that either has usable altimetry (Idukki is a narrow, steep-sided arch-dam reservoir, which is hard for radar altimeters). Check the station list before investing. The sweep made no Kerala-specific claim, so this is an open question rather than a contradiction."
+    },
+    {
+      "name": "KSDMA dam water level page and 2018 floods section",
+      "url": "https://sdma.kerala.gov.in/dam-water-level/",
+      "kind": "government portal",
+      "what_it_provides": "Kerala State Disaster Management Authority daily water-level page for major KSEB and Irrigation dams. The /floods_2018/ section also returns 200, and KSDMA is the host that actually serves the CWC 2018 flood report PDF verified above.",
+      "relevance": "Moderate - and it is the natural institutional counterpart to CWRDM for gap #5 (integration with KSEB/KSDMA systems), since it already publishes dam levels.",
+      "http_status": "200 (both /dam-water-level/ and /floods_2018/)",
+      "content_matches_claim": "yes - both paths return 200 and the CWC report is genuinely hosted here, which I proved by downloading it from this domain."
+    },
+    {
+      "name": "CWRDM - Centre for Water Resources Development and Management, Kerala",
+      "url": "https://cwrdm.kerala.gov.in/reservoir-assessment-tool-kerala-rat-30",
+      "kind": "state R&D institution page",
+      "what_it_provides": "Page text confirms verbatim: 'RAT 3.0 Kerala was co-developed by CWRDM and the SASWE Research Group at the University of Washington, USA with support from NASA Applied Science - Earth Action Water Program (Grant: 80NSSC22K0918)', and cites Suresh et al. 2024 with the correct DOI. Critically, the page links directly to http://210.212.226.241:8080/RAT_Kerala_CWRDM/.",
+      "relevance": "Highest for gap #5 and for the 2018 gap. Three independent teams state they obtained in-situ KSEB Idukki/Idamalayar 2018 inflow, and CWRDM is a Kerala state institution that already operates a public data-sharing channel - the most tractable single point of contact.",
+      "http_status": "200",
+      "content_matches_claim": "yes - the NASA grant number, the UW SASWE partnership and the dashboard link are all confirmed on the official page.",
+      "caveat": "This link is what elevates the bare-IP RAT dashboard from 'found on the internet' to 'officially published by a Kerala state institute'. The page HTML does carry some visible Drupal error backtrace text, which suggests light maintenance."
+    }
+  ],
+  "rejected": [
+    {
+      "name": "Global Reservoir Surface Area Dataset (GRSAD)",
+      "url": "https://dataverse.tdl.org/dataset.xhtml?persistentId=doi:10.18738/T8/DF80WG",
+      "reason": "Cannot be obtained, and would not help if it could. dataverse.tdl.org returns HTTP 202 with a ZERO-BYTE body to every non-browser client - the landing page, the DOI redirect target, and its own native API (/api/datasets/:persistentId) all return 202 with 0 bytes. So no file could be listed, sized or downloaded, and the sweep's description of its contents was never actually verified against the resource. I confirmed the dataset genuinely EXISTS via DataCite (10.18738/t8/df80wg, state 'findable', 'Global Reservoir Surface Area Dataset (GRSAD)', Gao Huilin & Zhao Gang, Texas Data Repository, 2019, described as 'time series of area values for 6817 global reservoirs ... generated from 1984 to 2015'), which does corroborate the 6,817-reservoir and 1984-2015 figures. But the record STOPS IN 2015, so it cannot inform the August 2018 event this sweep exists to reconstruct, and for surface area it is superseded by RAT-Kerala's TMS-OS series (2017-2025, Kerala-specific, downloadable in one curl)."
+    }
+  ],
+  "verification_notes": [
+    "METHOD: all 30 URLs curl-checked; 28 returned 200, two returned 202 (doi.org->figshare, which resolves fine via the figshare API, and dataverse.tdl.org, which does not). I went past status codes: I downloaded and parsed the three NWDP CSVs (87 MB), the four PDFs, the eight RAT CSVs, the IMD 2018 NetCDF and the GUARDIAN rating-curve workbook, and re-computed every headline number. The sweep is unusually accurate - byte counts matched to the byte on all eight files where one was claimed (39,425,558 / 23,703,774 / 24,200,224 / 6,003,314 / 4,413,605 / 539,052 / 3,714,034 / 25,431,832). This is not a hallucinated list; the corrections below are refinements, not debunkings.",
+    "CORRECTION 1 - the flood peak WAS measured, just not at Neeleeswaram. The sweep's headline caveat says 'the peak was never measured'. That is true for NEELEESWARAM (18 of 31 August days; and the gap is worse than reported - 13 days missing: 5, 12, 16-22, 24-27, not the 7 claimed) and equally true for ARANGALI (missing 16-27). But VANDIPERIYAR, the upstream Periyar headwater gauge, recorded ALL 31 DAYS of August 2018 with no gaps, straight through the event: 15 Aug 223.7, 16 Aug 1023, 17 Aug 653.1, 18 Aug 202.6 m3/s. That is a continuous upstream boundary condition across the exact window AquaSync's flagship case study covers, and the sweep missed it entirely.",
+    "CORRECTION 2 - the 1950-2000 discharge file is one reading per day throughout. The sweep claims Neeleeswaram goes to '730/yr from 1978 as two readings per day'. Per-year counts are 291 (1971) then 365 or 366 for every single year 1972-2000. No year has 730. The twice-daily pattern (08:00 and 08:30, or 09:00/09:15) only appears in the 2001-2025 file.",
+    "CORRECTION 3 - district is not catchment. BOYCE ESTATE and Vannapuram are described as 'long-record catchment stations' inside the Idukki catchment. Both are in Idukki DISTRICT, not the Idukki reservoir catchment: BOYCE ESTATE is in Peerumade tehsil at 9.565N on the southern/western slope, and Vannapuram's stored longitude (76.463E) sits far west of Thodupuzha town (~76.72E), so its coordinate is itself doubtful. Filtering to the true Periyar headwater box leaves only Vandanmedu (248 days) and Chinnar (168 days), both short. There is effectively NO long rainfall record inside the Idukki catchment in this file.",
+    "CORRECTION 4 - a station coordinate conflict between two of the sweep's own sources. GUARDIAN places VANDIPERIYAR at (9.1525, 77.1525), across the border in Tamil Nadu; NWDP/CWC places it at (9.57333, 77.09056), the correct site of Vandiperiyar town in Kerala - a ~47 km discrepancy. NEELEESWARAM (10.18361, 76.49556) and ARANGALI (10.28611, 76.32222) agree EXACTLY between the two datasets, which isolates Vandiperiyar as the bad record. Use NWDP coordinates; if you apply GUARDIAN's Vandiperiyar rating curve, you are applying it to a gauge whose location that dataset has wrong.",
+    "CORRECTION 5 - the HESS preprint was REJECTED. Its page states 'The manuscript was not accepted for further review after discussion.' The sweep presents it as an 'open preprint' and repeats its >500-year return period finding without qualification. Worse, that figure directly contradicts the peer-reviewed Current Science paper in the same list, which says the Periyar basin received a 145-YEAR return period rainfall. Do not put the 500-year number in AquaSync-facing material. The preprint's genuinely useful content is its data trail: seven major Kerala reservoirs' storage from India-WRIS for 2007-2018, with Idukki at 92.5% of FRL on 8 Aug 2018 - which independently agrees with the CWC bulletin's 92% for 01-08-2018.",
+    "CORRECTION 6 - India-WRIS is unreachable, so the 'recovered API contract' is documentation, not access. The contract itself is transcribed faithfully (I verified all seven endpoints line by line in the repo source). But indiawris.gov.in (164.100.85.36) times out on TCP connect to :443 after ~21 s on every endpoint tried. The sweep reported '200' for the GitHub repo, which is correct but easy to misread as the API working. Retry from an Indian network before planning around it - this matters because WRIS is the route to the 2007-2018 storage series that the rejected preprint used.",
+    "SCOPE CORRECTION - the CWC bulletin archive starts in 2015, not earlier. Scraping pages 0-25 yielded 528 PDFs: 36 for 2015, ~50/yr for 2016-2024, and only one or two stray files per year for 2001-2012. So this gives weekly Idukki level+storage for 2015-2025 and nothing usable before that. The '45 of 52 for 2018' claim is exactly right - I enumerated the Thursdays and confirmed the 7 absentees (03-29, 05-10, 08-09, 08-16, 09-27, 10-18, 12-27), and I re-tested all 7 filename variants for the two flood weeks: 14/14 returned 404. The hole over the event is real.",
+    "TWO BONUSES the sweep under-sold. (1) The bulletins validate BOTH reservoirs, not just Idukki: the same PDFs carry '*81 IDAMALAYAR 169.00 167.03 1.018 0.961 01-08-2018 94 30 45 33 75', independently confirming AquaSync's Idamalayar FRL of 169.00 m and 75 MW alongside Idukki's 732.43 m / 1.460 BCM / 780 MW - four project constants cross-checked from one official PDF. (2) GHI does not merely 'mention the Periyar': it uses NEELEESWARAM ON THE PERIYAR as its worked example of CWC station location verification (Fig. 5), checking the official coordinate against the town 4 km west - published, independent QC of the exact gauge coordinate AquaSync routes to. Separately, the RAT dashboard exposes far more than the two dams named: kakki, banasurasagar, mullaperiyar, pazhassi, neyyar and malampuzha all return 200. Mullaperiyar is the important one - Suresh et al. show it intercepts and re-regulates flow that would otherwise reach Idukki, a genuine structural gap in any model treating Idukki inflow as natural.",
+    "PRACTICAL WARNING for whoever ingests the papers: BOTH the Current Science and NTRS PDFs extract with SHIFTED TABLE COLUMNS. In Current Science Table 1 the dam names do not line up with their type/year/length/height values (one row loses its Type, another its name), so the '14 dams' count is approximate. In the NTRS manuscript Table 1 the Sl.No/reservoir-name column is offset by one row against the coordinate column - the values themselves are right (Idukki 9.845/76.968/60 km2, Idamalayaar 10.222/76.706/28.3 km2, confirmed by cross-referencing the River column) but a naive parser will mis-assign every row. Read both tables visually. By contrast the CWC bulletin rows and the CWC report's prose extract cleanly and can be parsed."
+  ],
+  "_dimension_key": "historical-data",
+  "_stage": "verify",
+  "_run": "wf_009a6299-c5b"
+}

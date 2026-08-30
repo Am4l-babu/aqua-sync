@@ -1,0 +1,28 @@
+# Root lint config.
+#
+# This must live at the repository root, not only in backend/pyproject.toml.
+# CI runs `ruff check backend/ scripts/` from here, and ruff resolves config
+# per-file: backend/ picked up its pyproject settings while scripts/ silently
+# fell back to ruff's built-in defaults. That drift is what broke CI when
+# ruff 0.16 enabled ISC004 by default.
+
+line-length = 100
+target-version = "py311"
+
+exclude = [
+    "research/repos",
+    "dashboard/vendor",
+    ".venv",
+]
+
+[lint]
+# Explicit and closed. Anything not listed here is off, so a new ruff release
+# cannot fail the build by enabling a rule we never opted into.
+select = ["E", "F", "I", "UP", "B"]
+
+[lint.per-file-ignores]
+# Report builders are mostly long prose strings laid out for readability.
+"scripts/build_dossier.py" = ["E501"]
+"scripts/build_research_report.py" = ["E501"]
+# Figure captions are prose, laid out to read naturally next to the plot code.
+"scripts/make_figures.py" = ["E501"]

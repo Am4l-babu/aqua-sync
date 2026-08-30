@@ -1,5 +1,10 @@
 # Bill of materials
 
+Also available as [`bom.html`](bom.html) — a shoppable version with a live
+vendor search link and a computed (not retyped) total on every tier. It is
+a hand-maintained companion to the tables below, not generated from them —
+if you edit a price here, update it there too.
+
 Four build tiers. **V1 is the only one required** for a working expo
 demonstration; V2–V4 are optional depth, and every one of them is a way to
 lose. Read [Choosing a tier](#choosing-a-tier) before ordering anything.
@@ -31,7 +36,7 @@ Vendors, in rough order of preference:
 
 ---
 
-## V1 — Hardware-in-the-loop scale rig  ·  ₹6,150  ·  1 week
+## V1 — Hardware-in-the-loop scale rig  ·  ₹6,250  ·  1 week
 
 The complete physical demonstrator: a two-tank recirculating model with a
 motorised sluice gate, level sensing, and live telemetry to the twin.
@@ -60,7 +65,7 @@ motorised sluice gate, level sensing, and live telemetry to the twin.
 | 19 | Micro-USB data cable | **Data**, not charge-only | 2 | 100 | 200 | Charge-only cables cost hours of debugging |
 | 20 | IP65 enclosure | 150×100×60 mm | 1 | 350 | 350 | |
 | 21 | Assorted R/C kit | 1/4 W resistors, ceramics | 1 | 200 | 200 | 4.7 kΩ needed for DS18B20 pull-up |
-| | | | | **Total** | **₹6,150** | |
+| | | | | **Total** | **₹6,250** | |
 
 ### Also needed if you do not already own them
 
@@ -122,7 +127,7 @@ actually moved is not a twin.
 
 ---
 
-## V3 — Edge AI and better sensing  ·  +₹6,900  ·  +2 weeks
+## V3 — Edge AI and better sensing  ·  +₹5,900  ·  +2 weeks
 
 | Component | Specification | Qty | ₹ ea | ₹ | Why |
 |---|---|---|---|---|---|
@@ -138,7 +143,7 @@ actually moved is not a twin.
 | 4–20 mA receiver | 250 Ω precision + op-amp | 1 | 150 | 150 | For the transmitter |
 | 3S BMS | 12 V Li-ion protection | 1 | 150 | 150 | |
 | Misc PCB/connectors | | 1 | 350 | 350 | |
-| | | | **Total** | **₹6,900** | |
+| | | | **Total** | **₹5,900** | |
 
 The hydrostatic transmitter is the single most defensible purchase in this
 tier. Two sensors measuring the same quantity through *different physics*
@@ -148,7 +153,7 @@ same way at the same time.
 
 ---
 
-## V4 — Offline command post and bathymetry  ·  +₹9,400  ·  +3 weeks
+## V4 — Offline command post and bathymetry  ·  +₹9,900  ·  +3 weeks
 
 Ambitious. Do not start this unless V1–V3 are finished and rehearsed.
 
@@ -165,19 +170,26 @@ Ambitious. Do not start this unless V1–V3 are finished and rehearsed.
 | LiPo 2S 2200 mAh | 7.4 V | 1 | 900 | 900 |
 | LiPo balance charger | 2S–3S + LiPo-safe bag | 1 | 650 | 650 |
 | Waterproofing | conformal coat, glands, silicone | 1 | 500 | 500 |
-| | | | **Total** | **₹9,400** |
+| | | | **Total** | **₹9,900** |
 
 ---
 
 ## Cumulative budget
 
+**Corrected 28 Aug 2026:** the V1, V3 and V4 tier totals above did not
+match the sum of their own line items (V1 was short by ₹100, V3 was over
+by ₹1,000, V4 was short by ₹500) — caught while building an HTML version
+of this BOM and recomputing every total from the actual rows instead of
+trusting the stated ones. V2 and the tools subtotal were already correct.
+The figures below are the corrected sums.
+
 | Tier | Adds | Running total | Cumulative weeks |
 |---|---|---|---|
 | Tools (if needed) | 1,480 | 1,480 | — |
-| **V1** | 6,150 | **7,630** | 1 |
-| V2 | 2,300 | 9,930 | 2 |
-| V3 | 6,900 | 16,830 | 4 |
-| V4 | 9,400 | 26,230 | 7 |
+| **V1** | 6,250 | **7,730** | 1 |
+| V2 | 2,300 | 10,030 | 2 |
+| V3 | 5,900 | 15,930 | 4 |
+| V4 | 9,900 | 25,830 | 7 |
 
 Software, data, and hosting: **₹0**. Every dependency is open source and
 every data source is free.
@@ -208,3 +220,44 @@ Concretely:
 
 Order V1 first and start building while V2 ships. Indian vendor delivery is
 3–5 days; do not sequence the build so that a ₹90 part blocks a demo.
+
+---
+
+## Reference: a real deployed design, not a tier to buy
+
+Found 28 August 2026 while checking ICFOSS's (Kerala's state FOSS body)
+GitLab for prior art. This is not another BOM tier — it is a **working,
+MIT-licensed, non-contact water-level station** that has actually been
+built and documented, worth reading before extending V1 toward a real
+field deployment rather than a tabletop demo.
+
+**[`icfoss/OpenIoT/c1_dev_lorawan_automatic_level_monitoring_station`](https://gitlab.com/icfoss/OpenIoT/c1_dev_lorawan_automatic_level_monitoring_station)**
+
+| | This project's V1 | ICFOSS's design |
+|---|---|---|
+| Level sensor | JSN-SR04T ultrasonic, 25–450 cm | Vega Puls C11 radar, 8 m range, non-contact |
+| Telemetry | Wi-Fi (ESP32) | LoRaWAN (C1-Dev board, Murata CMWX1ZZABZ-091) |
+| Power | Mains adapter | 100 W solar + 50 Ah Li-ion, MPPT charge controller |
+| Payload | Level + temperature | Level, 16-reading history, rate of change, solar/battery voltage and current |
+| Range | Tabletop, tethered | Field-deployable, kilometres via LoRaWAN |
+
+The two designs are solving different problems on purpose — V1 above is
+built to be cheap, buildable in a week, and demonstrate the *twin*, not the
+*sensor network*. But this is exactly the kind of hardware `docs/validation.md`
+and `ROADMAP.md` name as the fix for the biggest data-layer gap in the
+project: real reservoirs report on a **daily** bulletin, and the routing
+calibration attempt (`scripts/routing_calibration.py`) failed specifically
+because daily data cannot resolve an 8-hour travel time (see
+`docs/validation.md` §"River routing"). A radar level station reporting
+every few minutes over LoRaWAN, at either Idukki or a downstream point like
+Neeleeswaram, is a plausible real answer to that gap - not a V1 expo
+prop, but worth a look if this project ever moves toward an actual
+utility pilot rather than a demonstration rig.
+
+ICFOSS's OpenIoT group has several related designs worth the same kind of
+look if that direction is pursued: `Water_Quality_Monitoring_Device` and
+`Aquasentinals` (same STM32 + LoRaWAN + ChirpStack + Grafana telemetry
+stack, different sensors - pH/dissolved oxygen/temperature), and
+`flood-monitoring-technopark` (a deployed reference for the alerting and
+dashboard side - LoRaWAN sensors on the Thettiyar canal at Technopark,
+React/Node/MongoDB, threshold-based SMS/email alerts).

@@ -22,12 +22,15 @@ did not actually get is worse than no index.
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import subprocess
 import sys
+import time
 import urllib.request
-from datetime import datetime, timezone
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
+from urllib.parse import urlencode
 
 ROOT = Path(__file__).resolve().parents[1]
 RESEARCH = ROOT / "research"
@@ -115,7 +118,8 @@ def acquire_clone(entry: dict, dest: Path) -> dict:
         with urllib.request.urlopen(req, timeout=300) as resp:
             archive.write_bytes(resp.read())
     except Exception as exc:  # noqa: BLE001
-        return {"status": "failed", "error": f"tarball download failed: {type(exc).__name__}: {exc}"}
+        return {"status": "failed",
+                "error": f"tarball download failed: {type(exc).__name__}: {exc}"}
 
     if archive.stat().st_size > MAX_CLONE_MB * 1024 * 1024:
         size = archive.stat().st_size
@@ -151,7 +155,8 @@ def acquire_curl(entry: dict, dest: Path) -> dict:
             payload = resp.read()
             ctype = resp.headers.get("Content-Type", "")
     except Exception as exc:  # noqa: BLE001 - one bad URL must not stop the run
-        return {"status": "failed", "error": f"{type(exc).__name__}: {exc}"}
+        return {"status": "failed",
+                "error": f"{type(exc).__name__}: {exc}"}
 
     if not payload:
         return {"status": "failed", "error": "empty response"}
@@ -174,7 +179,9 @@ def acquire_api(entry: dict, dest: Path) -> dict:
         return {"status": "already-present", "bytes": dest.stat().st_size}
 
     dest.parent.mkdir(parents=True, exist_ok=True)
-    req = urllib.request.Request(entry["url"], headers={"User-Agent": UA, "Accept": "application/json"})
+    req = urllib.request.Request(
+        entry["url"], headers={"User-Agent": UA, "Accept": "application/json"}
+    )
     try:
         with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
             payload = json.loads(resp.read().decode("utf-8"))
@@ -184,6 +191,162 @@ def acquire_api(entry: dict, dest: Path) -> dict:
     dest.write_text(json.dumps(payload, indent=2), encoding="utf-8")
     return {"status": "ok", "bytes": dest.stat().st_size}
 
+
+def acquire_imd_rf25(entry: dict, dest: Path) -> dict:
+    """IMD 0.25-degree gridded daily rainfall - one year at a time.
+
+    The endpoint is not a JSON API despite the manifest's "api" method: it is
+    an HTML form whose only field is ``RF25=<year>``, POSTed (a GET returns
+    the form page, not data), and the response body is a raw NetCDF file
+    (Content-Type: application/octet-stream, Content-Disposition names it
+    ``RF25/ind<year>_rfp25.nc``). ``acquire_api`` json.loads()-ing that body
+    is exactly the "Expecting value: line 1 column 1" failure in the log.
+    """
+    years = entry.get("years", [2018, 2019, 2020, 2021])
+    dest.mkdir(parents=True, exist_ok=True)
+
+    total_bytes, fetched, failures = 0, [], []
+    for year in years:
+        out = dest / f"ind{year}_rfp25.nc"
+        if out.exists() and out.stat().st_size > 0:
+            total_bytes += out.stat().st_size
+            fetched.append(year)
+            continue
+
+        req = urllib.request.Request(
+            entry["url"],
+            data=urlencode({"RF25": str(year)}).encode("ascii"),
+            headers={"User-Agent": UA, "Referer": entry["url"]},
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
+                payload = resp.read()
+        except Exception as exc:  # noqa: BLE001 - one bad year must not stop the run
+            failures.append(f"{year}: {type(exc).__name__}: {exc}")
+            continue
+
+        # NetCDF classic starts "CDF"; NetCDF4/HDF5-backed starts with the
+        # HDF5 signature. Anything else means we got the HTML form back,
+        # which happens if IMD ever renames the field.
+        if not (payload.startswith(b"CDF") or payload.startswith(b"\x89HDF")):
+            failures.append(f"{year}: expected NetCDF, got {len(payload)} bytes "
+                             f"starting {payload[:20]!r}")
+            continue
+
+        out.write_bytes(payload)
+        total_bytes += len(payload)
+        fetched.append(year)
+
+    if not fetched:
+        return {"status": "failed", "error": "; ".join(failures) or "no years fetched"}
+    status = "ok" if not failures else "partial"
+    return {
+        "status": status,
+        "bytes": total_bytes,
+        "detail": f"{len(fetched)}/{len(years)} year(s): {fetched}"
+                  + (f"; failed: {failures}" if failures else ""),
+    }
+
+
+# SLDC's "Storage" page (id=7) is not deep-linkable: the date is a POST
+# field, not a query param, so every date needs its own request. Fetching
+# the full 2019-08-08-to-present archive would be several thousand requests
+# against a small state utility's server, which is not a reasonable thing
+# to do from an automated script. Instead this pulls the two windows the
+# roadmap's case studies actually need - the August 2018 flood (the CAG
+# comparison) and October 2021 (the calibration case study) - and the
+# manifest can be given more `date_windows` later if a specific study needs
+# them.
+_SLDC_COLS = [
+    "mddl_m", "frl_level_m", "frl_stg_mcm", "frl_stg_mu", "reservoir",
+    "level_m", "storage_mcm", "storage_pct", "gen_capability_gross_mu",
+    "gen_capability_station_mu", "rf_mm", "spill", "inflow_mcm_day",
+    "cum_inflow_month_mu", "prev_day_storage_pct", "remarks",
+]
+
+
+def _fetch_sldc_day(url: str, d: date):
+    """POST one date to the SLDC storage bulletin; return (rows, error)."""
+    from bs4 import BeautifulSoup
+
+    body = urlencode({
+        "date1_day": f"{d.day:02d}",
+        "date1_month": f"{d.month:02d}",
+        "date1_year": str(d.year),
+        "sbtstore": "SHOW",
+    }).encode("ascii")
+    req = urllib.request.Request(url, data=body, headers={"User-Agent": UA, "Referer": url})
+    try:
+        with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
+            html = resp.read().decode("utf-8", errors="replace")
+    except Exception as exc:  # noqa: BLE001
+        return None, f"{type(exc).__name__}: {exc}"
+
+    soup = BeautifulSoup(html, "html.parser")
+    rows = []
+    for tr in soup.find_all("tr"):
+        name_td = tr.find("td", style=lambda s: s and "color:red" in s)
+        if name_td is None:
+            continue  # header / group-total / comparison rows - not a dam row
+        cells = [td.get_text(strip=True) for td in tr.find_all("td")]
+        if len(cells) != len(_SLDC_COLS):
+            continue  # page layout changed underneath us - skip rather than mislabel
+        row = dict(zip(_SLDC_COLS, cells, strict=True))
+        row["date"] = d.isoformat()
+        rows.append(row)
+    if not rows:
+        return None, "no dam rows found (date may be outside the archive, or page format changed)"
+    return rows, None
+
+
+def acquire_sldc_storage(entry: dict, dest: Path) -> dict:
+    """Kerala SLDC daily reservoir storage/inflow bulletin, parsed to CSV."""
+    windows = entry.get("date_windows", [("2018-08-01", "2018-08-31"),
+                                          ("2021-10-01", "2021-10-31")])
+    dest.mkdir(parents=True, exist_ok=True)
+    out = dest / "sldc_storage_case_study_windows.csv"
+    if out.exists() and out.stat().st_size > 0:
+        return {"status": "already-present", "bytes": out.stat().st_size}
+
+    all_rows, day_errors = [], []
+    for start, end in windows:
+        d, end_d = date.fromisoformat(start), date.fromisoformat(end)
+        while d <= end_d:
+            rows, err = _fetch_sldc_day(entry["url"], d)
+            if err:
+                day_errors.append(f"{d.isoformat()}: {err}")
+            else:
+                all_rows.extend(rows)
+            time.sleep(0.4)  # be polite to a small state utility's server
+            d += timedelta(days=1)
+
+    if not all_rows:
+        return {"status": "failed",
+                "error": "; ".join(day_errors[:5]) + (" ..." if len(day_errors) > 5 else "")}
+
+    with out.open("w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=["date", *_SLDC_COLS])
+        w.writeheader()
+        w.writerows(all_rows)
+
+    status = "ok" if not day_errors else "partial"
+    n_days = sum((date.fromisoformat(e) - date.fromisoformat(s)).days + 1 for s, e in windows)
+    return {
+        "status": status,
+        "bytes": out.stat().st_size,
+        "detail": f"{len(all_rows)} dam-day rows over {n_days - len(day_errors)}/{n_days} "
+                  f"days across {len(windows)} window(s)"
+                  + (f"; {len(day_errors)} day(s) failed" if day_errors else ""),
+    }
+
+
+# Dispatch by URL rather than manifest ``method``: both of these are listed
+# as "api" in the manifest (they looked like JSON APIs until fetched), but
+# neither speaks JSON. Checked before the generic METHODS lookup in main().
+URL_OVERRIDES = [
+    ("imdpune.gov.in/cmpg/Griddata/RF25.php", acquire_imd_rf25),
+    ("sldckerala.com", acquire_sldc_storage),
+]
 
 METHODS = {
     "git-shallow-clone": acquire_clone,
@@ -210,7 +373,9 @@ def build_index(manifest: list[dict], results: dict) -> str:
     manual = by_status.get("manual-registration", [])
     failed = by_status.get("failed", []) + by_status.get("skipped-too-large", [])
 
-    total_bytes = sum(results.get(e["name"], {}).get("bytes", 0) for e in got)
+    total_bytes = sum(
+        results.get(e["name"], {}).get("bytes", 0) for e in got
+    )
 
     lines = [
         "# Research index",
@@ -222,7 +387,7 @@ def build_index(manifest: list[dict], results: dict) -> str:
         f"**{len(manual)} need manual registration** · "
         f"**{len(failed)} unavailable**",
         "",
-        f"Last run: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}",
+        f"Last run: {datetime.now(UTC).strftime('%Y-%m-%d %H:%M UTC')}",
         "",
         "---",
         "",
@@ -250,7 +415,8 @@ def build_index(manifest: list[dict], results: dict) -> str:
             "|---|---|---|",
         ]
         for e in sorted(manual, key=lambda x: x["name"]):
-            lines.append(f"| {e['name']} | {e.get('note', e.get('kind', '—'))} | [link]({e['url']}) |")
+            note = e.get("note", e.get("kind", "—"))
+            lines.append(f"| {e['name']} | {note} | [link]({e['url']}) |")
 
     if failed:
         lines += [
@@ -332,20 +498,23 @@ def main() -> int:
                 print(f"[{i:>2}/{len(manifest)}] {name:<44} needs registration")
                 continue
 
-            fn = METHODS.get(method)
+            fn = next((f for pat, f in URL_OVERRIDES if pat in entry.get("url", "")), None)
+            fn = fn or METHODS.get(method)
             if fn is None:
                 results[name] = {"status": "failed", "error": f"unknown method: {method}"}
                 print(f"[{i:>2}/{len(manifest)}] {name:<44} unknown method {method}")
                 continue
 
             if args.dry_run:
-                print(f"[{i:>2}/{len(manifest)}] {name:<44} would {method} -> {entry['destination']}")
+                print(f"[{i:>2}/{len(manifest)}] {name:<44} "
+                      f"would {fn.__name__} -> {entry['destination']}")
                 continue
 
             res = fn(entry, dest)
             results[name] = res
             mark = {"ok": "ok", "already-present": "cached"}.get(res["status"], res["status"])
-            detail = human(res["bytes"]) if res.get("bytes") else res.get("error", "")
+            detail = res.get("detail") or res.get("error", "") \
+                or (human(res["bytes"]) if res.get("bytes") else "")
             print(f"[{i:>2}/{len(manifest)}] {name:<44} {mark:<18} {detail[:70]}")
 
         if not args.dry_run:
