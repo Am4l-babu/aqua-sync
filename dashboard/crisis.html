@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AquaSync — Crisis Commander</title>
+<link rel="stylesheet" href="css/dashboard.css">
+<link rel="stylesheet" href="css/crisis.css">
+</head>
+<body class="crisis">
+
+<header id="crisis-top">
+  <div class="brand">
+    <span class="mark"></span>
+    <div>
+      <h1>Crisis Commander</h1>
+      <p id="subtitle">Idukki · you have the duty desk</p>
+    </div>
+  </div>
+  <a class="back" href="index.html">← live twin</a>
+</header>
+
+<main id="crisis">
+
+  <section class="card brief">
+    <h2>The situation</h2>
+    <p id="narrative" class="narrative">Loading the briefing…</p>
+    <div class="stats" id="stats"></div>
+    <p class="fineprint">
+      You are told what the duty engineer was told: the level now, the rain so
+      far, and that heavy rain is forecast. You are <em>not</em> told the inflow
+      that is coming — that is the whole problem.
+    </p>
+  </section>
+
+  <section class="card decide">
+    <h2>Your release order</h2>
+
+    <label class="ctl">
+      <span class="ctl-name">Draw down towards</span>
+      <span class="ctl-val" id="v-target">—</span>
+      <input type="range" id="target_level" disabled>
+      <span class="ctl-help">Below the rule level buys cushion; too far below wastes storage you cannot get back.</span>
+    </label>
+
+    <label class="ctl">
+      <span class="ctl-name">Start releasing in</span>
+      <span class="ctl-val" id="v-start">—</span>
+      <input type="range" id="start_hour" disabled>
+      <span class="ctl-help">Hours from now. The rain lands on 17 October.</span>
+    </label>
+
+    <label class="ctl">
+      <span class="ctl-name">At no more than</span>
+      <span class="ctl-val" id="v-rate">—</span>
+      <input type="range" id="max_rate" disabled>
+      <span class="ctl-help">Above turbine capacity the surplus goes over the spillway and earns nothing.</span>
+    </label>
+
+    <button id="commit" disabled>Commit the order</button>
+    <p class="fineprint" id="status">…</p>
+  </section>
+
+  <section class="card result" id="result" hidden>
+    <h2>What happened next</h2>
+    <p class="verdict" id="verdict"></p>
+    <table class="cmp">
+      <thead>
+        <tr><th></th><th>You</th><th>The operators</th><th>AquaSync</th></tr>
+      </thead>
+      <tbody id="cmp-body"></tbody>
+    </table>
+    <p class="fineprint" id="policy-note"></p>
+  </section>
+
+</main>
+
+<script src="js/crisis.js"></script>
+</body>
+</html>

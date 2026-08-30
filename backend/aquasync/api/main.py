@@ -37,6 +37,9 @@ from ..twin import (
     ReservoirState,
     TidePredictor,
 )
+from ..twin.crisis import Decision
+from ..twin.crisis import briefing as crisis_briefing
+from ..twin.crisis import score as crisis_score
 from ..twin.scenarios import SCENARIOS, load_scenario_series, run_counterfactual
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -65,6 +68,16 @@ class WhatIfRequest(BaseModel):
     inflow_cumecs: float = Field(..., ge=0.0, le=5000.0)
     release_cumecs: float = Field(..., ge=0.0, le=5000.0)
     hours: int = Field(72, ge=1, le=720)
+
+
+class CrisisDecision(BaseModel):
+    """The three numbers the player commits to. Bounds mirror the briefing's
+    controls, so a hand-rolled request cannot ask for a release the rig's
+    operational limits would refuse."""
+
+    target_level: float = Field(..., ge=600.0, le=800.0)
+    start_hour: int = Field(..., ge=0, le=720)
+    max_rate: float = Field(..., ge=0.0, le=1500.0)
 
 
 class PolicyRequest(BaseModel):
@@ -274,6 +287,39 @@ async def whatif(req: WhatIfRequest) -> dict:
         "spill_cumecs": spill,
         "advice": _advice(float(levels[-1]), spill),
     }
+
+
+@app.get("/api/crisis/{key}")
+async def crisis_brief(key: str) -> dict:
+    """The briefing. Everything the operator had, and nothing they did not -
+    in particular, not the inflow that is about to arrive."""
+    if key not in SCENARIOS:
+        raise HTTPException(404, f"unknown scenario: {key}")
+    try:
+        return await asyncio.to_thread(crisis_briefing, key, DATA_RAW)
+    except FileNotFoundError as exc:
+        raise HTTPException(503, f"data not cached - run scripts/fetch_data.py ({exc})") from exc
+
+
+@app.post("/api/crisis/{key}")
+async def crisis_play(key: str, decision: CrisisDecision) -> dict:
+    """Play the decision forward against the inflow that actually arrived.
+
+    The first call for a scenario runs the exhaustive policy search for the
+    hindsight reference and takes a few seconds; it is cached after that, so a
+    judge moving a slider gets an answer immediately.
+    """
+    if key not in SCENARIOS:
+        raise HTTPException(404, f"unknown scenario: {key}")
+    try:
+        return await asyncio.to_thread(
+            crisis_score,
+            Decision(decision.target_level, decision.start_hour, decision.max_rate),
+            key,
+            DATA_RAW,
+        )
+    except FileNotFoundError as exc:
+        raise HTTPException(503, f"data not cached - run scripts/fetch_data.py ({exc})") from exc
 
 
 @app.get("/api/tide")
