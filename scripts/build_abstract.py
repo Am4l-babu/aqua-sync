@@ -143,24 +143,32 @@ def sections() -> list[dict]:
 
 def updates(f: dict) -> list[tuple[str, str]]:
     runs = f["fcst"]
-    keep = [r["decision_rule_minimax_regret"]["retention_of_perfect_foresight_pct"]
-            for r in runs]
+    # Excess cost on the optimiser's own objective, not freeboard retention:
+    # a policy built on an over-forecast gains cushion by over-releasing and
+    # scores above 100% on a cushion-only metric while giving up revenue.
+    ev = [r["decision_rule_expected_value"]["excess_cost_vs_perfect_foresight_pct"]
+          for r in runs if "excess_cost_vs_perfect_foresight_pct"
+          in r["decision_rule_expected_value"]]
+    mm = [r["decision_rule_minimax_regret"]["excess_cost_vs_perfect_foresight_pct"]
+          for r in runs if "excess_cost_vs_perfect_foresight_pct"
+          in r["decision_rule_minimax_regret"]]
     cas = f["cascade"]
     return [
         ("Out-of-sample validation",
          f"August 2022 replays at {f['replay22']['mean_absolute_error_m']:.2f} m mean "
          "error — an episode the model was never fitted to."),
         ("Forecast-error study",
-         f"Driven from real GEFS ensembles at {len(runs)} lead times, a minimax-regret "
-         f"rule keeps {min(keep):.0f}\u2013{max(keep):.0f}% of the perfect-foresight "
-         "cushion. It never does worse than betting on the ensemble mean."),
+         f"Across {len(runs)} lead times, deciding from a real GEFS ensemble costs "
+         f"{min(ev):+.0f}% to {max(mm):+.0f}% more than hindsight on the full objective. "
+         "At 24 h it matches hindsight exactly; the value is in the last day."),
         ("Cascade co-optimisation",
          "Optimising the two dams independently raises their joint downstream peak "
          f"{abs(cas['naive_vs_observed_reduction_pct']):.0f}% above what happened; "
          f"retiming recovers only {cas['coordination_vs_naive_reduction_pct']:.0f}%."),
-        ("DEM-derived catchment",
-         "Idukki's catchment geometry now comes from a real digital elevation "
-         "model, with verified hardware references."),
+        ("Runoff model validated - and fixed",
+         "Four monsoons of observed rainfall against observed inflow found the "
+         "curve-number chain applying its initial abstraction per timestep, which "
+         "destroyed the storm. Fixed, tested, and every forecast figure re-run."),
         ("Shoppable bill of materials",
          "Four costed tiers with live vendor links; the V1 rig at " + RS + "6,250."),
     ]
