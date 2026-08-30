@@ -311,7 +311,7 @@ def dimension_section(d: dict, number: int) -> list:
         for s in confirmed:
             meta = []
             if s.get("stars") and str(s["stars"]) not in ("", "-", "unknown"):
-                meta.append(f"{s['stars']}★")
+                meta.append(f"{s['stars']} stars")
             if s.get("last_activity") and s["last_activity"] != "unknown":
                 meta.append(str(s["last_activity"])[:10])
             if s.get("license") and s["license"] not in ("", "unknown", "none"):

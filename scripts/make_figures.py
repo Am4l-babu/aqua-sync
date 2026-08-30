@@ -225,8 +225,10 @@ def fig_lead_time() -> dict:
     ax1.bar(n.lead_days.astype(str), n.freeboard_gained_m, color=GREEN, alpha=0.8, width=0.62)
     ax1.set_xlabel("Forecast lead time (days)", color=MUTED, fontsize=9)
     ax1.axhline(float(n.freeboard_gained_m.mean()), color=INK, lw=1.2, ls="--")
-    ax1.text(0.02, 0.93, f"mean +{n.freeboard_gained_m.mean():.2f} m",
-             transform=ax1.transAxes, fontsize=8.5, color=INK, va="top")
+    # "about 3 m", never 3.16 - two decimals claim precision the 0.30 m replay
+    # error does not support.
+    ax1.text(0.02, 0.915, f"mean about {n.freeboard_gained_m.mean():.0f} m",
+             transform=ax1.transAxes, fontsize=8.5, color=INK, va="bottom")
 
     style(ax2, "What lead time actually buys: less waste", "Share of release spilled")
     ax2.plot(n.lead_days, n.spill_fraction * 100, color=RED, lw=2.4, marker="o", ms=5)
@@ -234,7 +236,7 @@ def fig_lead_time() -> dict:
     ax2.set_ylim(0, 70)
     ax2.annotate(
         f"{n.spill_fraction.iloc[0]*100:.0f}% spilled\nacting on the day",
-        xy=(0, n.spill_fraction.iloc[0] * 100), xytext=(14, -30),
+        xy=(0, n.spill_fraction.iloc[0] * 100), xytext=(20, -52),
         textcoords="offset points", fontsize=8.5, color=RED,
         arrowprops=dict(arrowstyle="->", color=MUTED, lw=1))
     ax2.annotate(
