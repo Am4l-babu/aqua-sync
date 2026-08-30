@@ -48,3 +48,26 @@ jobs:
       # ruff 0.16 enabled ISC004. Bump this on purpose, not by surprise.
       - run: pip install ruff==0.16.4
       - run: ruff check backend/ scripts/
+
+  # Catches the class of defect that does not raise: a document builder using a
+  # character its font cannot draw. reportlab's base-14 fonts drop those
+  # silently, which is how the layer diagram lost every arrow, the hydropower
+  # formula rendered as "gQH", and star counts became bare numbers - all in a
+  # PDF that built without a single warning.
+  #
+  # The regeneration and determinism checks in scripts/check.py need the
+  # bulletin cache in data/raw/, which is gitignored, so they stay local.
+  # --fast is the subset that runs anywhere.
+  selfcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+          pip install ruff==0.16.4
+      - run: python scripts/check.py --fast
