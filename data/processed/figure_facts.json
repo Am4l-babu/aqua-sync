@@ -55,5 +55,57 @@
     "replay_final_err_m": 0.5174899358685252,
     "frl": 732.43,
     "rule_level": 728.5
+  },
+  "forecast_error": {
+    "perfect_m": 3.111,
+    "leads_h": [
+      24.0,
+      90.0,
+      120.0
+    ],
+    "issue_dates": [
+      "2021-10-15 18z",
+      "2021-10-13 00z",
+      "2021-10-11 18z"
+    ],
+    "ev_m": [
+      0.8104905536431488,
+      1.0304486064882212,
+      1.0304486064882212
+    ],
+    "mm_m": [
+      1.0304486064882212,
+      2.302510352741706,
+      1.069428671522246
+    ],
+    "ev_pct": [
+      26.054800872958822,
+      33.125781825816915,
+      33.125781825816915
+    ],
+    "mm_pct": [
+      33.125781825816915,
+      74.01868964289618,
+      34.378872102947604
+    ],
+    "bias_min": 1.6753,
+    "bias_max": 3.1844,
+    "best_mm_pct": 74.01868964289618,
+    "worst_mm_pct": 33.125781825816915
+  },
+  "cascade_coordination": {
+    "n_hours": 481,
+    "periyar_lower_bankfull_cumecs": 1100.0,
+    "periyar_lower_danger_cumecs": 1600.0,
+    "observed_joint_peak_cumecs": 403.4,
+    "naive_independent_joint_peak_cumecs": 910.9,
+    "coordinated_joint_peak_cumecs": 828.0,
+    "naive_vs_observed_reduction_pct": -125.8,
+    "coordination_vs_naive_reduction_pct": 9.1,
+    "coordination_vs_observed_reduction_pct": -105.3,
+    "idukki_coordinated_start_hour": 253,
+    "idamalayar_coordinated_start_hour": 304,
+    "idukki_own_peak_level_m": 728.508,
+    "idamalayar_own_peak_level_m": 164.095
   }
 }
