@@ -1,0 +1,79 @@
+{
+  "issue_date": "2022-08-06",
+  "hh": "18",
+  "horizon_h": 126,
+  "scenario": "idukki_aug_2022",
+  "storm_peak": "2022-08-08 18:00:00",
+  "lead_hours_before_storm_peak": 48.0,
+  "bias_factor": 1.7575,
+  "antecedent_5day_mm": 241.4,
+  "catchment_geometry": {
+    "area_km2": 650.0,
+    "main_channel_km": 66.3,
+    "slope": 0.0087,
+    "caveat": "area is sourced (CAG Appendix 3.1); channel length and slope are from scripts/catchment_geometry.py's DEM watershed delineation, net of the Mullaperiyar diversion (see that script's docstring)"
+  },
+  "perfect_foresight": {
+    "freeboard_gained_m": -1.455,
+    "peak_level_m": 728.853,
+    "total_cost": 0.7468022543307381,
+    "revenue_delta_cr": 1.424338901755488
+  },
+  "metric_note": "retention_of_perfect_foresight_pct can exceed 100% and that does NOT mean the forecast beat hindsight. It scores freeboard alone, one axis of a four-part objective (flood, dam safety, revenue, gate wear). A policy built on an over-forecast releases too much, ends lower than the hindsight optimum and scores above 100% while giving up revenue to do it. Read excess_cost_vs_perfect_foresight_pct instead: it is the optimiser's own objective, it is zero when the forecast picked the hindsight-optimal policy, and it is never negative.",
+  "observed": {
+    "peak_level_m": 727.397,
+    "revenue_cr": 86.7
+  },
+  "decision_rule_expected_value": {
+    "chosen_member": "gep01",
+    "peak_level_m": 728.3380150484849,
+    "freeboard_gained_m": -0.9406468250662101,
+    "retention_of_perfect_foresight_pct": 64.63944502326527,
+    "revenue_delta_cr": 1.4076050546440602,
+    "total_cost": 0.7875977565212365,
+    "excess_cost_vs_perfect_foresight_pct": 5.462691355566159
+  },
+  "decision_rule_minimax_regret": {
+    "chosen_member": "gep03",
+    "peak_level_m": 728.4457020725339,
+    "freeboard_gained_m": -1.048333849115238,
+    "retention_of_perfect_foresight_pct": 72.03949069954363,
+    "revenue_delta_cr": -1.5552727942055344,
+    "total_cost": 0.7863685442345894,
+    "excess_cost_vs_perfect_foresight_pct": 5.298094599260333
+  },
+  "ensemble_spread": {
+    "freeboard_gain_if_policy_matched_verifying_member_m": [
+      -1.138,
+      -1.063,
+      -1.16,
+      -1.321,
+      -1.163,
+      -1.098,
+      -1.122,
+      -1.216,
+      -1.226,
+      -1.022,
+      -1.196,
+      -1.01,
+      -1.243,
+      -1.237,
+      -1.312,
+      -1.055,
+      -1.115,
+      -1.096,
+      -1.053,
+      -1.05,
+      -1.051,
+      -1.109,
+      -1.377,
+      -1.226,
+      -1.071,
+      -1.059,
+      -1.094,
+      -1.322,
+      -1.045,
+      -0.983
+    ]
+  }
+}
