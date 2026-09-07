@@ -10,9 +10,14 @@ venv/
 # Third-party data snapshots. These change daily and are re-fetchable with
 # scripts/fetch_data.py. data/processed/ IS committed on purpose, so a result
 # quoted in the dossier can still be checked if the upstream feed changes.
-data/raw/
-data/external/
-!data/raw/.gitkeep
+#
+# Anchored with **/ rather than just at the repo root: a relative "data/raw"
+# path resolved from inside backend/ (the API's default cache_dir, and the
+# crisis tests) writes to backend/data/raw/, which the root-only pattern let
+# through uncaught. See HANDOVER.md.
+**/data/raw/
+**/data/external/
+!**/data/raw/.gitkeep
 
 # Firmware
 .pio/
