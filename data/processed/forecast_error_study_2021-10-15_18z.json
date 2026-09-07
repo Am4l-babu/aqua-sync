@@ -2,6 +2,8 @@
   "issue_date": "2021-10-15",
   "hh": "18",
   "horizon_h": 102,
+  "scenario": "periyar_oct_2021",
+  "storm_peak": "2021-10-16 18:00:00",
   "lead_hours_before_storm_peak": 24.0,
   "bias_factor": 1.6753,
   "antecedent_5day_mm": 82.7,

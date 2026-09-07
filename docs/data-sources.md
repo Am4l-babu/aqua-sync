@@ -5,7 +5,8 @@ each source actually contains — as opposed to what it is commonly claimed to
 contain — because two widely repeated assumptions turned out to be wrong when
 checked against the live files.
 
-**Verification date: 26 August 2026.** Re-verify before quoting any figure
+**Verification date: 26 August 2026**, with the sources the research sweep
+acquired on 28 August added below. Re-verify before quoting any figure
 here in a submission.
 
 ---
@@ -45,6 +46,7 @@ framing — it is why anyone cares — but no quantitative claim depends on it.
 | KSDMA formal data request | Official Idukki/Idamalayar 2018 operation log | Written request, weeks of lead time |
 | Published literature | Digitised 2018 Idukki inflow/outflow hydrographs | Free, immediate, but second-hand — cite the paper |
 | CWC Flood Forecasting (`ffs.india-water.gov.in`) | Gauge records at Periyar stations | Coverage for 2018 is patchy |
+| KSEB Dam Safety monthly workbooks (`dams.kseb.in`) | 2018 Idukki levels via the "Previous Year Water Level" column of the 2019 workbooks — 96 unique 2018 dates. Already fetched to `research/raw/kseb_monthly/` by `scripts/acquire.py` | Free, on disk; levels only, daily, no releases |
 
 For the literature route, the standard reference is the *Current Science*
 analysis of the role of dams in the August 2018 Periyar floods, which
@@ -210,6 +212,22 @@ baseline composite rather than classifying a single image.
   footprints for exposure counts.
 
 ---
+
+## Acquired by the research sweep, 28 August 2026
+
+Fetched, verified with a real HTTP request, and logged in
+[`research/index/README.md`](../research/index/README.md). Bulk files are
+gitignored and re-fetchable with `python scripts/acquire.py`.
+
+| Source | What it adds | Used for |
+|---|---|---|
+| CWC / NWDP hourly river water level, basin 031, 1991–2020 and 2021–2025 | Neeleeswaram stage at hourly resolution, including the October 2021 window at 744/744 hours | The routing calibration attempt — daily *release* data turned out to be the bottleneck, not the gauge (`validation.md` §4) |
+| GUARDIAN rating curves for 210 CWC gauges | Stage to discharge at Neeleeswaram, Arangali, Vandiperiyar | Would convert the hourly stage above to discharge; does not help until sub-daily releases exist |
+| NOAA GEFS 30-member ensembles (`noaa-gefs-pds` on S3) | Real rainfall forecasts issued before the October 2021 and August 2022 storms | The forecast-error study, ten runs. About 450 MB per issue date, cached in `research/raw/gefs_hindcast/` |
+| IMD 0.25° gridded daily rainfall, 2018–2021 | Catchment-scale observed rainfall | Bias-correcting each GEFS member |
+| RAT-Kerala (CWRDM) daily inflow for Idukki, Idamalayar and Mullaperiyar; area–elevation curves | Modelled (VIC) inflow 2015–2025; the upstream Mullaperiyar regulation the twin ignores | Cross-checks only. The Idukki area–elevation curve has a 40 km²/m discontinuity at 722–723 m — use it above 724 m only |
+| KSEB Dam Safety monthly workbooks | The corrupt-window months (Nov 2020 – Apr 2021) in their original layout, and the 2018 levels noted above | Diagnosing the upstream scraper's column-alignment bug; a 2018 route if one is ever needed |
+| AWS Terrarium elevation tiles | 30 m DEM | `scripts/catchment_geometry.py`: the Idukki catchment net of the Mullaperiyar diversion |
 
 ## Sources that were checked and rejected
 

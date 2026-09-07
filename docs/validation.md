@@ -6,10 +6,13 @@ A model that has not been validated against something it was not fitted to is
 a hypothesis. This document tracks the distance between those two states, and
 is honest about how far there is still to go.
 
-**Status as of 28 August 2026:** the reservoir model is calibrated and
+**Status as of 31 August 2026:** the reservoir model is calibrated and
 replay-validated **on two independent episodes**, not just the one it was
-tuned against. The routing and runoff models are **not yet validated**, and
-the headline counterfactual assumes **perfect foresight**. Read §4 before
+tuned against. The runoff chain is validated and **partially fit** — storm
+timing yes, storm size no — after a defect that stopped it producing runoff
+was found and fixed. Routing calibration was attempted and is **blocked by
+data resolution**; the CWC 8 h anchor stands. The perfect-foresight caveat
+is **closed at five lead times on two storms** (ten runs). Read §4 before
 quoting anything.
 
 ---
@@ -182,7 +185,7 @@ Reproduce: `python scripts/lead_time_study.py`.
 
 Ordered by how much they undercut current claims.
 
-### 🟢 Perfect foresight - closed at five lead times, 30 Aug 2026
+### 🟢 Perfect foresight - closed at five lead times on two storms, 30 Aug 2026
 
 The optimiser in §3 sees the **true** inflow series when choosing a policy.
 Every benefit figure above is a ceiling until this is closed.
@@ -254,23 +257,94 @@ Three findings, and one of them retracts a previous one.
    policy exactly. An earlier three-point version of this section asserted the
    opposite, on a sample too small to separate them.
 
-**What is still open.** Five points from a single storm, and the transition
-between 48 and 90 hours rests on the single 72 h run. A second storm in
-another monsoon is what would turn this into a curve worth relying on. Note
-also that the whole study inherits whatever error the rainfall-runoff chain
-carries, and that chain scores NSE 0.07 on daily amplitude - see below.
+#### The second storm - August 2022, ten runs in total
+
+The five October points were a single storm, and the 48 to 90 h transition
+rested on one 72 h run. The same five lead times were therefore run against
+`idukki_aug_2022` (§2b) - the same ensemble source, the same bias correction
+against IMD, the same chain, the same scoring. Perfect foresight on this
+episode costs 0.75, "gains" **-1.46 m** of cushion (the optimal policy ends
+*higher* than the operators did) and earns Rs +1.42 crore.
+
+| Lead time | Ensemble issued | Bias | Expected value | Minimax regret |
+|---|---|---|---|---|
+| 24 h | 2022-08-07 18z | 1.80x | **+0%** | +0% |
+| 48 h | 2022-08-06 18z | 1.76x | **+5%** | +5% |
+| 72 h | 2022-08-05 18z | 1.50x | **+5%** | +57% |
+| 90 h | 2022-08-05 00z | 2.05x | **+5%** | +39% |
+| 120 h | 2022-08-03 18z | 0.90x | **+158%** | +177% |
+
+Four things follow, and the first is a correction.
+
+1. **A premature reading is on record.** With three of the five runs in, an
+   earlier draft said the degradation "does not reproduce." The 120 h run
+   reversed that - it is the point that carries the shape. This is the
+   fourth claim on this project stated early and broken by the next data
+   point (the others: the 24 to 90 h "cliff" that was a ramp, and findings
+   2 and 3 above). **Treat any conclusion drawn from a partial run set as
+   provisional until the set is complete.**
+
+2. **The structure reproduces; the shape does not.** Both storms have a flat
+   region where a real ensemble is as good as hindsight, then degradation.
+   October ramps from 48 h (+37% at 72 h) to a +69% plateau. August holds
+   within +5% out to 90 h and then jumps to +158% in a single 30-hour step.
+   So the honest general statement is: *a real ensemble matches hindsight up
+   to some horizon, beyond which committing to its policy costs
+   substantially more than doing nothing clever.* The horizon is not a
+   constant across storms and the penalty beyond it is not bounded by
+   October's +69%. **Do not describe the degradation as gradual, and do not
+   average the two storms into one curve.**
+
+3. **The two episodes are not equally hard, and August is the easier one.**
+   October 2021 came within about a metre of FRL; August 2022 peaked nearly
+   5 m below it. The perfect-foresight cost reflects it - 1.96 against
+   0.75 - and August's optimal policy ends higher than the operators did.
+   Part of why August stays flat for longer is plausibly that less was at
+   stake, not that the forecast was better. Qualify by reservoir state when
+   quoting.
+
+4. **Both retractions get stronger.** Across all ten runs, minimax regret is
+   better than expected value in exactly one - August 48 h, by 0.16
+   percentage points (+5.30% against +5.46%), a tie in everything but sign -
+   ties in two, and is worse in seven, sometimes heavily (August 72 h: +57%
+   hedged against +5%). And the 120 h August run has the **smallest bias
+   factor of all ten** (0.90x, the only one below 1) and the **worst
+   outcome** (+158%): it drew the reservoir down 1.21 m when the optimal
+   policy would have let it rise. Bias magnitude does not predict decision
+   quality.
+
+**What is still open.** Two storms, ten runs, and the break point differs
+between them by about two days. A third storm - ideally a harder one, with
+the reservoir near FRL as in October - is what would say whether the horizon
+tracks reservoir state, lead time, or something else. Note also that the
+whole study inherits whatever error the rainfall-runoff chain carries, and
+that chain scores NSE 0.07 on daily amplitude - see below. **The August
+results are on the record here, in `PROGRESS.md` and in `ROADMAP.md`; the
+dossier's §4.4 and Figure 6 still show October only** - a builder change
+and a rebuild, not started.
 
 Reproduce, one run per lead time:
 
 ```bash
+# October 2021
 python scripts/forecast_error_study.py --issue-date 2021-10-15 --hh 18 --horizon-h 102  # 24 h
 python scripts/forecast_error_study.py --issue-date 2021-10-14 --hh 18 --horizon-h 126  # 48 h
 python scripts/forecast_error_study.py --issue-date 2021-10-13 --hh 18 --horizon-h 150  # 72 h
 python scripts/forecast_error_study.py --issue-date 2021-10-13 --hh 00 --horizon-h 168  # 90 h
 python scripts/forecast_error_study.py --issue-date 2021-10-11 --hh 18 --horizon-h 198  # 120 h
+# August 2022
+python scripts/forecast_error_study.py --scenario idukki_aug_2022 --issue-date 2022-08-07 --hh 18 --horizon-h 102  # 24 h
+python scripts/forecast_error_study.py --scenario idukki_aug_2022 --issue-date 2022-08-06 --hh 18 --horizon-h 126  # 48 h
+python scripts/forecast_error_study.py --scenario idukki_aug_2022 --issue-date 2022-08-05 --hh 18 --horizon-h 150  # 72 h
+python scripts/forecast_error_study.py --scenario idukki_aug_2022 --issue-date 2022-08-05 --hh 00 --horizon-h 168  # 90 h
+python scripts/forecast_error_study.py --scenario idukki_aug_2022 --issue-date 2022-08-03 --hh 18 --horizon-h 198  # 120 h
 ```
 
-Results: `data/processed/forecast_error_study_*.json`.
+Each run fetches about 450 MB of GEFS GRIB2 slices into
+`research/raw/gefs_hindcast/` (gitignored, cached, skipped if already
+present) and took ten to twenty minutes each on first fetch. Results:
+`data/processed/forecast_error_study_*.json`, ten files, with the full
+policy-by-member cross matrix beside each as CSV.
 
 ### 🔴 Cascade - the two dams are not jointly scheduled, and optimising them separately is worse than not coordinating at all, 28 Aug 2026
 
@@ -490,7 +564,9 @@ Cochin as microtidal mixed semi-diurnal — a sanity check, not a validation.
 
 ## 5 · Unit and physics tests
 
-`python -m pytest backend/tests/ -q` — **46 passing.**
+`python -m pytest backend/tests/ -q` — **75 passing** as of 31 August 2026.
+The count moves; `python -m pytest backend/tests --collect-only -q` prints
+the current one.
 
 These are mostly physics tests rather than unit tests. A hydrological model
 that passes its unit tests but does not conserve water is worse than no model,
@@ -501,6 +577,7 @@ because it is wrong in a way that looks right.
 | Level–storage | Round-trip, monotonicity, anchoring at FRL and dead level, area = dS/dh, β recovery from synthetic data |
 | Mass balance | Volume conservation to 1e-9, hourly vs 6-minute agreement < 1 mm, storage never negative, spill zero below crest |
 | Runoff | Runoff ≤ rainfall always, unit hydrograph conserves volume to 2%, steeper catchments peak sooner |
+| Storm excess | Effective rainfall identical whether a storm is driven in 1, 8, 24 or 48 sub-steps (the defect in §4 cannot come back); a dry gap splits storms and each pays its own abstraction; the AMC feedback is covered separately |
 | Routing | C0+C1+C2 = 1, auto sub-reaching restores stability, volume conserved to 2%, attenuation and lag both present, never negative, calibration recovers known K |
 | Tide | Dominant period in the semi-diurnal band, ~2 highs/day, spring range plausible for Cochin, discharge shortens intrusion |
 | Hydropower | Rated flow at FRL within 15% of nameplate for both plants, no output below cut-in, efficiency never exceeds peak, peak tariff worth more, spill above turbine rating not charged as lost revenue |
@@ -512,12 +589,13 @@ because it is wrong in a way that looks right.
 
 ```bash
 python scripts/fetch_data.py --all         # cache + quality report
-python -m pytest backend/tests/ -q         # 65 tests
+python scripts/check.py                    # the gate: lint, 75 tests, glyphs, regeneration, determinism
 python scripts/lead_time_study.py          # §3
 python scripts/out_of_sample_replay.py --scenario idukki_aug_2022   # §2b
-python scripts/forecast_error_study.py     # §4, one lead time per run
+python scripts/forecast_error_study.py     # §4, one lead time per run, ten runs in all
 python scripts/cascade_coordination.py     # §4
 python scripts/routing_calibration.py      # §4
+python scripts/runoff_validation.py        # §4
 python scripts/make_figures.py             # all figures + figure_facts.json
 python scripts/build_dossier.py            # the PDF
 ```

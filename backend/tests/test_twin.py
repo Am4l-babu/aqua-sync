@@ -28,6 +28,7 @@ from aquasync.twin import (
     UnitHydrograph,
     scs_effective_rainfall,
 )
+from aquasync.twin.crisis import Decision, briefing, score, verdict
 from aquasync.twin.optimizer import (
     DrawdownPolicy,
     ObjectiveWeights,
@@ -624,3 +625,37 @@ class TestPublishedConstants:
         """
         total_k = REACHES["periyar_upper"].k_hours + REACHES["periyar_lower"].k_hours
         assert total_k == pytest.approx(8.0, abs=0.5)
+
+
+# --------------------------------------------------------------------------
+# crisis commander
+# --------------------------------------------------------------------------
+
+class TestCrisisCommander:
+    """The demo beat: the player's decision has to be scored by the same
+    optimiser and the same objective as everything else, or the three numbers
+    it puts side by side are not comparable."""
+
+    def test_briefing_withholds_the_answer(self):
+        b = briefing(cache_dir="data/raw")
+        # Level, rain so far and the knobs - never the inflow that is coming.
+        assert "inflow_series" not in b
+        assert b["level_now_m"] < b["frl_m"]
+        assert set(b["controls"]) == {"target_level", "start_hour", "max_rate"}
+
+    def test_hoarding_ends_higher_than_releasing_early(self):
+        early = score(Decision(727.0, 0, 400.0), cache_dir="data/raw")
+        hoard = score(Decision(731.0, 200, 60.0), cache_dir="data/raw")
+        assert early["you"]["peak_level_m"] < hoard["you"]["peak_level_m"]
+
+    def test_the_two_references_do_not_move_with_the_player(self):
+        a = score(Decision(728.5, 24, 138.0), cache_dir="data/raw")
+        b = score(Decision(726.0, 0, 900.0), cache_dir="data/raw")
+        assert a["what_happened"] == b["what_happened"]
+        assert a["aquasync"] == b["aquasync"]
+
+    def test_verdict_calls_out_an_frl_breach_first(self):
+        you = {"breaches_frl": True, "peak_level_m": 733.0, "total_cost": 9e9,
+               "revenue_delta_cr": 0.0}
+        ref = {"peak_level_m": 731.5, "total_cost": 1.0}
+        assert "Full Reservoir Level" in verdict(you, ref, ref)

@@ -49,6 +49,19 @@ Layer 2 is pure NumPy with no web, no I/O and no framework dependencies.
 That is what makes it testable, and it is why `backend/aquasync/twin/`
 imports nothing from `api/`.
 
+**Where each layer stands, 31 August 2026.** Layer 1: bulletin ingestion
+with validation is built and used everywhere; the field node is a firmware
+skeleton and nothing is ordered. Layer 2: all five models built; the
+reservoir replay-validated on two episodes (0.30 m and 0.32 m MAE), runoff
+validated on four monsoons (shape yes, amplitude no), routing anchored to
+CWC's 8 h travel time and not gauge-calibrated, tide sanity-checked only.
+Layer 3: built, deterministic, and tested against real forecast ensembles
+on two storms. Layer 4: the 3D twin and Crisis Commander are built; the
+what-if slider is not yet wired to the API; Malayalam alerts are not
+started. The numbers behind each of those words are in
+[validation.md](validation.md); the status table is
+[PROGRESS.md](../PROGRESS.md).
+
 ---
 
 ## Layer 2 — the simulation core
@@ -288,15 +301,20 @@ detectable, which is the part that matters in an inquiry.
 ```
 backend/aquasync/
   twin/         simulation + optimisation (pure NumPy, no web deps)
+    crisis.py     Crisis Commander scoring — same optimiser, same objective
+    scenarios.py  Oct 2021, Nov–Dec 2021, Aug 2022 episodes
   io/           data adapters, with validation
-  api/          FastAPI: REST + telemetry WebSocket
-dashboard/      Three.js 3D twin, no build step
+  api/          FastAPI: eight REST routes + telemetry WebSocket
+backend/tests/  75 physics and behaviour tests
+dashboard/      Three.js 3D twin + Crisis Commander, no build step
 firmware/       ESP32 nodes (PlatformIO)
-hardware/       BOM, wiring, CAD for the scale rig
-scripts/        reproducible analyses
+hardware/       BOM (four tiers, shoppable HTML), wiring, CAD
+scripts/        reproducible analyses, figure and document builders,
+                check.py (the gate) and status.py (the board)
+research/       the deep-research sweep: index, findings, provenance
 data/raw/       third-party cache (gitignored)
 data/processed/ derived results (committed — reproducibility)
-docs/           this
+docs/           this, validation.md, data-sources.md, four PDFs
 ```
 
 `data/processed/` is committed on purpose. The upstream feed changes daily

@@ -112,7 +112,15 @@ CATCHMENT_MAIN_CHANNEL_KM = 66.3
 CATCHMENT_SLOPE = 0.0087
 
 CACHE_ROOT = ROOT / "research" / "raw" / "gefs_hindcast"
-IMD_NC = ROOT / "research" / "raw" / "imd_rf25" / "ind2021_rfp25.nc"
+IMD_DIR = ROOT / "research" / "raw" / "imd_rf25"
+
+# Storm peak each scenario's lead time is measured back from. Adding a
+# scenario means adding its peak here - the study cannot infer it, because
+# "the peak" is a judgement about which rise the operator was reacting to.
+STORM_PEAKS = {
+    "periyar_oct_2021": "2021-10-16 18:00",   # 168 mm on the 17th, one day
+    "idukki_aug_2022": "2022-08-08 18:00",    # 1-10 Aug spell, inflow peaks the 9th
+}
 
 
 # --------------------------------------------------------------------------
@@ -282,6 +290,9 @@ def main() -> int:
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter,
     )
+    ap.add_argument("--scenario", default="periyar_oct_2021",
+                    choices=sorted(STORM_PEAKS),
+                    help="which storm to study; see STORM_PEAKS")
     ap.add_argument("--issue-date", default="2021-10-13")
     ap.add_argument("--hh", default="00", choices=["00", "06", "12", "18"])
     ap.add_argument("--horizon-h", type=int, default=168)
@@ -291,11 +302,14 @@ def main() -> int:
     args = ap.parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
 
-    if not IMD_NC.exists():
-        print(f"missing {IMD_NC} - run: python scripts/acquire.py", file=sys.stderr)
-        return 1
-
     issue_dt = pd.Timestamp(f"{args.issue_date} {args.hh}:00:00")
+
+    imd_nc = IMD_DIR / f"ind{issue_dt.year}_rfp25.nc"
+    if not imd_nc.exists():
+        print(f"missing {imd_nc} - fetch it with acquire_imd_rf25 "
+              f"(scripts/acquire.py), years=[{issue_dt.year}]",
+              file=sys.stderr)
+        return 1
     window_end = issue_dt + pd.Timedelta(hours=args.horizon_h)
 
     # Truncate the scenario to [scenario.start, issue + horizon] so BOTH the
@@ -305,17 +319,19 @@ def main() -> int:
     # never covered - the first version of this script zero-padded that gap,
     # which fabricated an 8-day near-zero-inflow tail against an observed
     # 130-240 cumecs and biased every policy ranking that used it.
-    base_scenario = SCENARIOS["periyar_oct_2021"]
+    base_scenario = SCENARIOS[args.scenario]
     scenario = dc_replace(base_scenario, end=str(window_end))
     series = load_scenario_series(scenario, cache_dir=args.cache_dir, hourly=True)
 
-    lead_hours_before_storm = (pd.Timestamp("2021-10-16 18:00") - issue_dt).total_seconds() / 3600.0
-    print(f"issue: {issue_dt} UTC  ({lead_hours_before_storm:.0f} h before the 17 Oct storm peak)")
+    peak_dt = pd.Timestamp(STORM_PEAKS[args.scenario])
+    lead_hours_before_storm = (peak_dt - issue_dt).total_seconds() / 3600.0
+    print(f"issue: {issue_dt} UTC  ({lead_hours_before_storm:.0f} h before the "
+          f"{peak_dt:%d %b} storm peak)")
     print(f"horizon: {args.horizon_h} h -> window [{scenario.start}, {window_end}]")
 
     member_rain = fetch_all_members(args.issue_date, args.hh, args.horizon_h, args.workers)
 
-    imd_daily = imd_daily_box_mean(IMD_NC)
+    imd_daily = imd_daily_box_mean(imd_nc)
     bias = bias_factor(imd_daily, member_rain, issue_dt, args.horizon_h)
     antecedent = antecedent_5day_mm(imd_daily, issue_dt)
     print(f"bias factor (IMD storm total / GEFS ensemble-mean storm total): {bias:.3f}")
@@ -392,6 +408,8 @@ def main() -> int:
 
     result = {
         "issue_date": args.issue_date, "hh": args.hh, "horizon_h": args.horizon_h,
+        "scenario": args.scenario,
+        "storm_peak": str(peak_dt),
         "lead_hours_before_storm_peak": round(lead_hours_before_storm, 1),
         "bias_factor": round(bias, 4),
         "antecedent_5day_mm": round(antecedent, 1),
