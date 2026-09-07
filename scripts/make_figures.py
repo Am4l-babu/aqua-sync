@@ -300,16 +300,27 @@ def fig_counterfactual() -> dict:
     return {k: v for k, v in s.items() if isinstance(v, (int, float, bool))}
 
 
-def fig_forecast_error() -> dict:
-    """What deciding under a real forecast costs, on the optimiser's own objective."""
+def fig_forecast_error(scenario: str = "periyar_oct_2021") -> dict:
+    """What deciding under a real forecast costs, on the optimiser's own objective.
+
+    Filtered to one storm. `data/processed/` now holds ten runs across two
+    scenarios (October 2021 and August 2022); folding both onto one x-axis
+    would sort two unrelated studies together at coincidentally equal lead
+    times, which is exactly the "average the two storms into one curve"
+    mistake docs/validation.md Sec.4 forbids, and section_results() in
+    build_dossier.py writes Sec.4.4 as prose about October 2021 specifically.
+    Runs from before the `scenario` field existed are the flagship study, so
+    a missing field defaults here rather than being dropped.
+    """
     files = sorted(PROC.glob("forecast_error_study_*.json"))
     if not files:
         print("  (skipping forecast-error figure: run scripts/forecast_error_study.py first)")
         return {}
-    runs = [json.loads(p.read_text(encoding="utf-8")) for p in files]
+    all_runs = [json.loads(p.read_text(encoding="utf-8")) for p in files]
+    runs = [r for r in all_runs if r.get("scenario", "periyar_oct_2021") == scenario]
     runs = [r for r in runs if "total_cost" in r.get("perfect_foresight", {})]
     if not runs:
-        print("  (skipping forecast-error figure: results predate the cost metric, re-run)")
+        print(f"  (skipping forecast-error figure: no runs for scenario {scenario!r})")
         return {}
     runs.sort(key=lambda r: r["lead_hours_before_storm_peak"])
 
