@@ -13,6 +13,14 @@ const API = location.origin.startsWith('http') ? '' : 'http://localhost:8000';
 const $ = (id) => document.getElementById(id);
 const CONTROLS = ['target_level', 'start_hour', 'max_rate'];
 
+// The value-readout element beside each slider. Not derivable from the
+// control name by a split rule: max_rate's readout is #v-rate, not #v-max.
+const VAL_ID = {
+  target_level: 'v-target',
+  start_hour: 'v-start',
+  max_rate: 'v-rate',
+};
+
 const fmt = {
   target_level: (v) => `${(+v).toFixed(2)} m`,
   start_hour: (v) => (+v === 0 ? 'immediately' : `${v} h`),
@@ -55,8 +63,9 @@ async function loadBriefing() {
     const c = brief.controls[key];
     const el = $(key);
     Object.assign(el, { min: c.min, max: c.max, step: c.step, value: c.default, disabled: false });
-    el.addEventListener('input', () => { $(`v-${key.split('_')[0]}`).textContent = fmt[key](el.value); });
-    $(`v-${key.split('_')[0]}`).textContent = fmt[key](c.default);
+    const valEl = $(VAL_ID[key]);
+    el.addEventListener('input', () => { valEl.textContent = fmt[key](el.value); });
+    valEl.textContent = fmt[key](c.default);
   }
   $('commit').disabled = false;
   setStatus('The first order takes a few seconds while the hindsight-optimal policy is searched.');

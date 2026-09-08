@@ -1,0 +1,41 @@
+{
+  "source": "AWS Terrain Tiles (Terrarium encoding), zoom 12",
+  "encoding": "elevation_m = (R * 256 + G + B / 256) - 32768",
+  "grid": 448,
+  "span_m": 18000.0,
+  "metres_per_sample": 40.179,
+  "dam": {
+    "lat": 9.8436,
+    "lon": 76.9762,
+    "grid_x": 224,
+    "grid_y": 224,
+    "flow_dir_xz": [
+      0.319,
+      -0.9478
+    ],
+    "flow_heading_deg": -71.4,
+    "note": "flow_dir_xz points downstream in scene axes (x east, z south); the dam wall stands perpendicular to it"
+  },
+  "bounds": {
+    "north": 9.924438,
+    "south": 9.762742,
+    "west": 76.894144,
+    "east": 77.058256
+  },
+  "elevation_m": {
+    "min": 258.2,
+    "max": 1268.4,
+    "dam_site": 704.7
+  },
+  "reservoir": {
+    "mask_channels": "red = captured sheet (always water); green = shoreline may advance; blue = distance from shore, normalised over DEPTH_SCALE_M",
+    "captured_sheet_level_m": 723.7,
+    "core_cells": 22927,
+    "core_area_km2": 37.01,
+    "allowed_area_km2": 68.83,
+    "published_area_at_frl_km2": 60.0,
+    "frl_m": 732.43,
+    "mwl_m": 734.11
+  },
+  "caveat": "Surface model, not bathymetry. The reservoir appears in the DEM as a flat sheet at the level it held when the data was captured, so the bed beneath it is unknown and the twin does not claim otherwise - water inside that footprint is drawn at the reported level, not computed from depth. Structures (dam, spillway) are schematic; the terrain is real."
+}
