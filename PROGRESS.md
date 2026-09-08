@@ -8,7 +8,7 @@ every session.
 hydropower optimisation on the Periyar basin.
 **Target:** EVOKE 26 Project Expo · Track 2, Climate Resilience & Disaster
 Preparedness · MACE IoT Club, Kothamangalam.
-**Last updated:** Tuesday 8 September 2026.
+**Last updated:** Tuesday 8 September 2026 (evening).
 
 **At a glance** — as `python scripts/status.py` counts it from the tables
 below (✅ rows over all rows):
@@ -19,15 +19,16 @@ below (✅ rows over all rows):
 | Simulation core | 9 / 11 | `████████░░` |
 | Decision engine | 6 / 7 | `█████████░` |
 | Scenarios & validation | 5 / 6 | `████████░░` |
-| Hardware (V1 rig) | 2 / 9 | `██░░░░░░░░` |
+| Hardware (V1 rig) | 4 / 9 | `████░░░░░░` |
 | Interface | 4 / 5 | `████████░░` |
 | Documentation | 11 / 14 | `████████░░` |
-| **Overall** | **42 / 58** | `███████░░░` |
+| **Overall** | **44 / 58** | `████████░░` |
 
 The software is a finished, validated, twice-retracted-and-corrected piece of
-work. The hardware is a bill of materials. **The two things only the team can
-do — order the parts and confirm the expo entry — are in
-[ACTION_PLAN.md](ACTION_PLAN.md), and both are overdue.**
+work. **Both of the things only the team could do are now done — the components
+are in hand and the expo entry is confirmed — so the hardware rows are the
+critical path from here.** The rig's telemetry already reaches the dashboard;
+what is left is building the bench and the fault-injection switches.
 
 ---
 
@@ -51,7 +52,7 @@ do — order the parts and confirm the expo entry — are in
 | Source-material analysis | ✅ Done | Am4l-babu | `feature/project-scaffold` | Analysed `analyze_1.pdf` + EVOKE chat export. Found 2 load-bearing errors in the brief — see [docs/data-sources.md](docs/data-sources.md) |
 | Data ingestion (KSEB bulletin) | ✅ Done | Am4l-babu | `feature/project-scaffold` | `aquasync.io.kseb_dataset`. 18 dams, 2020-08 → 2026-08 |
 | Data validation layer | ✅ Done | Am4l-babu | `feature/project-scaffold` | Found ~11% of the source feed is physically impossible. `quality_ok` flag + `quality_report()` |
-| Test suite & CI | ✅ Done | Am4l-babu | `feature/api-and-validation` | **75** physics/behaviour tests passing (31 Aug). **`python scripts/check.py` is the single gate** — lint, tests, a glyph audit for characters the PDF fonts drop silently, plus regeneration and determinism of every figure and document. Runs automatically via `.githooks/pre-commit` and the CI `selfcheck` job |
+| Test suite & CI | ✅ Done | Am4l-babu | `feature/api-and-validation` | **91** physics/behaviour tests passing (8 Sep). **`python scripts/check.py` is the single gate** — lint, tests, a glyph audit for characters the PDF fonts drop silently, plus regeneration and determinism of every figure and document. Runs automatically via `.githooks/pre-commit` and the CI `selfcheck` job |
 | Deployment | 📋 Todo | — | — | Expo runs offline on a laptop by design. Optional: Streamlit Cloud / Fly.io free tier for a public link. **Do not** put this on paid infra |
 
 ## Simulation Core
@@ -99,22 +100,22 @@ do — order the parts and confirm the expo entry — are in
 |---|---|---|---|---|
 | BOM & sourcing | ✅ Done | Am4l-babu | `feature/project-scaffold` | 4 tiers, ₹6,250 for V1 (corrected 28 Aug 2026 — was ₹6,150, didn't match its own line items). Shoppable HTML with live vendor links. See [hardware/bom/](hardware/bom/) |
 | Firmware skeleton | ✅ Done | Am4l-babu | `feature/project-scaffold` | PlatformIO, sensor fusion + safety interlock structure. Untested on hardware |
-| Order V1 components | 📋 Todo | — | — | 🔴 **Blocks all hardware work. Open since 26 Aug — 12 days as of 7 Sep.** ACTION_PLAN.md's Week 2 (31 Aug – 6 Sep, the rig-build week) has now elapsed with no commit under `firmware/` or `hardware/` recording progress. Status not reconfirmed this session — ask before re-planning. 3–5 day delivery. Order a spare ESP32 |
+| Order V1 components | ✅ Done | Am4l-babu | — | **Ordered and received — components in hand, confirmed 8 Sep.** Unblocks every remaining hardware row |
 | Two-tank rig build | 📋 Todo | — | — | Acrylic tanks, pump loop, sluice gate |
 | Level sensing + EKF | 📋 Todo | — | — | JSN-SR04T + DS18B20 temperature compensation |
 | Stepper gate control | 📋 Todo | — | — | NEMA 17 + A4988 + limit switches |
-| Telemetry (MQTT/WebSocket) | 📋 Todo | — | — | Mosquitto is already installed locally; the API's WebSocket fan-out is the receiving end |
-| Fault injection demo | 📋 Todo | — | — | Sensor-failure and gate-jam switches. **This is the beat that wins the room** |
+| Telemetry (MQTT/WebSocket) | ✅ Done | Am4l-babu | `feature/rig-mqtt-bridge` | The firmware had published to `aquasync/reservoir/01/telemetry` since it was written and nothing subscribed. `aquasync.api.rig` now parses the frames, follows the SHA-256 record chain and serves `GET /api/rig`; opt-in via `AQUASYNC_MQTT_HOST` so the offline demo stays offline. Rig values carry `scope: SCALE_RIG` and are never converted to m MSL — a 400 mm tank is not a reservoir. Verified end to end against mosquitto: chain 2/2, 0 breaks, a jammed frame reporting commanded 70% vs verified 21%. Receive-only; the command topic is deliberately not wired. [PR #14](https://github.com/Am4l-babu/aqua-sync/pull/14) |
+| Fault injection demo | 📋 Todo | — | — | Sensor-failure and gate-jam switches. **This is the beat that wins the room.** The dashboard side is ready: a rig fault now raises a banner across the 3D view, and `sensors_agree` / `gate_jammed` / commanded-vs-verified already arrive over MQTT. What is left is the physical switches and the firmware paths behind them |
 | LoRa fallback (V2) | 📋 Todo | — | — | SX1278 @ 433 MHz — India ISM band, not the 868 MHz usually recommended online |
 
 ## Interface
 
 | Component | Status | Assigned To | Branch | Notes |
 |---|---|---|---|---|
-| 3D twin dashboard | ✅ Done | Am4l-babu | `feature/project-scaffold` | Three.js, no build step, WebSocket telemetry with lerp smoothing. Falls back to a bundled Oct 2021 replay when the API is down |
+| 3D twin dashboard | ✅ Done | Am4l-babu | `feature/real-terrain-3d-twin` | Rebuilt 8 Sep on **measured ground**: `scripts/build_terrain.py` bakes 18 km of the real Periyar valley from the DEM tiles the catchment work already caches (448², 40 m posting), and the reservoir footprint is derived from the DEM's flat water sheet rather than drawn, so the shoreline walks up actual topography as the level moves. Shader water, sky, fog, and a procedural arch dam sized off the real 365.85 m crest. A caption states which parts are measured and which are schematic. Verified in headless Chrome. [PR #13](https://github.com/Am4l-babu/aqua-sync/pull/13) |
 | FastAPI backend | ✅ Done | Am4l-babu | `feature/api-and-validation` | Eight REST routes (health, reservoirs, scenarios, counterfactual, what-if, crisis briefing, crisis score, tide) + telemetry WebSocket fan-out. Serves the dashboard same-origin |
-| What-if panel | ✅ Done | Am4l-babu | `feature/whatif-wiring` | Wired 8 Sep — the slider POSTs to `/api/whatif` on release and the card shows the 72 h peak level, cushion at peak, whether it reaches FRL, and the advice sentence. Contract checked with curl against a running API (higher release → lower peak, larger cushion). **The DOM rendering itself is not browser-verified** — no headless browser on the machine; open the dashboard before relying on it. [PR #10](https://github.com/Am4l-babu/aqua-sync/pull/10), merged into `development` |
-| Crisis Commander mode | ✅ Done | Am4l-babu | `feature/crisis-commander` | Built 30 Aug. `dashboard/crisis.html` scored by `twin/crisis.py` with the same optimiser and objective as everything else. Hoard → 0.87 m less cushion than the day and −₹21 cr; release early → 2.95 m more and +₹45 cr (regenerated 31 Aug). **Not visually verified** — no headless browser; open it before relying on it |
+| What-if panel | ✅ Done | Am4l-babu | `feature/whatif-wiring` | Wired 8 Sep — the slider POSTs to `/api/whatif` on release and the card shows the 72 h peak level, cushion at peak, whether it reaches FRL, and the advice sentence. Contract checked with curl against a running API (higher release → lower peak, larger cushion). **Browser-verified 8 Sep** — the card renders and hides correctly. [PR #10](https://github.com/Am4l-babu/aqua-sync/pull/10), merged into `development` |
+| Crisis Commander mode | ✅ Done | Am4l-babu | `feature/crisis-commander` | Built 30 Aug. `dashboard/crisis.html` scored by `twin/crisis.py` with the same optimiser and objective as everything else. Hoard → 0.87 m less cushion than the day and −₹21 cr; release early → 2.95 m more and +₹45 cr (regenerated 31 Aug). **Visually verified end to end 8 Sep**, driven through a real browser over the DevTools protocol: the briefing loads, the sliders take an order, and committing renders the three-way outcome table (you / the operators / AquaSync) with the verdict and the colour coding. There *is* a headless browser on this machine — Chrome, plus cached Playwright binaries — which earlier notes wrongly said there was not |
 | Malayalam alerting | 📋 Todo | — | — | Last-mile. Nice-to-have, not expo-critical |
 
 ## Documentation
@@ -142,11 +143,11 @@ do — order the parts and confirm the expo entry — are in
 
 | Risk | Severity | Mitigation |
 |---|---|---|
-| Expo entry status unknown | 🔴 High | Registration closed **Saturday 22 August** — 16 days without an answer as of 7 Sep. Whether the entry went in changes the whole schedule. Not reconfirmed this session — ask before re-planning |
+| Expo entry status unknown | 🟢 Closed | **Confirmed 8 Sep: the entry is in.** The schedule in [ACTION_PLAN.md](ACTION_PLAN.md) applies |
 | Hardware ordering delay blocks the rig | 🔴 High | Still unordered on Monday 31 Aug, and this is the rig-build week. 3–5 day delivery. Software is fully demonstrable without it, but EVOKE is an IoT club event |
 | Independent per-dam optimisation makes the shared downstream peak worse | 🔴 High | Measured at 126% above observed. Do not present cascade results as a coordination win, and do not ship per-dam optimisation as if it degrades gracefully. Fix is a joint objective |
 | Forecast-error result rests on two storms of very different difficulty | 🟠 Medium | Degradation reproduces in both, but Oct 2021 breaks at 48 h and plateaus at +69% while Aug 2022 holds to 90 h then jumps to +158%; Aug 2022 sat nearly 5 m below FRL. Qualify by reservoir state; never average the two. A third, harder storm is the next thing the study needs |
-| Crisis Commander has never been seen rendered | 🟠 Medium | Functionally checked end to end. Open it in a browser before any demo; fix what looks wrong |
+| Crisis Commander has never been seen rendered | 🟢 Closed | Driven through a real browser 8 Sep; the briefing, the order and the outcome table all render. Nothing needed fixing |
 | Routing K/x anchored, not calibrated → downstream discharge is indicative | 🟠 Medium | Calibration attempted and failed on daily data (r² = 0.005); the CWC 8 h anchor stands. Do not quote Aluva discharge as measured. Needs the 15-minute telemetry feed |
 | Runoff amplitude unvalidated (NSE 0.07, no recession limb) | 🟠 Medium | Disclosed in validation.md. Shape is usable, amplitude is not |
 | `backend/data/raw/` is committable | 🟢 Low | Fixed 7 Sep: `.gitignore` anchored with `**/data/raw/` and `**/data/external/`; the stray 740 KB `backend/data/raw/Idukki.json` deleted |
@@ -185,6 +186,6 @@ do — order the parts and confirm the expo entry — are in
   (727.5 m, h0, 400 cumecs) → 728.59 m, 2.95 m more, +₹45 cr. Regenerated
   from `aquasync.twin.crisis.score` on 31 Aug; not cached on disk.
 - Documents: dossier **21 pp**, abstract 4, ICFOSS analysis 9, research
-  report 59. Tests: **75**.
+  report 59. Tests: **91**.
 - The optimiser independently converged on 728.43 m, against KSEB's published
   rule level of 728.50 m.
