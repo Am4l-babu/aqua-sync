@@ -266,10 +266,10 @@ not a dependency the demo can afford.
 
 | Document | Read it for |
 |---|---|
-| [**Project dossier (PDF, 21 pp)**](docs/AquaSync_Project_Dossier.pdf) | The complete case: problem, method, results, the retractions, BOM, limitations, pitch |
+| [**Project dossier (PDF, 24 pp)**](docs/AquaSync_Project_Dossier.pdf) | The complete case: problem, method, results, the retractions, BOM, limitations, pitch |
 | [**Abstract (PDF, 4 pp)**](docs/AquaSync_Abstract.pdf) | The one-sitting version |
 | [**Deep research report (PDF, 59 pp)**](docs/AquaSync_Research_Report.pdf) | 144 verified sources and the evidence *against* the thesis |
-| [**ICFOSS analysis (PDF, 9 pp)**](docs/AquaSync_ICFOSS_Analysis.pdf) | What Kerala's open-source institute has already built, which of it AquaSync can stand on, and what goes back |
+| [**ICFOSS analysis (PDF, 10 pp)**](docs/AquaSync_ICFOSS_Analysis.pdf) | What Kerala's open-source institute has already built, which of it AquaSync can stand on, and what goes back |
 | [PROGRESS.md](PROGRESS.md) | Live status of every component — the single source of truth, on `main` |
 | [ACTION_PLAN.md](ACTION_PLAN.md) | The next fourteen days, and the two things that must happen first |
 | [ROADMAP.md](ROADMAP.md) | What is next, what is beyond the expo, and what is deliberately *not* being built |

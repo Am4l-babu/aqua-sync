@@ -300,81 +300,50 @@ def fig_counterfactual() -> dict:
     return {k: v for k, v in s.items() if isinstance(v, (int, float, bool))}
 
 
-def fig_forecast_error(scenario: str = "periyar_oct_2021") -> dict:
-    """What deciding under a real forecast costs, on the optimiser's own objective.
+OCT_2021 = "periyar_oct_2021"
+AUG_2022 = "idukki_aug_2022"
 
-    Filtered to one storm. `data/processed/` now holds ten runs across two
-    scenarios (October 2021 and August 2022); folding both onto one x-axis
-    would sort two unrelated studies together at coincidentally equal lead
-    times, which is exactly the "average the two storms into one curve"
-    mistake docs/validation.md Sec.4 forbids, and section_results() in
-    build_dossier.py writes Sec.4.4 as prose about October 2021 specifically.
-    Runs from before the `scenario` field existed are the flagship study, so
-    a missing field defaults here rather than being dropped.
+
+def _panel_title(ax, text: str) -> None:
+    """A title carrying the storm's name as well as the panel's subject.
+
+    Smaller than style()'s default because Figure 6 now has four panels and
+    two of them must name their storm; at 11.5 pt the left title overran into
+    the right panel's.
+    """
+    ax.set_title(text, color=INK, fontsize=10, fontweight="bold", loc="left", pad=10)
+
+
+def _forecast_runs(scenario: str) -> list:
+    """Every completed forecast-error run for one storm, ordered by lead time.
+
+    Runs written before the `scenario` field existed belong to the flagship
+    October study, so a missing field defaults rather than being dropped.
     """
     files = sorted(PROC.glob("forecast_error_study_*.json"))
-    if not files:
-        print("  (skipping forecast-error figure: run scripts/forecast_error_study.py first)")
-        return {}
-    all_runs = [json.loads(p.read_text(encoding="utf-8")) for p in files]
-    runs = [r for r in all_runs if r.get("scenario", "periyar_oct_2021") == scenario]
+    runs = [json.loads(p.read_text(encoding="utf-8")) for p in files]
+    runs = [r for r in runs if r.get("scenario", OCT_2021) == scenario]
     runs = [r for r in runs if "total_cost" in r.get("perfect_foresight", {})]
-    if not runs:
-        print(f"  (skipping forecast-error figure: no runs for scenario {scenario!r})")
-        return {}
     runs.sort(key=lambda r: r["lead_hours_before_storm_peak"])
+    return runs
 
-    leads = [float(r["lead_hours_before_storm_peak"]) for r in runs]
+
+def _forecast_facts(runs: list) -> dict:
+    """The numbers Sec.4.4 of the dossier quotes, for one storm."""
+    if not runs:
+        return {}
     ev = [r["decision_rule_expected_value"] for r in runs]
     mm = [r["decision_rule_minimax_regret"] for r in runs]
-    pf_rev = float(runs[0]["perfect_foresight"]["revenue_delta_cr"])
     ev_cost = [v["excess_cost_vs_perfect_foresight_pct"] for v in ev]
     mm_cost = [v["excess_cost_vs_perfect_foresight_pct"] for v in mm]
-
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(9.2, 3.6))
-    x = np.arange(len(runs))
-    labels = [f"{h:.0f} h" for h in leads]
-
-    # The honest axis: the objective the optimiser actually minimises. Zero
-    # means the forecast picked the policy hindsight would have picked.
-    style(ax1, "What deciding without hindsight costs", "Excess cost vs perfect foresight (%)")
-    ax1.axhline(0.0, color=INK, lw=1.3, ls="--")
-    ax1.text(-0.35, 2.0, "hindsight-optimal", fontsize=8.5, color=INK, fontweight="bold")
-    ax1.plot(x, ev_cost, color=AMBER, lw=2.2, marker="o", ms=6, label="Expected value")
-    ax1.plot(x, mm_cost, color=GREEN, lw=2.2, marker="s", ms=5.5, label="Minimax regret")
-    ax1.set_xticks(x, labels)
-    ax1.set_xlabel("Lead time before the storm peak", color=MUTED, fontsize=9)
-    ax1.set_ylim(-6, max(mm_cost + ev_cost) * 1.32)
-    ax1.legend(frameon=False, fontsize=8.5, labelcolor=MUTED, loc="upper left")
-
-    # Why the freeboard-only reading flatters it: the extra cushion is bought.
-    style(ax2, "What the extra cushion cost", "Revenue vs observed (Rs crore)")
-    w = 0.34
-    ax2.bar(x - w / 2, [v["revenue_delta_cr"] for v in ev], width=w, color=AMBER,
-            alpha=0.85, label="Expected value")
-    ax2.bar(x + w / 2, [v["revenue_delta_cr"] for v in mm], width=w, color=GREEN,
-            alpha=0.85, label="Minimax regret")
-    ax2.axhline(pf_rev, color=INK, lw=1.3, ls="--")
-    ax2.text(-0.35, pf_rev + 0.03, f"perfect foresight {pf_rev:+.2f}", fontsize=8.5,
-             color=INK, fontweight="bold")
-    ax2.set_xticks(x, labels)
-    ax2.set_xlabel("Lead time before the storm peak", color=MUTED, fontsize=9)
-    ax2.set_ylim(0, max(pf_rev * 1.45, 0.1))
-    ax2.legend(frameon=False, fontsize=8.5, labelcolor=MUTED, loc="upper right")
-
-    fig.suptitle(
-        "Every forecast-driven policy releases more than hindsight would, and pays for it",
-        color=INK, fontsize=11, fontweight="bold", x=0.01, ha="left", y=1.0,
-    )
-    fig.tight_layout()
-    fig.savefig(OUT / "fig6_forecast_error.png", dpi=200, facecolor="white")
-    plt.close(fig)
-
+    pf = runs[0]["perfect_foresight"]
     return {
-        "leads_h": leads,
+        "scenario": runs[0].get("scenario", OCT_2021),
+        "leads_h": [float(r["lead_hours_before_storm_peak"]) for r in runs],
         "issue_dates": [f"{r['issue_date']} {r['hh']}z" for r in runs],
-        "perfect_m": float(runs[0]["perfect_foresight"]["freeboard_gained_m"]),
-        "perfect_revenue_cr": pf_rev,
+        "perfect_m": float(pf["freeboard_gained_m"]),
+        "perfect_revenue_cr": float(pf["revenue_delta_cr"]),
+        "perfect_cost": float(pf["total_cost"]),
         "ev_excess_cost_pct": ev_cost,
         "mm_excess_cost_pct": mm_cost,
         "ev_m": [v["freeboard_gained_m"] for v in ev],
@@ -387,6 +356,102 @@ def fig_forecast_error(scenario: str = "periyar_oct_2021") -> dict:
         "bias_min": min(float(r["bias_factor"]) for r in runs),
         "bias_max": max(float(r["bias_factor"]) for r in runs),
     }
+
+
+def _draw_storm(ax1, ax2, runs: list, label: str) -> None:
+    """One storm across two panels, on its own axes.
+
+    Each storm gets its own y-limits deliberately. The two episodes are not
+    equally hard - October came within about a metre of FRL, August peaked
+    nearly 5 m below it - and the penalties beyond the flat region differ by
+    more than a factor of two, so a shared scale would either flatten October
+    into a straight line or imply the two curves are comparable point by
+    point. docs/validation.md Sec.4 forbids averaging them; this keeps them
+    legible without merging them.
+    """
+    f = _forecast_facts(runs)
+    x = np.arange(len(runs))
+    ticks = [f"{h:.0f} h" for h in f["leads_h"]]
+    ev_cost, mm_cost = f["ev_excess_cost_pct"], f["mm_excess_cost_pct"]
+    pf_rev = f["perfect_revenue_cr"]
+
+    # The honest axis: the objective the optimiser actually minimises. Zero
+    # means the forecast picked the policy hindsight would have picked.
+    top = max(mm_cost + ev_cost) * 1.32 or 1.0
+    style(ax1, "", "Excess cost vs perfect foresight (%)")
+    _panel_title(ax1, f"{label} — deciding without hindsight")
+    ax1.axhline(0.0, color=INK, lw=1.3, ls="--")
+    ax1.text(-0.35, top * 0.025, "hindsight-optimal", fontsize=8.5, color=INK,
+             fontweight="bold")
+    ax1.plot(x, ev_cost, color=AMBER, lw=2.2, marker="o", ms=6, label="Expected value")
+    ax1.plot(x, mm_cost, color=GREEN, lw=2.2, marker="s", ms=5.5, label="Minimax regret")
+    ax1.set_xticks(x, ticks)
+    ax1.set_xlabel("Lead time before the storm peak", color=MUTED, fontsize=9)
+    ax1.set_ylim(-top * 0.07, top)
+    ax1.legend(frameon=False, fontsize=8.5, labelcolor=MUTED, loc="upper left")
+
+    # Why the freeboard-only reading flatters it: the extra cushion is bought.
+    ev_rev, mm_rev = f["ev_revenue_cr"], f["mm_revenue_cr"]
+    style(ax2, "", "Revenue vs observed (Rs crore)")
+    _panel_title(ax2, f"{label} — what that cushion cost")
+    w = 0.34
+    ax2.bar(x - w / 2, ev_rev, width=w, color=AMBER, alpha=0.85, label="Expected value")
+    ax2.bar(x + w / 2, mm_rev, width=w, color=GREEN, alpha=0.85, label="Minimax regret")
+    ax2.axhline(pf_rev, color=INK, lw=1.3, ls="--")
+    lo = min(ev_rev + mm_rev + [0.0])
+    hi = max(ev_rev + mm_rev + [pf_rev])
+    # A storm whose hedged policies lose money needs the axis to cross zero;
+    # one where every bar is positive keeps the original headroom so the
+    # legend has somewhere to sit that is not on top of a bar.
+    if lo < 0:
+        pad = (hi - lo) * 0.22
+        ax2.axhline(0.0, color=MUTED, lw=0.9)
+        ax2.set_ylim(lo - pad * 0.3, hi + pad)
+        ax2.legend(frameon=False, fontsize=8.5, labelcolor=MUTED, loc="lower left")
+    else:
+        pad = hi * 0.45
+        ax2.set_ylim(0, max(hi * 1.45, 0.1))
+        ax2.legend(frameon=False, fontsize=8.5, labelcolor=MUTED, loc="upper right")
+    ax2.text(-0.35, pf_rev + pad * 0.08, f"perfect foresight {pf_rev:+.2f}",
+             fontsize=8.5, color=INK, fontweight="bold")
+    ax2.set_xticks(x, ticks)
+    ax2.set_xlabel("Lead time before the storm peak", color=MUTED, fontsize=9)
+
+
+def fig_forecast_error() -> dict:
+    """Figure 6 - what deciding under a real forecast costs, on both storms.
+
+    One row per storm, never one shared x-axis. Folding both onto a single
+    axis would sort two unrelated studies together at coincidentally equal
+    lead times, which is the "average the two storms into one curve" mistake
+    docs/validation.md Sec.4 forbids. Returns October's facts; the second
+    storm's are returned separately by facts_forecast_error_aug_2022().
+    """
+    oct_runs = _forecast_runs(OCT_2021)
+    if not oct_runs:
+        print("  (skipping forecast-error figure: run scripts/forecast_error_study.py first)")
+        return {}
+    aug_runs = _forecast_runs(AUG_2022)
+
+    rows = 2 if aug_runs else 1
+    fig, axes = plt.subplots(rows, 2, figsize=(9.2, 3.6 * rows), squeeze=False)
+    _draw_storm(axes[0][0], axes[0][1], oct_runs, "October 2021")
+    if aug_runs:
+        _draw_storm(axes[1][0], axes[1][1], aug_runs, "August 2022")
+
+    fig.suptitle(
+        "A real ensemble matches hindsight up to some horizon - and the horizon moves",
+        color=INK, fontsize=11, fontweight="bold", x=0.01, ha="left", y=1.0,
+    )
+    fig.tight_layout()
+    fig.savefig(OUT / "fig6_forecast_error.png", dpi=200, facecolor="white")
+    plt.close(fig)
+    return _forecast_facts(oct_runs)
+
+
+def facts_forecast_error_aug_2022() -> dict:
+    """The second storm's numbers. Its panels are the lower row of Figure 6."""
+    return _forecast_facts(_forecast_runs(AUG_2022))
 
 
 def fig_cascade_coordination() -> dict:
@@ -499,6 +564,7 @@ def main() -> int:
         ("lead_time", fig_lead_time),
         ("counterfactual", fig_counterfactual),
         ("forecast_error", fig_forecast_error),
+        ("forecast_error_aug_2022", facts_forecast_error_aug_2022),
         ("cascade_coordination", fig_cascade_coordination),
         ("runoff_validation", fig_runoff_validation),
     ]:

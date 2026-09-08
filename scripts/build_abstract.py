@@ -73,10 +73,6 @@ def facts() -> dict:
         "replay22": json.loads((PROC / "replay_idukki_aug_2022.json").read_text()),
         "head": json.loads((PROC / "lead_time_headline.json").read_text()),
         "cascade": json.loads((PROC / "cascade_coordination.json").read_text()),
-        "fcst": sorted(
-            (json.loads(q.read_text()) for q in PROC.glob("forecast_error_study_*.json")),
-            key=lambda r: r["lead_hours_before_storm_peak"],
-        ),
     }
 
 
@@ -142,25 +138,31 @@ def sections() -> list[dict]:
 
 
 def updates(f: dict) -> list[tuple[str, str]]:
-    runs = f["fcst"]
     # Excess cost on the optimiser's own objective, not freeboard retention:
     # a policy built on an over-forecast gains cushion by over-releasing and
     # scores above 100% on a cushion-only metric while giving up revenue.
-    ev = [r["decision_rule_expected_value"]["excess_cost_vs_perfect_foresight_pct"]
-          for r in runs if "excess_cost_vs_perfect_foresight_pct"
-          in r["decision_rule_expected_value"]]
-    mm = [r["decision_rule_minimax_regret"]["excess_cost_vs_perfect_foresight_pct"]
-          for r in runs if "excess_cost_vs_perfect_foresight_pct"
-          in r["decision_rule_minimax_regret"]]
+    #
+    # Read per storm from figure_facts.json rather than by globbing the study
+    # files. Ten runs across two storms now sit in data/processed/, and an
+    # unfiltered glob reported "across 10 lead times" (there are five, run
+    # twice) and merged two ranges docs/validation.md Sec.4 forbids merging.
+    oct21 = f["figs"]["forecast_error"]
+    aug22 = f["figs"].get("forecast_error_aug_2022", {})
+    n_leads = len(oct21["leads_h"])
     cas = f["cascade"]
     return [
         ("Out-of-sample validation",
          f"August 2022 replays at {f['replay22']['mean_absolute_error_m']:.2f} m mean "
          "error — an episode the model was never fitted to."),
         ("Forecast-error study",
-         f"Across {len(runs)} lead times, deciding from a real GEFS ensemble costs "
-         f"{min(ev):+.0f}% to {max(mm):+.0f}% more than hindsight on the full objective. "
-         "At 24 h it matches hindsight exactly; the value is in the last day."),
+         f"{n_leads} lead times on each of two storms. Deciding from a real GEFS ensemble "
+         f"costs {oct21['best_excess_cost_pct']:+.0f}% to "
+         f"{oct21['worst_excess_cost_pct']:+.0f}% more than hindsight on the full objective "
+         f"in October 2021"
+         + (f", {aug22['best_excess_cost_pct']:+.0f}% to "
+            f"{aug22['worst_excess_cost_pct']:+.0f}% in August 2022 — not averaged, because "
+            f"the horizon moves between storms" if aug22 else "")
+         + ". At 24 h it matches hindsight exactly; the value is in the last day."),
         ("Cascade co-optimisation",
          "Optimising the two dams independently raises their joint downstream peak "
          f"{abs(cas['naive_vs_observed_reduction_pct']):.0f}% above what happened; "

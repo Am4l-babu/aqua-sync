@@ -34,9 +34,9 @@ timeline
 | **1 · Twin core** | 1.5 | Mass balance, calibration, replay | Observed Oct 2021 level reproduced to < 0.5 m | ✅ 0.30 m, and 0.32 m out-of-sample |
 | **2 · Routing & tide** | 1.5 | Muskingum reaches, harmonic tide | Downstream hydrograph with a stated travel time | ✅ anchored to CWC's 8 h; calibration blocked, see item 3 |
 | **3 · Decision engine** | 1.5 | Policy search, baseline comparison | A counterfactual with a defensible headline number | ✅ about 3 m, and it holds to 48 h on a real forecast |
-| **4 · Hardware rig** | 2 | Two-tank HIL bench | Twin drives the gate; fault injection recovers | 🚫 nothing ordered |
-| **5 · Interface** | 1.5 | 3D twin, what-if, Crisis Commander | A stranger can run the demo unaided | 🔄 twin and API built; Crisis Commander built, unseen; what-if unwired |
-| **6 · Hardening** | 1 | Tests, docs, rehearsal, poster | Full demo runs with the network cable pulled | 🔄 75 tests and the gate exist; poster and rehearsal not started |
+| **4 · Hardware rig** | 2 | Two-tank HIL bench | Twin drives the **bench rig's** model sluice; fault injection recovers | 🔄 parts in hand 8 Sep; bench not built |
+| **5 · Interface** | 1.5 | 3D twin, what-if, Crisis Commander | A stranger can run the demo unaided | ✅ twin on measured terrain, what-if wired, Crisis Commander driven through a real browser |
+| **6 · Hardening** | 1 | Tests, docs, rehearsal, poster | Full demo runs with the network cable pulled | 🔄 91 tests and the gate exist; poster and rehearsal not started |
 
 Each phase ends in something demonstrable, so the project is presentable at
 any point after Phase 2 rather than only when finished. That is deliberate:
@@ -48,18 +48,20 @@ it means a slipped week costs polish, not the demo.
 
 ```mermaid
 flowchart LR
-    order["Order V1 parts<br/>₹6,250 · 3–5 days<br/>open since 26 Aug"]:::blocked --> bench["Bench-test<br/>every part alone"] --> rig["Two-tank rig<br/>gate · level · telemetry"] --> loop["Twin computes,<br/>gate executes"] --> fault["Fault injection<br/>the beat that wins the room"]:::prize
-    expo{"Expo entry<br/>confirmed?"}:::blocked -.-> poster["A1 poster"] & pitch["Pitch, out loud, ten times"] & offline["Offline rehearsal"]
-    cc["Crisis Commander<br/>open it in a browser"] --> whatif["Wire the what-if slider<br/>to /api/whatif"]
-    storm["Second storm into<br/>dossier §4.4 and Figure 6"] --> gate["Full check.py<br/>commit · push"]
-    joint["Joint cascade objective"] -. only if the rig is on track,<br/>or there is no expo date .-> gate
+    order["Order V1 parts<br/>₹6,250<br/>received 8 Sep"]:::done --> bench["Bench-test<br/>every part alone"] --> rig["Two-tank rig<br/>gate · level · telemetry"] --> loop["Twin computes,<br/>the <i>rig</i> gate executes"] --> fault["Fault injection<br/>the beat that wins the room"]:::prize
+    expo{"Expo entry<br/>confirmed 8 Sep"}:::done -.-> poster["A1 poster"] & pitch["Pitch, out loud, ten times"] & offline["Offline rehearsal"]
+    cc["Crisis Commander<br/>seen in a browser"]:::done --> whatif["What-if slider<br/>wired to /api/whatif"]:::done
+    storm["Second storm into<br/>dossier §4.4 and Figure 6"]:::done --> gate["Full check.py<br/>commit · push"]:::done
+    joint["Joint cascade objective<br/>built — inert on held data"]:::done -.-> gate
     classDef blocked fill:#fde8e8,stroke:#c0392b,color:#5a0f0f
     classDef prize fill:#dff5e1,stroke:#2f8f46,color:#0b3d17
+    classDef done fill:#e8f1fd,stroke:#1f6feb,color:#0b2a52
 ```
 
-Two of those boxes are red because they are the only two things nobody but
-the team can do, and both have been open for days. The fortnight in detail is
-in [ACTION_PLAN.md](ACTION_PLAN.md).
+Both of the boxes that were red — the parts order and the expo entry — closed
+on 8 September. They were the only two things nobody but the team could do.
+The critical path is now the bench itself. The fortnight in detail is in
+[ACTION_PLAN.md](ACTION_PLAN.md).
 
 ---
 
@@ -213,9 +215,10 @@ extrapolation. CAMELS-IND was considered as an alternative route and is not
 one: it solves a rainfall–runoff problem, not this routing problem, and
 carries no dam releases either.
 
-### 🚫 4 · V1 hardware rig
+### 🔄 4 · V1 hardware rig
 
-Blocked on ordering, since 26 August. EVOKE is an **IoT club** event — a
+**Unblocked 8 September: the parts are in hand.** Two SX1278 LoRa modules
+and further components followed on 9 September. EVOKE is an **IoT club** event — a
 software-only submission will underperform regardless of how good the
 modelling is. The BOM is ₹6,250 with live vendor links in
 [hardware/bom/bom.html](hardware/bom/bom.html); the build week is planned
@@ -294,7 +297,7 @@ how much water, roughly when", not for day-ahead inflow; fixing that is a
 continuous soil-moisture model with a recession limb, which is "beyond the
 expo" work.
 
-### 📋 9 · Joint cascade objective — the largest open modelling item
+### ✅ 9 · Joint cascade objective — built 8 Sep, and inert on the data we hold
 
 Score each dam's policy against the *combined* downstream discharge instead
 of its own reach, then repeat item 2's three-way comparison. Item 2 shows
@@ -304,7 +307,16 @@ and not tractable, so the design question is which parameters to hold and
 which to search. Worth starting only if the rig is on track — or if there is
 no expo date, in which case it is worth more than the rig.
 
-### 📋 10 · Put the second storm into the dossier and Figure 6
+**Result, 8 September.** Built, and the honest answer is a null one: on the
+data as held it is **inert**. The combined peak is 911 cumecs against a 1,100
+cumec bankfull, so the shared flood term is identically zero, the objective
+collapses to the sum of the private costs, and coordinate descent converges in
+**zero moves**. That *corrects* the diagnosis above: the blocker is not the
+objective's structure but the ungauged lateral inflow. An assumed-lateral sweep
+— an **assumption, not a measurement** — stays inert to 200 cumecs and bites at
+300. `scripts/cascade_joint_objective.py`.
+
+### ✅ 10 · Put the second storm into the dossier and Figure 6 — done 9 Sep
 
 Dossier §4.4 still says *"a second storm in another monsoon is what would
 turn this from a result into a curve worth relying on"* — and that storm has
@@ -313,6 +325,25 @@ now been run. `_forecast_error_block` in `scripts/build_dossier.py` and
 do not replace: October's "+69% by 90 h" is one storm's curve, August's
 90 h figure is +5%. A builder change, so the **full** `check.py` before
 pushing.
+
+**Result, 9 September.** Done, and qualified rather than replaced. Figure 6 grew
+a second *row*, not a second curve — separate axes and separate y-limits,
+because the two episodes are not equally hard and the penalties past the flat
+region differ by more than a factor of two. Two further unfiltered globs turned
+up in `build_abstract.py` and `build_icfoss_analysis.py` and were fixed: any
+`glob("forecast_error_study_*")` without a scenario filter is a defect.
+
+---
+
+## Never in scope
+
+Deferral means *later*. These mean *never*, and they are listed separately so
+nobody reads them off the table below as merely postponed.
+
+| Never | Why |
+|---|---|
+| **Operating a real dam gate** | AquaSync is advisory, permanently. Kerala's gates are operated by KSEB and the district administration under a statutory chain of accountability; there is no path from this system to them and there will not be one. The API's command topic is deliberately not wired, and the rig bridge is receive-only. The only gate anything here actuates is the model sluice on the bench. A named officer approves every recommendation, and the value on offer is the *timing* of a decision a human still makes |
+| **Presenting simulated values as live** | Every reading carries its provenance — LIVE, STALE, SIMULATED, REPLAY, PREDICTED or ESTIMATED. A rig reading is `scope: SCALE_RIG` and is never converted to metres MSL, because a 400 mm tank is not a reservoir |
 
 ---
 

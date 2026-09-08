@@ -103,11 +103,11 @@ hardware.
 |---|---|---|
 | Mon 31 | Desk list above | Parts ordered; Crisis Commander seen; second storm committed |
 | Tue 1 | Wire the what-if slider to `POST /api/whatif` (both ends exist) | Dragging the slider changes the level trace from the live model, not the client-side approximation |
-| Wed 2 | Put the second storm into the dossier §4.4 and Figure 6 (qualify October, do not replace it); full `check.py` | A dossier that says "two storms" and a Figure 6 with two curves |
+| Wed 2 | ✅ Done 9 Sep. Second storm into dossier §4.4 and Figure 6 (October qualified, not replaced); full `check.py` green | A dossier that says "two storms" and a Figure 6 with two **rows** — separate axes, never one merged curve |
 | Wed 2 – Thu 3 | **Parts land.** Bench-test every component individually before assembly | Each part confirmed working alone. Set the LM2596 to 5.0 V *before* it meets the ESP32 |
 | Fri 4 | Cut and cement the acrylic tanks; plumb the pump loop | Water circulates, nothing leaks |
 | Sat 5 | Sluice gate: NEMA 17, rack-and-pinion, limit switches. Level sensing: JSN-SR04T + DS18B20 compensation + EKF | Gate travels full range and homes reliably; level stable to ±2 mm on a moving surface |
-| Sun 6 | Telemetry: ESP32 → MQTT → twin (Mosquitto is already installed). Close the loop: twin computes a policy, gate executes it | Live level on the 3D dashboard; the physical gate opens ahead of a simulated storm |
+| Sun 6 | Telemetry: ESP32 → MQTT → twin (Mosquitto is already installed). Close the loop **on the bench**: twin computes a policy, the rig's model sluice executes it | Live level on the 3D dashboard; the rig's gate opens ahead of a simulated storm. **This loop exists on the bench and nowhere else** — see [ROADMAP.md](ROADMAP.md) §Never in scope |
 
 **Week 2 gate:** pour water into the upstream tank and the gate opens *before*
 the reservoir tank reaches its FRL line — without anyone touching a keyboard.
