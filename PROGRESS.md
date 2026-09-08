@@ -20,9 +20,9 @@ below (✅ rows over all rows):
 | Decision engine | 6 / 7 | `█████████░` |
 | Scenarios & validation | 5 / 6 | `████████░░` |
 | Hardware (V1 rig) | 2 / 9 | `██░░░░░░░░` |
-| Interface | 3 / 5 | `██████░░░░` |
+| Interface | 4 / 5 | `████████░░` |
 | Documentation | 11 / 14 | `████████░░` |
-| **Overall** | **41 / 58** | `███████░░░` |
+| **Overall** | **42 / 58** | `███████░░░` |
 
 The software is a finished, validated, twice-retracted-and-corrected piece of
 work. The hardware is a bill of materials. **The two things only the team can
@@ -113,7 +113,7 @@ do — order the parts and confirm the expo entry — are in
 |---|---|---|---|---|
 | 3D twin dashboard | ✅ Done | Am4l-babu | `feature/project-scaffold` | Three.js, no build step, WebSocket telemetry with lerp smoothing. Falls back to a bundled Oct 2021 replay when the API is down |
 | FastAPI backend | ✅ Done | Am4l-babu | `feature/api-and-validation` | Eight REST routes (health, reservoirs, scenarios, counterfactual, what-if, crisis briefing, crisis score, tide) + telemetry WebSocket fan-out. Serves the dashboard same-origin |
-| What-if panel | 👀 In Review | Am4l-babu | `feature/whatif-wiring` | Wired 8 Sep — the slider POSTs to `/api/whatif` on release and the card shows the 72 h peak level, cushion at peak, whether it reaches FRL, and the advice sentence. Contract checked with curl against a running API (higher release → lower peak, larger cushion); the DOM rendering itself is **not** browser-verified — no headless browser on the machine. [PR #10](https://github.com/Am4l-babu/aqua-sync/pull/10), pending review |
+| What-if panel | ✅ Done | Am4l-babu | `feature/whatif-wiring` | Wired 8 Sep — the slider POSTs to `/api/whatif` on release and the card shows the 72 h peak level, cushion at peak, whether it reaches FRL, and the advice sentence. Contract checked with curl against a running API (higher release → lower peak, larger cushion). **The DOM rendering itself is not browser-verified** — no headless browser on the machine; open the dashboard before relying on it. [PR #10](https://github.com/Am4l-babu/aqua-sync/pull/10), merged into `development` |
 | Crisis Commander mode | ✅ Done | Am4l-babu | `feature/crisis-commander` | Built 30 Aug. `dashboard/crisis.html` scored by `twin/crisis.py` with the same optimiser and objective as everything else. Hoard → 0.87 m less cushion than the day and −₹21 cr; release early → 2.95 m more and +₹45 cr (regenerated 31 Aug). **Not visually verified** — no headless browser; open it before relying on it |
 | Malayalam alerting | 📋 Todo | — | — | Last-mile. Nice-to-have, not expo-critical |
 
