@@ -33,9 +33,9 @@ downloaded rather than what was merely intended.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import sys
-from datetime import UTC, datetime
 from pathlib import Path
 
 from reportlab.lib.pagesizes import A4
@@ -84,6 +84,28 @@ FINDINGS = INDEX / "research_findings.json"
 ACQ_LOG = INDEX / "acquisition_log.json"
 MANIFEST = INDEX / "manifest.json"
 OUT = ROOT / "docs" / "AquaSync_Research_Report.pdf"
+
+
+def index_revision() -> str:
+    """A short digest of the corpus this report was built from.
+
+    This replaces a `Generated <today>` line. That line made the build
+    non-deterministic across a date boundary: two runs on the same day matched,
+    but the committed PDF stopped matching a rebuild the moment midnight
+    passed, so `check.py`'s regeneration check failed on any later day
+    regardless of whether a single line of code had changed. A gate that cries
+    wolf on the calendar is a gate people learn to ignore.
+
+    Hashing the parsed JSON rather than the file bytes keeps the digest stable
+    across the CRLF normalisation `.gitattributes` applies on Windows.
+    """
+    h = hashlib.sha256()
+    for path in (FINDINGS, ACQ_LOG, MANIFEST):
+        if path.exists():
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            h.update(json.dumps(payload, sort_keys=True, separators=(",", ":")).encode())
+    return h.hexdigest()[:8]
+
 
 DIMENSION_TITLES = {
     "historical-data": "Historical data: what exists, and what does not",
@@ -197,7 +219,7 @@ def cover(data: dict, acq: dict) -> list:
                "Every claimed source survived that pass."),
             accent=AMBER, tint=TINT_AMBER),
         Spacer(1, 7 * mm),
-        para(f"Generated {datetime.now(UTC).strftime('%d %B %Y')} · "
+        para(f"Built from research index {index_revision()} · "
              "Regenerate with <font face='Courier'>scripts/build_research_report.py</font> · "
              "Local index at <font face='Courier'>research/index/README.md</font>", "caption"),
     ]

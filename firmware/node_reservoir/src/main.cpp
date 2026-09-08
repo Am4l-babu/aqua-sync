@@ -55,7 +55,8 @@ constexpr uint8_t PIN_FLOW         = 27;   // hardware interrupt
 // ---------------------------------------------------------------------------
 
 struct LevelEstimate {
-  float level_m      = 0.0f;   // fused estimate
+  // level_m is read by the interlock ISR while updateLevelEstimate writes it.
+  volatile float level_m = 0.0f;   // fused estimate
   float variance     = 1.0f;   // filter covariance
   float ultrasonic_m = 0.0f;   // raw
   float pressure_m   = 0.0f;   // raw
@@ -64,7 +65,11 @@ struct LevelEstimate {
 };
 
 struct GateState {
-  float   commanded_pct = 0.0f;
+  // commanded_pct is written by the safety interlock (timer ISR), by the MQTT
+  // command handler and by homing, and read by driveGate. volatile stops the
+  // compiler caching it across those contexts; the portMUX below makes the
+  // read-modify-write in driveGate atomic against the ISR.
+  volatile float commanded_pct = 0.0f;
   float   actual_pct    = 0.0f;
   int32_t position_steps = 0;
   bool    homed         = false;
@@ -73,6 +78,9 @@ struct GateState {
 
 static LevelEstimate g_level;
 static GateState     g_gate;
+
+// Guards the gate setpoint against the 10 Hz interlock ISR.
+static portMUX_TYPE  g_gate_mux = portMUX_INITIALIZER_UNLOCKED;
 static volatile uint32_t g_flow_pulses = 0;
 static uint8_t g_prev_hash[32] = {0};
 
@@ -87,7 +95,18 @@ PubSubClient mqtt(wifiClient);
 
 void IRAM_ATTR onFlowPulse() { g_flow_pulses++; }
 
-/** Speed of sound in air, corrected for temperature. */
+/**
+ * Speed of sound in air, corrected for temperature.
+ *
+ * The only thermometer on this node is the DS18B20, and it is in the water.
+ * The ultrasonic pulse travels through the air above it, so what gets passed
+ * here is a proxy, not the air temperature. The error is bounded and small:
+ * the coefficient is 0.606 m/s per degree against roughly 346 m/s, so even a
+ * 5 degree air-water difference is about 0.9% of the speed - under 4 mm over
+ * this tank's 400 mm range. Worth knowing, not worth a second sensor, and
+ * worth saying out loud rather than letting the parameter name imply a
+ * measurement nobody takes.
+ */
 static inline float speedOfSound(float temp_c) {
   return 331.3f + 0.606f * temp_c;
 }
@@ -202,19 +221,28 @@ void updateLevelEstimate(float dt_s) {
  * put the gate somewhere unsafe, because none of them execute here.
  */
 void IRAM_ATTR safetyInterlock() {
-  if (g_level.level_m >= EMERGENCY_LEVEL_M) {
+  const float level = g_level.level_m;
+  portENTER_CRITICAL_ISR(&g_gate_mux);
+  if (level >= EMERGENCY_LEVEL_M) {
     g_gate.commanded_pct = 100.0f;          // structural relief overrides all
-  } else if (g_level.level_m <= MIN_OPERATING_LEVEL_M) {
+  } else if (level <= MIN_OPERATING_LEVEL_M) {
     g_gate.commanded_pct = 0.0f;            // never drain below dead storage
   }
+  portEXIT_CRITICAL_ISR(&g_gate_mux);
 }
 
 /** Move toward the commanded position, respecting limits and ramp rate. */
 void driveGate(float dt_s) {
   if (!g_gate.homed) return;
 
+  // Take one consistent copy: the interlock can change the setpoint between
+  // the comparison and the step loop otherwise.
+  portENTER_CRITICAL(&g_gate_mux);
+  const float commanded = g_gate.commanded_pct;
+  portEXIT_CRITICAL(&g_gate_mux);
+
   const float max_delta = GATE_MAX_RATE_PCT_PER_S * dt_s;
-  float delta = g_gate.commanded_pct - g_gate.actual_pct;
+  float delta = commanded - g_gate.actual_pct;
   delta = constrain(delta, -max_delta, max_delta);
   if (fabsf(delta) < 0.01f) return;
 
@@ -234,6 +262,11 @@ void driveGate(float dt_s) {
 
   g_gate.position_steps += (delta > 0 ? steps : -steps);
   g_gate.actual_pct += delta;
+
+  // Release the driver between moves. Left enabled, the A4988 holds torque
+  // continuously: the motor and driver run hot for no benefit on a sluice
+  // that is not fighting a load once it has stopped.
+  digitalWrite(PIN_GATE_ENABLE, HIGH);
 }
 
 /** Drive to the closed limit switch to establish a datum. */
@@ -291,6 +324,23 @@ void appendAuditRecord(const char* payload, char* out_hex, size_t out_len) {
 // telemetry
 // ---------------------------------------------------------------------------
 
+/**
+ * Format a float for JSON, or `null` if it is not finite.
+ *
+ * printf renders a failed sensor as a bare `nan`, which is not valid JSON -
+ * so one dead channel took the whole frame down at the parser, hiding the
+ * gate position and the flow along with it. That is exactly backwards: a
+ * sensor failure is when the rest of the frame matters most.
+ */
+static const char* jsonF(char* buf, size_t n, float v, int dp) {
+  if (!isfinite(v)) {
+    snprintf(buf, n, "null");
+  } else {
+    snprintf(buf, n, "%.*f", dp, v);
+  }
+  return buf;
+}
+
 void publishTelemetry() {
   static uint32_t last_pulses = 0;
   const uint32_t pulses = g_flow_pulses;
@@ -298,23 +348,27 @@ void publishTelemetry() {
                        * (60000.0f / TELEMETRY_INTERVAL_MS);
   last_pulses = pulses;
 
+  char b_lvl[16], b_var[16], b_us[16], b_pr[16], b_tmp[16], b_flow[16];
   char payload[512];
   snprintf(payload, sizeof(payload),
            "{\"node\":\"%s\",\"uptime_s\":%lu,"
-           "\"level_m\":%.4f,\"variance\":%.5f,"
-           "\"ultrasonic_m\":%.4f,\"pressure_m\":%.4f,\"temp_c\":%.2f,"
+           "\"level_m\":%s,\"variance\":%s,"
+           "\"ultrasonic_m\":%s,\"pressure_m\":%s,\"temp_c\":%s,"
            "\"sensors_agree\":%s,"
            "\"gate_cmd_pct\":%.1f,\"gate_actual_pct\":%.1f,"
            "\"gate_homed\":%s,\"gate_jammed\":%s,"
-           "\"flow_lpm\":%.2f}",
+           "\"flow_lpm\":%s}",
            NODE_ID, millis() / 1000UL,
-           g_level.level_m, g_level.variance,
-           g_level.ultrasonic_m, g_level.pressure_m, g_level.water_temp_c,
+           jsonF(b_lvl, sizeof(b_lvl), g_level.level_m, 4),
+           jsonF(b_var, sizeof(b_var), g_level.variance, 5),
+           jsonF(b_us, sizeof(b_us), g_level.ultrasonic_m, 4),
+           jsonF(b_pr, sizeof(b_pr), g_level.pressure_m, 4),
+           jsonF(b_tmp, sizeof(b_tmp), g_level.water_temp_c, 2),
            g_level.sensors_agree ? "true" : "false",
            g_gate.commanded_pct, g_gate.actual_pct,
            g_gate.homed ? "true" : "false",
            g_gate.jammed ? "true" : "false",
-           flow_lpm);
+           jsonF(b_flow, sizeof(b_flow), flow_lpm, 2));
 
   char hash_hex[65] = {0};
   appendAuditRecord(payload, hash_hex, sizeof(hash_hex));
@@ -400,6 +454,7 @@ void setup() {
 
 void loop() {
   static uint32_t last_sense = 0, last_publish = 0, last_reconnect = 0;
+  static uint32_t last_wifi_retry = 0;
   const uint32_t now = millis();
 
   if (now - last_sense >= SENSE_INTERVAL_MS) {
@@ -411,6 +466,17 @@ void loop() {
   if (now - last_publish >= TELEMETRY_INTERVAL_MS) {
     publishTelemetry();
     last_publish = now;
+  }
+
+  // Wi-Fi first: the MQTT reconnect below is gated on the link being up, so
+  // without this a single dropped association left the node offline forever
+  // while still happily reconnecting to a broker it could never reach. An
+  // expo hall is precisely where that happens.
+  if (WiFi.status() != WL_CONNECTED && now - last_wifi_retry >= 10000) {
+    last_wifi_retry = now;
+    Serial.println("wifi down - reconnecting");
+    WiFi.disconnect();
+    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   }
 
   if (!mqtt.connected() && now - last_reconnect >= 5000) {
