@@ -152,6 +152,25 @@ function setLink(state, text) {
   el.textContent = text;
 }
 
+/**
+ * Show the provenance the server declared, never an inference from the
+ * transport. Only LIVE is green: a recorded episode and a rig that has gone
+ * quiet must both be visibly not-live, because the one thing this dashboard
+ * must never do is present a simulated value as a measured one.
+ */
+const SOURCE_STYLE = {
+  LIVE: ['ok', 'LIVE'],
+  REPLAY: ['warn', 'REPLAY'],
+  STALE: ['warn', 'STALE'],
+  SIMULATED: ['warn', 'SIMULATED'],
+};
+
+function showSource(source) {
+  const [state, label] = SOURCE_STYLE[source] || ['warn', String(source || 'UNKNOWN')];
+  setLink(state, label);
+  return label;
+}
+
 function connect() {
   let ws;
   try {
@@ -164,7 +183,10 @@ function connect() {
     if (ws.readyState !== WebSocket.OPEN) { ws.close(); startReplay('backend unreachable'); }
   }, 2500);
 
-  ws.onopen = () => { clearTimeout(giveUp); setLink('ok', 'LIVE'); };
+  // Connecting proves the backend is reachable, nothing more. The badge
+  // stays neutral until a frame arrives and states its own provenance -
+  // this used to light up LIVE here while a 2021 replay streamed beneath it.
+  ws.onopen = () => { clearTimeout(giveUp); setLink('warn', 'CONNECTED'); };
   ws.onmessage = (e) => { try { apply(JSON.parse(e.data)); } catch { /* ignore */ } };
   ws.onerror = () => { clearTimeout(giveUp); startReplay('websocket error'); };
   ws.onclose = () => { if (!replayTimer) startReplay('backend closed'); };
@@ -282,6 +304,12 @@ function updatePanel(t) {
   if (t.advice) document.getElementById('advice').textContent = t.advice;
   if (t.timestamp) document.getElementById('clock').textContent = t.timestamp;
   if (t.scenario) document.getElementById('scenario').textContent = `scenario: ${t.scenario}`;
+  if (t.source && !manualOverride) {
+    const label = showSource(t.source);
+    document.getElementById('source').textContent =
+      t.source === 'REPLAY' ? 'source: replay (recorded episode, not live)'
+        : `source: ${label.toLowerCase()}`;
+  }
 
   const card = document.getElementById('advice-card');
   card.classList.toggle('alert', target.level >= RES.rule && target.spill === 0);
