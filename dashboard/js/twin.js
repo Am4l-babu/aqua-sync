@@ -1,23 +1,30 @@
 /**
- * AquaSync 3D digital twin.
+ * AquaSync 3D digital twin - telemetry, panel and state.
  *
- * Renders the reservoir, dam wall, sluice gate and downstream channel, driven
- * by telemetry over a WebSocket. Two things about this file are deliberate:
+ * The scene itself lives in scene.js, built on the real DEM of the Periyar
+ * valley. This file owns everything else: the socket, the fallback, the
+ * readouts, the what-if sandbox, and the mapping from reported state to what
+ * the scene shows.
+ *
+ * Two things about it are deliberate:
  *
  * 1. Telemetry arrives at roughly 1 Hz but the render loop runs at 60 fps, so
- *    every visual quantity is interpolated toward its target rather than
- *    snapped. Snapping looks broken even when the data is perfect.
+ *    every visual quantity eases toward its target rather than snapping.
+ *    Snapping looks broken even when the data is perfect. The easing is
+ *    time-based, not per-frame, so a 144 Hz display does not converge 2.4x
+ *    faster than a 60 Hz one.
  *
- * 2. If no WebSocket is available it falls back to replaying a bundled
- *    October 2021 series. The expo venue Wi-Fi is not a dependency the demo
- *    can afford, and a dashboard that shows nothing when the network is down
- *    would rather undercut a project about disaster resilience.
+ * 2. If no WebSocket is available it falls back to a bundled October 2021
+ *    trajectory and says so in the status bar. The expo venue Wi-Fi is not a
+ *    dependency the demo can afford, and a dashboard that shows nothing when
+ *    the network is down would rather undercut a project about resilience.
  */
 
-import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { TwinScene } from './scene.js';
 
-// -- reservoir constants, mirrored from twin/constants.py -------------------
+// -- reservoir constants ----------------------------------------------------
+// Mirrored from twin/constants.py as a starting point, then replaced by
+// whatever /api/reservoirs reports so the two cannot drift apart unnoticed.
 const RES = {
   name: 'Idukki',
   frl: 732.43,
@@ -25,160 +32,112 @@ const RES = {
   red: 728.19,
   dead: 694.94,
   turbineRated: 138.0,
+  liveStorageAtFrl: 1459.49,   // Mm3
+  beta: 1.348,                 // level-storage exponent, calibrated
 };
 
-const WS_URL = `ws://${location.hostname || 'localhost'}:8000/ws/telemetry`;
-const LERP = 0.06;
+// Same origin as the page when served by the API, which is how it is meant to
+// run. Falling back to :8000 only helps when the page is opened some other
+// way, and using the page's own scheme keeps it working behind TLS.
+const WS_URL = (() => {
+  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const host = location.host || 'localhost:8000';
+  return `${proto}//${host}/ws/telemetry`;
+})();
 
-// Live state (jumps on message) and displayed state (chases live).
+// Seconds for the shown value to close ~63% of the gap to the target.
+const EASE_TAU = 0.55;
+
 const target = { level: RES.rule, gate: 0, inflow: 0, turbine: 0, spill: 0 };
-const shown = { level: RES.rule, gate: 0 };
+const shown = { level: RES.rule, gate: 0, spill: 0, turbine: 0 };
 
-let scene, camera, renderer, controls;
-let waterMesh, gateMesh, downstreamMesh, frlPlane, rulePlane;
 const history = [];
+let twin = null;
+let replayTimer = null;
+let manualOverride = false;
 
 // --------------------------------------------------------------------------
-// scene
+// hypsometry
 // --------------------------------------------------------------------------
 
-function init() {
+/**
+ * Reservoir surface area at a given level, km2.
+ *
+ * The twin stores S(h) = S_frl * ((h - dead)/(frl - dead))^beta, so the
+ * surface area is its derivative. This used to be a bare 5000 in the
+ * time-to-FRL line, which implied about 18 km2 against the calibrated
+ * curve's 50 km2 and so ran the clock nearly three times too fast.
+ */
+function surfaceAreaKm2(level) {
+  const span = RES.frl - RES.dead;
+  const h = Math.max(0.01, Math.min(level, RES.frl) - RES.dead);
+  return RES.liveStorageAtFrl * RES.beta * Math.pow(h, RES.beta - 1) / Math.pow(span, RES.beta);
+}
+
+/** Hours until FRL at the current net inflow, or null if it is not rising. */
+function hoursToFrl(level, netCumecs) {
+  if (!(netCumecs > 0)) return null;
+  const freeboard = RES.frl - level;
+  if (freeboard <= 0) return 0;
+  const riseMs = netCumecs / (surfaceAreaKm2(level) * 1e6);   // m/s
+  return freeboard / riseMs / 3600;
+}
+
+// --------------------------------------------------------------------------
+// boot
+// --------------------------------------------------------------------------
+
+async function init() {
   const stage = document.getElementById('stage');
+  twin = new TwinScene(stage);
 
-  scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x0d1a26);
-  scene.fog = new THREE.Fog(0x0d1a26, 90, 220);
+  try {
+    const meta = await twin.load('assets');
+    captionProvenance(meta);
+  } catch (err) {
+    // The terrain is an asset, not a hard dependency - say so rather than
+    // showing an empty canvas.
+    console.error('terrain failed to load', err);
+    captionUnavailable();
+  }
 
-  camera = new THREE.PerspectiveCamera(46, stage.clientWidth / stage.clientHeight, 0.1, 600);
-  camera.position.set(46, 30, 52);
-
-  renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-  renderer.setSize(stage.clientWidth, stage.clientHeight);
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  stage.appendChild(renderer.domElement);
-
-  controls = new OrbitControls(camera, renderer.domElement);
-  controls.enableDamping = true;
-  controls.dampingFactor = 0.06;
-  controls.target.set(0, 6, 0);
-  controls.maxPolarAngle = Math.PI * 0.49;
-
-  scene.add(new THREE.HemisphereLight(0x9ec8ff, 0x1b2b38, 0.85));
-  const sun = new THREE.DirectionalLight(0xfff2df, 1.15);
-  sun.position.set(40, 60, 25);
-  sun.castShadow = true;
-  sun.shadow.mapSize.set(2048, 2048);
-  sun.shadow.camera.left = -70; sun.shadow.camera.right = 70;
-  sun.shadow.camera.top = 70; sun.shadow.camera.bottom = -70;
-  scene.add(sun);
-
-  buildTerrain();
-  buildDam();
-  buildWater();
-  buildThresholdPlanes();
-
-  addEventListener('resize', onResize);
+  await adoptServerConstants();
   bindControls();
   connect();
   animate();
 }
 
-/** Level in m MSL to a scene-space Y coordinate. */
-function levelToY(level) {
-  const span = RES.frl - RES.dead;
-  return ((level - RES.dead) / span) * 22.0;
+/** Replace the mirrored constants with the API's, when it is reachable. */
+async function adoptServerConstants() {
+  try {
+    const res = await fetch('/api/reservoirs', { signal: AbortSignal.timeout(2000) });
+    if (!res.ok) return;
+    const idukki = (await res.json()).find((r) => r.key === 'idukki');
+    if (!idukki) return;
+    RES.frl = idukki.frl;
+    RES.rule = idukki.rule_level;
+    RES.red = idukki.red;
+    RES.dead = idukki.dead;
+    RES.liveStorageAtFrl = idukki.live_storage_at_frl_mm3;
+    target.level = RES.rule;
+    shown.level = RES.rule;
+  } catch { /* offline: the mirrored values stand, and they are documented */ }
 }
 
-function buildTerrain() {
-  const valley = new THREE.Mesh(
-    new THREE.BoxGeometry(70, 4, 70),
-    new THREE.MeshStandardMaterial({ color: 0x2a4034, roughness: 0.96 })
-  );
-  valley.position.set(0, -2, 0);
-  valley.receiveShadow = true;
-  scene.add(valley);
-
-  const hillMat = new THREE.MeshStandardMaterial({ color: 0x30503c, roughness: 0.95 });
-  for (const side of [-1, 1]) {
-    const hill = new THREE.Mesh(new THREE.BoxGeometry(10, 34, 70), hillMat);
-    hill.position.set(side * 30, 15, 0);
-    hill.castShadow = hill.receiveShadow = true;
-    scene.add(hill);
-  }
+function captionProvenance(meta) {
+  const el = document.getElementById('scene-note');
+  if (!el) return;
+  const km = (meta.span_m / 1000).toFixed(0);
+  el.innerHTML =
+    `<strong>Terrain: measured.</strong> ${km} km of the Periyar valley from the ` +
+    `${meta.source}, ${meta.metres_per_sample.toFixed(0)} m posting. ` +
+    `<strong>Structures: schematic.</strong> No bathymetry exists for the reservoir, ` +
+    `so the bed is not drawn and water is shaded by distance from the bank, not depth.`;
 }
 
-function buildDam() {
-  const concrete = new THREE.MeshStandardMaterial({ color: 0xb9bec4, roughness: 0.85 });
-
-  // Arch dam wall, with a gap left for the spillway bay.
-  for (const [x, w] of [[-16, 18], [16, 18]]) {
-    const seg = new THREE.Mesh(new THREE.BoxGeometry(w, 26, 6), concrete);
-    seg.position.set(x, 13, 0);
-    seg.castShadow = seg.receiveShadow = true;
-    scene.add(seg);
-  }
-
-  const crest = new THREE.Mesh(new THREE.BoxGeometry(50, 1.2, 7.4), concrete);
-  crest.position.set(0, 26.6, 0);
-  crest.castShadow = true;
-  scene.add(crest);
-
-  // Spillway gate — slides vertically in the bay.
-  gateMesh = new THREE.Mesh(
-    new THREE.BoxGeometry(13, 9, 1.2),
-    new THREE.MeshStandardMaterial({
-      color: 0xd0512e, roughness: 0.5, metalness: 0.35,
-    })
-  );
-  gateMesh.position.set(0, levelToY(RES.red) + 3.5, 0);
-  gateMesh.castShadow = true;
-  scene.add(gateMesh);
-
-  const piers = new THREE.MeshStandardMaterial({ color: 0xa8adb4, roughness: 0.9 });
-  for (const x of [-7, 7]) {
-    const pier = new THREE.Mesh(new THREE.BoxGeometry(1.4, 24, 6.6), piers);
-    pier.position.set(x, 12, 0);
-    pier.castShadow = true;
-    scene.add(pier);
-  }
-}
-
-function buildWater() {
-  const mat = new THREE.MeshStandardMaterial({
-    color: 0x2f7fbf, transparent: true, opacity: 0.82,
-    roughness: 0.18, metalness: 0.15,
-  });
-  waterMesh = new THREE.Mesh(new THREE.BoxGeometry(50, 1, 34), mat);
-  waterMesh.position.set(0, 0, -18);
-  scene.add(waterMesh);
-
-  downstreamMesh = new THREE.Mesh(
-    new THREE.BoxGeometry(14, 1, 30),
-    new THREE.MeshStandardMaterial({
-      color: 0x3f92c9, transparent: true, opacity: 0.75, roughness: 0.3,
-    })
-  );
-  downstreamMesh.position.set(0, 0.4, 19);
-  scene.add(downstreamMesh);
-}
-
-function buildThresholdPlanes() {
-  const mk = (level, colour) => {
-    const g = new THREE.PlaneGeometry(52, 36);
-    const m = new THREE.MeshBasicMaterial({
-      color: colour, transparent: true, opacity: 0.16,
-      side: THREE.DoubleSide, depthWrite: false,
-    });
-    const p = new THREE.Mesh(g, m);
-    p.rotation.x = -Math.PI / 2;
-    p.position.set(0, levelToY(level), -18);
-    scene.add(p);
-    return p;
-  };
-  frlPlane = mk(RES.frl, 0xd1242f);
-  rulePlane = mk(RES.rule, 0x1a7f37);
+function captionUnavailable() {
+  const el = document.getElementById('scene-note');
+  if (el) el.textContent = 'Terrain data unavailable - run scripts/build_terrain.py.';
 }
 
 // --------------------------------------------------------------------------
@@ -209,15 +168,13 @@ function connect() {
   ws.onclose = () => { if (!replayTimer) startReplay('backend closed'); };
 }
 
-let replayTimer = null;
-
 /**
  * Offline fallback: a synthesised October 2021 trajectory.
  *
  * The shape is taken from the real bulletin - level rising from 727.7 to
  * 731.0 with an inflow spike on 17 October and gates opening on the 20th -
- * so the fallback tells the same story as the live system rather than
- * showing something invented.
+ * so the fallback tells the same story as the live system. It is a
+ * synthesis, not the record, and the status bar says "replay" throughout.
  */
 function startReplay(reason) {
   if (replayTimer) return;
@@ -263,11 +220,16 @@ function startReplay(reason) {
 }
 
 function apply(t) {
+  // A dragged what-if slider is the operator asking a question. Do not
+  // overwrite their answer with the next frame of the stream; the status bar
+  // says so until they reset it.
+  if (!manualOverride) {
+    if (typeof t.gate === 'number') target.gate = t.gate;
+    if (typeof t.turbine === 'number') target.turbine = t.turbine;
+    if (typeof t.spill === 'number') target.spill = t.spill;
+  }
   if (typeof t.level === 'number') target.level = t.level;
-  if (typeof t.gate === 'number') target.gate = t.gate;
   if (typeof t.inflow === 'number') target.inflow = t.inflow;
-  if (typeof t.turbine === 'number') target.turbine = t.turbine;
-  if (typeof t.spill === 'number') target.spill = t.spill;
 
   history.push(target.level);
   if (history.length > 90) history.shift();
@@ -293,6 +255,11 @@ function updatePanel(t) {
   document.getElementById('spill').textContent = fmt(target.spill, 'cumecs');
   document.getElementById('gate').textContent = fmt(target.gate, '%');
 
+  const storage = RES.liveStorageAtFrl
+    * Math.pow(Math.max(0, target.level - RES.dead) / (RES.frl - RES.dead), RES.beta);
+  const storageEl = document.getElementById('storage');
+  if (storageEl) storageEl.textContent = fmt(storage, 'Mm³', 0);
+
   const span = RES.frl - RES.dead;
   const pct = Math.max(0, Math.min(100, ((target.level - RES.dead) / span) * 100));
   const fill = document.getElementById('band-fill');
@@ -304,9 +271,11 @@ function updatePanel(t) {
   document.getElementById('lbl-frl').textContent = `FRL ${RES.frl}`;
 
   const net = target.inflow - target.turbine - target.spill;
+  const hrs = hoursToFrl(target.level, net);
   document.getElementById('ttf').textContent =
-    net <= 0 ? 'stable or falling'
-             : `${(freeboard / (net / 5000) / 24).toFixed(1)} d at current net inflow`;
+    hrs === null ? 'stable or falling'
+      : hrs < 48 ? `${hrs.toFixed(1)} h at current net inflow`
+        : `${(hrs / 24).toFixed(1)} d at current net inflow`;
 
   if (t.advice) document.getElementById('advice').textContent = t.advice;
   if (t.timestamp) document.getElementById('clock').textContent = t.timestamp;
@@ -333,6 +302,10 @@ function drawSpark() {
        <polyline points="${pts}" fill="none" stroke="#4aa3df" stroke-width="1.6"/>
      </svg>`;
 }
+
+// --------------------------------------------------------------------------
+// what-if sandbox
+// --------------------------------------------------------------------------
 
 /**
  * Ask the API what a constant `release` (cumecs) does to Idukki over the next
@@ -390,13 +363,17 @@ function clearWhatIf() {
 function bindControls() {
   const slider = document.getElementById('whatif');
   const label = document.getElementById('whatif-val');
+  const source = document.getElementById('source');
 
-  // Live: label + 3D gate follow the handle continuously (unchanged).
+  // Live: label and the 3D gate follow the handle continuously.
   slider.addEventListener('input', () => {
+    manualOverride = true;
     label.textContent = slider.value;
-    target.spill = Math.max(0, Number(slider.value) - RES.turbineRated);
-    target.turbine = Math.min(Number(slider.value), RES.turbineRated);
+    const q = Number(slider.value);
+    target.turbine = Math.min(q, RES.turbineRated);
+    target.spill = Math.max(0, q - RES.turbineRated);
     target.gate = Math.min(100, (target.spill / 400) * 100);
+    source.textContent = 'source: what-if override (release set by hand)';
     updatePanel({});
   });
 
@@ -414,7 +391,7 @@ function bindControls() {
         document.getElementById('whatif-out').hidden = true;
         document.getElementById('wi-advice').textContent = '';
         document.getElementById('whatif-status').textContent =
-          'Sandbox needs the API running (uvicorn on port 8000).';
+          'Sandbox needs the API running — serve this page from uvicorn.';
       }
     }, 250);
   });
@@ -424,6 +401,10 @@ function bindControls() {
     slider.value = 0;
     label.textContent = '0';
     slider.dispatchEvent(new Event('input'));
+    // The dispatch above re-arms the override, so clear it afterwards: the
+    // next telemetry frame should take the panel back.
+    manualOverride = false;
+    source.textContent = 'source: telemetry';
     clearWhatIf();
   });
 }
@@ -432,41 +413,20 @@ function bindControls() {
 // render loop
 // --------------------------------------------------------------------------
 
-function onResize() {
-  const stage = document.getElementById('stage');
-  camera.aspect = stage.clientWidth / stage.clientHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(stage.clientWidth, stage.clientHeight);
-}
-
 function animate() {
   requestAnimationFrame(animate);
+  if (!twin) return;
 
-  // Chase the targets rather than snapping to them.
-  shown.level += (target.level - shown.level) * LERP;
-  shown.gate += (target.gate - shown.gate) * LERP;
+  // Frame-rate independent easing: the same wall-clock settling time on any
+  // display. dt comes back from the scene's own clock.
+  const dt = twin.lastDt ?? 1 / 60;
+  const k = 1 - Math.exp(-dt / EASE_TAU);
+  shown.level += (target.level - shown.level) * k;
+  shown.gate += (target.gate - shown.gate) * k;
+  shown.spill += (target.spill - shown.spill) * k;
+  shown.turbine += (target.turbine - shown.turbine) * k;
 
-  const y = levelToY(shown.level);
-  waterMesh.scale.y = Math.max(0.1, y);
-  waterMesh.position.y = y / 2;
-
-  // Gate rises out of the flow as it opens.
-  gateMesh.position.y = levelToY(RES.red) + 3.5 + (shown.gate / 100) * 8.4;
-
-  // Downstream channel swells with the routed discharge.
-  const d = 0.5 + Math.min(4.5, (target.spill + target.turbine) / 160);
-  downstreamMesh.scale.y = d;
-  downstreamMesh.position.y = d / 2;
-
-  // Colour the reservoir by proximity to FRL.
-  const risk = Math.max(0, Math.min(1, (shown.level - RES.rule) / (RES.frl - RES.rule)));
-  waterMesh.material.color.setRGB(0.18 + risk * 0.6, 0.50 - risk * 0.25, 0.75 - risk * 0.45);
-
-  frlPlane.material.opacity = 0.12 + risk * 0.20;
-  rulePlane.material.opacity = 0.16;
-
-  controls.update();
-  renderer.render(scene, camera);
+  twin.lastDt = twin.update(shown);
 }
 
 init();
