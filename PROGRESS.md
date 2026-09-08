@@ -8,7 +8,7 @@ every session.
 hydropower optimisation on the Periyar basin.
 **Target:** EVOKE 26 Project Expo · Track 2, Climate Resilience & Disaster
 Preparedness · MACE IoT Club, Kothamangalam.
-**Last updated:** Tuesday 8 September 2026 (evening).
+**Last updated:** Wednesday 9 September 2026.
 
 **At a glance** — as `python scripts/status.py` counts it from the tables
 below (✅ rows over all rows):
@@ -17,18 +17,24 @@ below (✅ rows over all rows):
 |---|---|---|
 | Core infrastructure | 5 / 6 | `████████░░` |
 | Simulation core | 9 / 11 | `████████░░` |
-| Decision engine | 6 / 7 | `█████████░` |
+| Decision engine | 7 / 7 | `██████████` |
 | Scenarios & validation | 5 / 6 | `████████░░` |
 | Hardware (V1 rig) | 4 / 9 | `████░░░░░░` |
 | Interface | 4 / 5 | `████████░░` |
 | Documentation | 11 / 14 | `████████░░` |
-| **Overall** | **44 / 58** | `████████░░` |
+| **Overall** | **45 / 58** | `████████░░` |
 
 The software is a finished, validated, twice-retracted-and-corrected piece of
 work. **Both of the things only the team could do are now done — the components
 are in hand and the expo entry is confirmed — so the hardware rows are the
 critical path from here.** The rig's telemetry already reaches the dashboard;
 what is left is building the bench and the fault-injection switches.
+
+As of 9 September the **Decision Engine is complete (7 / 7)** — the joint
+cascade objective, the last open modelling item, is built and merged. Its
+result is a null one, honestly reported: on the data as held the objective
+is inert, because the combined peak never reaches bankfull. Every software
+task that does not need the rig is now either merged or in review.
 
 ---
 
@@ -81,7 +87,7 @@ what is left is building the bench and the fault-injection switches.
 | Grid offtake constraint | ✅ Done | Am4l-babu | `feature/project-scaffold` | Without it the optimiser books revenue the grid would never take |
 | **Forecast-error study** | ✅ Done | Am4l-babu | `feature/runoff-defect-fix` | **Ten runs, two storms**, five lead times each (24/48/72/90/120 h), on the fixed runoff chain, scored as excess cost against perfect foresight on the full objective. Oct 2021: matches hindsight **to 48 h**, ramps to ~**+69%** by 90 h. Aug 2022: matches **to 90 h** (≤ +5%), then **+158%** at 120 h — a cliff, not a ramp. **Do not average the two storms.** Hedging (minimax regret) is better in 1 run of 10, by 0.16 points. Never quote freeboard retention; read `excess_cost_vs_perfect_foresight_pct`. `scripts/forecast_error_study.py`, [docs/validation.md](docs/validation.md) §4 |
 | Cascade co-optimisation | ✅ Done | Am4l-babu | `feature/deep-research` | Run, and **the result is a warning, not a win**: optimising the two dams independently puts the joint peak at their confluence **126% above what actually happened**, and retiming both start hours recovers only 9% of that. `scripts/cascade_coordination.py` |
-| **Joint cascade objective** | 📋 Todo | — | — | 🔴 **Largest open modelling item.** Score each dam's policy against the *combined* downstream discharge instead of its own reach. The cascade result shows this is an objective-function problem, not a timing one — a bigger timing search will not fix it. Worth starting only if the rig is on track, or if there is no expo date |
+| **Joint cascade objective** | ✅ Done | Am4l-babu | `feature/joint-cascade-objective` | Built 8 Sep: one shared flood term on the *combined* routed discharge at the confluence, each dam keeping its private dam-safety, revenue and gate-wear terms; same functional form and weights, so only the flood term moves. Searched by coordinate descent from the independent optima. **On the data as held it is inert** — the combined peak is 911 cumecs against a 1,100 cumec bankfull, so the shared flood term is identically zero, the objective collapses to the sum of private costs, and descent converges in **zero moves**. This *corrects* the earlier diagnosis: the blocker is not the objective's structure but the ungauged lateral inflow. An assumed-lateral sweep (an **assumption, not a measurement**) stays inert to 200 cumecs and bites at 300, where Idukki starts 42 h earlier and releases more gently. `scripts/cascade_joint_objective.py`, [PR #18](https://github.com/Am4l-babu/aqua-sync/pull/18) |
 
 ## Scenarios & Validation
 
@@ -99,7 +105,7 @@ what is left is building the bench and the fault-injection switches.
 | Component | Status | Assigned To | Branch | Notes |
 |---|---|---|---|---|
 | BOM & sourcing | ✅ Done | Am4l-babu | `feature/project-scaffold` | 4 tiers, ₹6,250 for V1 (corrected 28 Aug 2026 — was ₹6,150, didn't match its own line items). Shoppable HTML with live vendor links. See [hardware/bom/](hardware/bom/) |
-| Firmware skeleton | ✅ Done | Am4l-babu | `feature/project-scaffold` | PlatformIO, sensor fusion + safety interlock structure. Untested on hardware |
+| Firmware skeleton | ✅ Done | Am4l-babu | `fix/firmware-defects` | PlatformIO, sensor fusion + safety interlock structure. Still untested on hardware. **Five defects fixed 8 Sep before the board is flashed:** non-finite floats printed as bare `nan` (invalid JSON) now emit `null`; Wi-Fi never reconnected after a drop; gate state shared with an ISR was neither `volatile` nor `portMUX`-guarded; the stepper enable pin was left asserted after a move; and the air-vs-water temperature approximation is now documented rather than implied. [PR #17](https://github.com/Am4l-babu/aqua-sync/pull/17) |
 | Order V1 components | ✅ Done | Am4l-babu | — | **Ordered and received — components in hand, confirmed 8 Sep.** Unblocks every remaining hardware row |
 | Two-tank rig build | 📋 Todo | — | — | Acrylic tanks, pump loop, sluice gate |
 | Level sensing + EKF | 📋 Todo | — | — | JSN-SR04T + DS18B20 temperature compensation |
@@ -122,18 +128,18 @@ what is left is building the bench and the fault-injection switches.
 
 | Component | Status | Assigned To | Branch | Notes |
 |---|---|---|---|---|
-| Project dossier (PDF) | ✅ Done | Am4l-babu | `feature/project-scaffold` | [docs/AquaSync_Project_Dossier.pdf](docs/AquaSync_Project_Dossier.pdf) — **21 pp**, regenerates from data. §4.4 forecast error (October only, so far), §4.5 cascade, §4.6 runoff |
+| Project dossier (PDF) | ✅ Done | Am4l-babu | `feature/project-scaffold` | [docs/AquaSync_Project_Dossier.pdf](docs/AquaSync_Project_Dossier.pdf) — **24 pp**, regenerates from data. §4.4 forecast error (**both storms**, on separate axes), §4.5 cascade, §4.6 runoff |
 | Architecture | ✅ Done | Am4l-babu | `feature/project-scaffold` | [docs/architecture.md](docs/architecture.md) — now carries a per-layer status note |
 | Data sources & corrections | ✅ Done | Am4l-babu | `feature/project-scaffold` | [docs/data-sources.md](docs/data-sources.md) — plus the sources the research sweep acquired |
 | Roadmap | ✅ Done | Am4l-babu | `feature/project-scaffold` | [ROADMAP.md](ROADMAP.md) — refreshed 31 Aug: ten items, a timeline, a dependency map |
 | Action plan | ✅ Done | Am4l-babu | `feature/project-scaffold` | [ACTION_PLAN.md](ACTION_PLAN.md) — re-dated 31 Aug; the earlier plan had Week 2 starting on a Wednesday |
 | Validation report | ✅ Done | Am4l-babu | `feature/api-and-validation` | [docs/validation.md](docs/validation.md) — every claim with its error bar; the second storm added 31 Aug; explicit list of what is **not** validated |
 | Project abstract (PDF) | ✅ Done | Am4l-babu | `feature/docs-corrections` | [docs/AquaSync_Abstract.pdf](docs/AquaSync_Abstract.pdf) — 4 pp, the one-sitting version |
-| ICFOSS portfolio analysis (PDF) | ✅ Done | Am4l-babu | `feature/docs-corrections` | [docs/AquaSync_ICFOSS_Analysis.pdf](docs/AquaSync_ICFOSS_Analysis.pdf) — 9 pp: what Kerala's open-source institute has already built, and which of it AquaSync can stand on |
-| Deep research report (PDF) | ✅ Done | Am4l-babu | `feature/deep-research` | [docs/AquaSync_Research_Report.pdf](docs/AquaSync_Research_Report.pdf) — 59 pp, 144 verified sources, including the five that contradict this project's thesis |
+| ICFOSS portfolio analysis (PDF) | ✅ Done | Am4l-babu | `feature/docs-corrections` | [docs/AquaSync_ICFOSS_Analysis.pdf](docs/AquaSync_ICFOSS_Analysis.pdf) — 10 pp: what Kerala's open-source institute has already built, and which of it AquaSync can stand on |
+| Deep research report (PDF) | ✅ Done | Am4l-babu | `feature/deep-research` | [docs/AquaSync_Research_Report.pdf](docs/AquaSync_Research_Report.pdf) — 59 pp, 144 verified sources, including the five that contradict this project's thesis. **Determinism fixed 8 Sep:** it embedded the day it was built, so every rebuild produced a different PDF and `check.py`'s regeneration check failed on a document nobody had changed. The date is now an 8-character digest of the parsed index files. [PR #16](https://github.com/Am4l-babu/aqua-sync/pull/16) |
 | Working agreements (CLAUDE.md) | ✅ Done | Am4l-babu | `feature/contributor-rule` | [CLAUDE.md](CLAUDE.md) — human contributors only, the gate, and (31 Aug) an operating loop, a writing guide, a numbers ledger and a definition of done |
 | Handover brief | ✅ Done | Am4l-babu | `feature/second-storm-and-doc-refresh` | [HANDOVER.md](HANDOVER.md) — written 30 Aug, refreshed 31 Aug, committed 7 Sep |
-| Second storm into dossier §4.4 + Figure 6 | 🔄 Ongoing | Am4l-babu | `feature/second-storm-and-doc-refresh` | On the record in this file, ROADMAP item 1 and validation.md §4. `make_figures.py` still reads October only for Figure 6 and §4.4 — now by an explicit scenario filter rather than by there only being five files. **Defect found and fixed 7 Sep:** with no filter, committing the second storm's five files made the figure silently sort both studies onto one x-axis by lead time — the "average the two storms" mistake validation.md §4 forbids. Caught by `check.py`'s regeneration check before it was ever committed. Writing an August 2022 section into the dossier itself is separate, larger work |
+| Second storm into dossier §4.4 + Figure 6 | 👀 In Review | Am4l-babu | `feature/second-storm-into-dossier` | Written 9 Sep. §4.4 now carries a second-storm subsection and Figure 6 a second row — **separate axes and separate y-limits, never one shared curve**, because the two episodes are not equally hard and the penalties past the flat region differ by more than a factor of two. The structure reproduces but the shape does not: October ramps to a +69% plateau, August holds within +5% to 90 h then jumps to +158% in one 30-hour step. Perfect foresight on August *gains* **−1.46 m** of cushion — the hindsight-optimal policy ends higher than the operators did. **Two more unfiltered globs found and fixed:** `build_abstract.py` counted study *files* as lead times and said "across 10 lead times" (there are five, run twice), and `build_icfoss_analysis.py` merged both storms into one excess-cost range. Any `glob("forecast_error_study_*")` without a scenario filter is a defect. Full `check.py` green. [PR #20](https://github.com/Am4l-babu/aqua-sync/pull/20) |
 | Poster (A1) | 📋 Todo | — | — | Figures 1, 4 and 5 carry it. Print by expo minus 3 days |
 | Pitch rehearsal | 📋 Todo | — | — | Script is in the dossier §12 |
 
@@ -185,7 +191,7 @@ what is left is building the bench and the fault-injection switches.
   732.41 m, 0.87 m less cushion than the day, −₹21 cr; release early
   (727.5 m, h0, 400 cumecs) → 728.59 m, 2.95 m more, +₹45 cr. Regenerated
   from `aquasync.twin.crisis.score` on 31 Aug; not cached on disk.
-- Documents: dossier **21 pp**, abstract 4, ICFOSS analysis 9, research
+- Documents: dossier **24 pp**, abstract 4, ICFOSS analysis 10, research
   report 59. Tests: **91**.
 - The optimiser independently converged on 728.43 m, against KSEB's published
   rule level of 728.50 m.
