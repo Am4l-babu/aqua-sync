@@ -15,6 +15,10 @@
 
 * { box-sizing: border-box; }
 
+/* The `hidden` attribute must win over any `display` a component sets
+   (e.g. `.kv { display: grid }` on #whatif-out). */
+[hidden] { display: none !important; }
+
 body {
   margin: 0;
   font-family: var(--font);
