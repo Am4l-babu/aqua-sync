@@ -2,9 +2,15 @@
 
 ESP32 nodes for the AquaSync scale rig and field deployment.
 
+> **The gate this firmware drives is the scale rig's model sluice.** AquaSync
+> never operates a real dam gate. Kerala's gates are operated by KSEB and the
+> district administration; there is no path from this firmware to them. The
+> MQTT command topic is deliberately not subscribed on the API side, and the
+> bridge in `aquasync.api.rig` is receive-only.
+
 | Node | Role | Status |
 |---|---|---|
-| `node_reservoir/` | Level sensing, sensor fusion, sluice gate control, telemetry | Skeleton complete, untested on hardware |
+| `node_reservoir/` | Level sensing, sensor fusion, **bench-rig** sluice gate control, telemetry | Skeleton complete, untested on hardware |
 | `node_downstream/` | Downstream stage and flow, LoRa relay | Planned |
 
 ## Build
