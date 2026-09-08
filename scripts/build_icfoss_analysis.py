@@ -59,12 +59,20 @@ pdfmetrics.registerFont(TTFont("Glyph", str(_DJ)))
 RS = "₹"
 
 
-def forecast_excess_cost() -> tuple[float, float]:
-    """Best and worst excess cost against perfect foresight, across every lead
-    time in data/processed. Typed numbers go stale; this does not."""
+def forecast_excess_cost(scenario: str = "periyar_oct_2021") -> tuple[float, float]:
+    """Best and worst excess cost against perfect foresight, for one storm.
+
+    Filtered by scenario. data/processed holds ten runs across two storms, and
+    an unfiltered sweep merged their ranges into one - the "average the two
+    storms" mistake docs/validation.md Sec.4 forbids, and the two ranges differ
+    by more than a factor of two. Runs written before the `scenario` field
+    existed belong to the flagship October study.
+    """
     costs = []
-    for q in PROC.glob("forecast_error_study_*.json"):
+    for q in sorted(PROC.glob("forecast_error_study_*.json")):
         d = json.loads(q.read_text(encoding="utf-8"))
+        if d.get("scenario", "periyar_oct_2021") != scenario:
+            continue
         for rule in ("decision_rule_expected_value", "decision_rule_minimax_regret"):
             v = d.get(rule, {}).get("excess_cost_vs_perfect_foresight_pct")
             if v is not None:
@@ -1159,7 +1167,8 @@ def page_7(doc):
 
 
 def page_8(doc):
-    _FC_LO, _FC_HI = forecast_excess_cost()
+    _FC_LO, _FC_HI = forecast_excess_cost("periyar_oct_2021")
+    _FC_AUG_HI = forecast_excess_cost("idukki_aug_2022")[1]
     doc.start_page("Engagement plan")
     doc.band("Section 06", "What to actually do, in order")
 
@@ -1231,9 +1240,10 @@ def page_8(doc):
         "Present them as directions, not as calibrated sensors.",
 
         "Nothing here changes AquaSync's central constraint. Deciding from a real "
-        f"ensemble costs {_FC_LO:+.0f}% to {_FC_HI:+.0f}% more than hindsight, and the "
-        "penalty grows with lead time. Better sensors improve the present state; they "
-        "do not supply the forecast.",
+        f"ensemble costs {_FC_LO:+.0f}% to {_FC_HI:+.0f}% more than hindsight in "
+        f"October 2021 and up to {_FC_AUG_HI:+.0f}% in August 2022, and the horizon "
+        "past which it stops helping moves between storms. Better sensors improve the "
+        "present state; they do not supply the forecast.",
     ], colour=AMBER, size=8.3, leading=10.6, gap=2.4)
 
     doc.h2("The one-line version")
