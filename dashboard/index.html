@@ -74,6 +74,15 @@
         <input type="range" id="whatif" min="0" max="900" value="0" step="10">
       </label>
       <button id="whatif-reset" class="btn">Return to recommended</button>
+
+      <dl class="kv" id="whatif-out" hidden>
+        <dt>Peak level, 72 h</dt><dd id="wi-peak">—</dd>
+        <dt>Cushion at peak</dt><dd id="wi-cushion">—</dd>
+        <dt>Reaches FRL</dt><dd id="wi-breach">—</dd>
+        <dt>Time to FRL</dt><dd id="wi-ttf">—</dd>
+      </dl>
+      <p class="note" id="wi-advice"></p>
+      <p class="note" id="whatif-status">Move the slider to test a constant release.</p>
     </section>
   </aside>
 

@@ -334,9 +334,64 @@ function drawSpark() {
      </svg>`;
 }
 
+/**
+ * Ask the API what a constant `release` (cumecs) does to Idukki over the next
+ * 72 hours, starting from whatever level and inflow the dashboard is showing.
+ * Served same-origin, so the URL is relative. Throws if the API is unreachable
+ * or returns a non-OK status.
+ */
+async function postWhatIf(release) {
+  const body = {
+    start_level: target.level,
+    inflow_cumecs: Math.max(0, target.inflow),
+    release_cumecs: release,
+    hours: 72,
+  };
+  const res = await fetch('/api/whatif', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`whatif ${res.status}`);
+  return res.json();
+}
+
+/** Write a /api/whatif result into the What-if card. */
+function renderWhatIf(r) {
+  const out = document.getElementById('whatif-out');
+  const peak = Number(r.peak_level);
+  const cushion = RES.frl - peak;
+  const ttf = Number(r.hours_to_frl);
+
+  document.getElementById('wi-peak').textContent = `${peak.toFixed(2)} m`;
+  document.getElementById('wi-cushion').textContent = `${cushion.toFixed(2)} m`;
+
+  const breach = document.getElementById('wi-breach');
+  breach.textContent = r.breaches_frl ? 'yes' : 'no';
+  breach.classList.toggle('crit', !!r.breaches_frl);
+
+  document.getElementById('wi-ttf').textContent =
+    Number.isFinite(ttf) && ttf > 0 ? `${ttf.toFixed(0)} h` : '—';
+
+  document.getElementById('wi-advice').textContent = r.advice || '';
+  document.getElementById('whatif-status').textContent =
+    'Constant inflow and release, 72 h. Advisory — a named operator approves every release.';
+  out.hidden = false;
+}
+
+/** Reset the card to its pre-interaction state. */
+function clearWhatIf() {
+  document.getElementById('whatif-out').hidden = true;
+  document.getElementById('wi-advice').textContent = '';
+  document.getElementById('whatif-status').textContent =
+    'Move the slider to test a constant release.';
+}
+
 function bindControls() {
   const slider = document.getElementById('whatif');
   const label = document.getElementById('whatif-val');
+
+  // Live: label + 3D gate follow the handle continuously (unchanged).
   slider.addEventListener('input', () => {
     label.textContent = slider.value;
     target.spill = Math.max(0, Number(slider.value) - RES.turbineRated);
@@ -344,8 +399,32 @@ function bindControls() {
     target.gate = Math.min(100, (target.spill / 400) * 100);
     updatePanel({});
   });
+
+  // On release: ask the API what that constant release does over 72 h.
+  // Debounced so a quick drag-and-release fires one request.
+  let timer = 0;
+  slider.addEventListener('change', () => {
+    clearTimeout(timer);
+    const release = Number(slider.value);
+    document.getElementById('whatif-status').textContent = 'Simulating…';
+    timer = setTimeout(async () => {
+      try {
+        renderWhatIf(await postWhatIf(release));
+      } catch {
+        document.getElementById('whatif-out').hidden = true;
+        document.getElementById('wi-advice').textContent = '';
+        document.getElementById('whatif-status').textContent =
+          'Sandbox needs the API running (uvicorn on port 8000).';
+      }
+    }, 250);
+  });
+
   document.getElementById('whatif-reset').addEventListener('click', () => {
-    slider.value = 0; label.textContent = '0';
+    clearTimeout(timer);
+    slider.value = 0;
+    label.textContent = '0';
+    slider.dispatchEvent(new Event('input'));
+    clearWhatIf();
   });
 }
 
