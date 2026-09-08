@@ -1,0 +1,568 @@
+{
+  "window": [
+    "2021-10-08",
+    "2021-10-28"
+  ],
+  "n_hours": 481,
+  "shared_reach": "periyar_lower",
+  "bankfull_cumecs": 1100.0,
+  "weights": {
+    "flood": 1.0,
+    "dam_safety": 3.0,
+    "revenue": 0.05,
+    "gate_movement": 0.05
+  },
+  "objective": "One shared flood term on the combined routed discharge at periyar_lower, plus each dam's private dam-safety, forgone-revenue and gate-wear terms. Same functional form and weights as the single-dam objective; only the flood term moves.",
+  "search": "Coordinate descent from the independent optima: each sweep re-optimises one dam exhaustively over its own 1,344-policy grid against the joint objective while the other is held fixed.",
+  "as_held": {
+    "lateral_cumecs": 0.0,
+    "observed_joint_peak_cumecs": 403.4,
+    "independent": {
+      "policies": {
+        "idukki": {
+          "target_level_m": 728.433,
+          "start_hour": 166,
+          "max_rate_cumecs": 828.0
+        },
+        "idamalayar": {
+          "target_level_m": 163.469,
+          "start_hour": 249,
+          "max_rate_cumecs": 314.3
+        }
+      },
+      "joint_peak_cumecs": 910.9,
+      "joint_cost": 2.91,
+      "joint_flood_cost": 0.0,
+      "private_cost": 2.91,
+      "per_dam": {
+        "idukki": {
+          "private_cost": 2.7633,
+          "peak_level_m": 728.508,
+          "min_freeboard_m": 3.922,
+          "revenue_cr": 128.16,
+          "breaches_frl": false
+        },
+        "idamalayar": {
+          "private_cost": 0.1468,
+          "peak_level_m": 164.095,
+          "min_freeboard_m": 4.905,
+          "revenue_cr": 9.92,
+          "breaches_frl": false
+        }
+      }
+    },
+    "joint": {
+      "policies": {
+        "idukki": {
+          "target_level_m": 728.433,
+          "start_hour": 166,
+          "max_rate_cumecs": 828.0
+        },
+        "idamalayar": {
+          "target_level_m": 163.469,
+          "start_hour": 249,
+          "max_rate_cumecs": 314.3
+        }
+      },
+      "joint_peak_cumecs": 910.9,
+      "joint_cost": 2.91,
+      "joint_flood_cost": 0.0,
+      "private_cost": 2.91,
+      "per_dam": {
+        "idukki": {
+          "private_cost": 2.7633,
+          "peak_level_m": 728.508,
+          "min_freeboard_m": 3.922,
+          "revenue_cr": 128.16,
+          "breaches_frl": false
+        },
+        "idamalayar": {
+          "private_cost": 0.1468,
+          "peak_level_m": 164.095,
+          "min_freeboard_m": 4.905,
+          "revenue_cr": 9.92,
+          "breaches_frl": false
+        }
+      },
+      "converged": true,
+      "sweeps": 0,
+      "history": [
+        {
+          "sweep": 0,
+          "moved": null,
+          "total": 2.91,
+          "joint_peak_cumecs": 910.9
+        }
+      ]
+    },
+    "joint_changed_the_policies": false,
+    "peak_reduction_pct": 0.0
+  },
+  "lateral_sensitivity": [
+    {
+      "lateral_cumecs": 100.0,
+      "observed_joint_peak_cumecs": 503.4,
+      "independent": {
+        "policies": {
+          "idukki": {
+            "target_level_m": 728.433,
+            "start_hour": 166,
+            "max_rate_cumecs": 828.0
+          },
+          "idamalayar": {
+            "target_level_m": 163.469,
+            "start_hour": 249,
+            "max_rate_cumecs": 314.3
+          }
+        },
+        "joint_peak_cumecs": 1010.9,
+        "joint_cost": 2.91,
+        "joint_flood_cost": 0.0,
+        "private_cost": 2.91,
+        "per_dam": {
+          "idukki": {
+            "private_cost": 2.7633,
+            "peak_level_m": 728.508,
+            "min_freeboard_m": 3.922,
+            "revenue_cr": 128.16,
+            "breaches_frl": false
+          },
+          "idamalayar": {
+            "private_cost": 0.1468,
+            "peak_level_m": 164.095,
+            "min_freeboard_m": 4.905,
+            "revenue_cr": 9.92,
+            "breaches_frl": false
+          }
+        }
+      },
+      "joint": {
+        "policies": {
+          "idukki": {
+            "target_level_m": 728.433,
+            "start_hour": 166,
+            "max_rate_cumecs": 828.0
+          },
+          "idamalayar": {
+            "target_level_m": 163.469,
+            "start_hour": 249,
+            "max_rate_cumecs": 314.3
+          }
+        },
+        "joint_peak_cumecs": 1010.9,
+        "joint_cost": 2.91,
+        "joint_flood_cost": 0.0,
+        "private_cost": 2.91,
+        "per_dam": {
+          "idukki": {
+            "private_cost": 2.7633,
+            "peak_level_m": 728.508,
+            "min_freeboard_m": 3.922,
+            "revenue_cr": 128.16,
+            "breaches_frl": false
+          },
+          "idamalayar": {
+            "private_cost": 0.1468,
+            "peak_level_m": 164.095,
+            "min_freeboard_m": 4.905,
+            "revenue_cr": 9.92,
+            "breaches_frl": false
+          }
+        },
+        "converged": true,
+        "sweeps": 0,
+        "history": [
+          {
+            "sweep": 0,
+            "moved": null,
+            "total": 2.91,
+            "joint_peak_cumecs": 1010.9
+          }
+        ]
+      },
+      "joint_changed_the_policies": false,
+      "peak_reduction_pct": 0.0
+    },
+    {
+      "lateral_cumecs": 200.0,
+      "observed_joint_peak_cumecs": 603.4,
+      "independent": {
+        "policies": {
+          "idukki": {
+            "target_level_m": 728.433,
+            "start_hour": 166,
+            "max_rate_cumecs": 828.0
+          },
+          "idamalayar": {
+            "target_level_m": 163.469,
+            "start_hour": 249,
+            "max_rate_cumecs": 314.3
+          }
+        },
+        "joint_peak_cumecs": 1110.9,
+        "joint_cost": 2.9103,
+        "joint_flood_cost": 0.0002,
+        "private_cost": 2.91,
+        "per_dam": {
+          "idukki": {
+            "private_cost": 2.7633,
+            "peak_level_m": 728.508,
+            "min_freeboard_m": 3.922,
+            "revenue_cr": 128.16,
+            "breaches_frl": false
+          },
+          "idamalayar": {
+            "private_cost": 0.1468,
+            "peak_level_m": 164.095,
+            "min_freeboard_m": 4.905,
+            "revenue_cr": 9.92,
+            "breaches_frl": false
+          }
+        }
+      },
+      "joint": {
+        "policies": {
+          "idukki": {
+            "target_level_m": 728.433,
+            "start_hour": 166,
+            "max_rate_cumecs": 828.0
+          },
+          "idamalayar": {
+            "target_level_m": 163.469,
+            "start_hour": 249,
+            "max_rate_cumecs": 314.3
+          }
+        },
+        "joint_peak_cumecs": 1110.9,
+        "joint_cost": 2.9103,
+        "joint_flood_cost": 0.0002,
+        "private_cost": 2.91,
+        "per_dam": {
+          "idukki": {
+            "private_cost": 2.7633,
+            "peak_level_m": 728.508,
+            "min_freeboard_m": 3.922,
+            "revenue_cr": 128.16,
+            "breaches_frl": false
+          },
+          "idamalayar": {
+            "private_cost": 0.1468,
+            "peak_level_m": 164.095,
+            "min_freeboard_m": 4.905,
+            "revenue_cr": 9.92,
+            "breaches_frl": false
+          }
+        },
+        "converged": true,
+        "sweeps": 0,
+        "history": [
+          {
+            "sweep": 0,
+            "moved": null,
+            "total": 2.9103,
+            "joint_peak_cumecs": 1110.9
+          }
+        ]
+      },
+      "joint_changed_the_policies": false,
+      "peak_reduction_pct": 0.0
+    },
+    {
+      "lateral_cumecs": 300.0,
+      "observed_joint_peak_cumecs": 703.4,
+      "independent": {
+        "policies": {
+          "idukki": {
+            "target_level_m": 728.433,
+            "start_hour": 166,
+            "max_rate_cumecs": 828.0
+          },
+          "idamalayar": {
+            "target_level_m": 163.469,
+            "start_hour": 249,
+            "max_rate_cumecs": 314.3
+          }
+        },
+        "joint_peak_cumecs": 1210.9,
+        "joint_cost": 2.9963,
+        "joint_flood_cost": 0.0863,
+        "private_cost": 2.91,
+        "per_dam": {
+          "idukki": {
+            "private_cost": 2.7633,
+            "peak_level_m": 728.508,
+            "min_freeboard_m": 3.922,
+            "revenue_cr": 128.16,
+            "breaches_frl": false
+          },
+          "idamalayar": {
+            "private_cost": 0.1468,
+            "peak_level_m": 164.095,
+            "min_freeboard_m": 4.905,
+            "revenue_cr": 9.92,
+            "breaches_frl": false
+          }
+        }
+      },
+      "joint": {
+        "policies": {
+          "idukki": {
+            "target_level_m": 728.433,
+            "start_hour": 124,
+            "max_rate_cumecs": 729.4
+          },
+          "idamalayar": {
+            "target_level_m": 163.469,
+            "start_hour": 249,
+            "max_rate_cumecs": 314.3
+          }
+        },
+        "joint_peak_cumecs": 1129.4,
+        "joint_cost": 2.9799,
+        "joint_flood_cost": 0.0099,
+        "private_cost": 2.9699,
+        "per_dam": {
+          "idukki": {
+            "private_cost": 2.8232,
+            "peak_level_m": 728.389,
+            "min_freeboard_m": 4.041,
+            "revenue_cr": 127.16,
+            "breaches_frl": false
+          },
+          "idamalayar": {
+            "private_cost": 0.1468,
+            "peak_level_m": 164.095,
+            "min_freeboard_m": 4.905,
+            "revenue_cr": 9.92,
+            "breaches_frl": false
+          }
+        },
+        "converged": true,
+        "sweeps": 1,
+        "history": [
+          {
+            "sweep": 0,
+            "moved": null,
+            "total": 2.9963,
+            "joint_peak_cumecs": 1210.9
+          },
+          {
+            "sweep": 1,
+            "moved": "idukki",
+            "total": 2.9799,
+            "joint_peak_cumecs": 1129.4
+          }
+        ]
+      },
+      "joint_changed_the_policies": true,
+      "peak_reduction_pct": 6.7
+    },
+    {
+      "lateral_cumecs": 400.0,
+      "observed_joint_peak_cumecs": 803.4,
+      "independent": {
+        "policies": {
+          "idukki": {
+            "target_level_m": 728.433,
+            "start_hour": 166,
+            "max_rate_cumecs": 828.0
+          },
+          "idamalayar": {
+            "target_level_m": 163.469,
+            "start_hour": 249,
+            "max_rate_cumecs": 314.3
+          }
+        },
+        "joint_peak_cumecs": 1310.9,
+        "joint_cost": 3.3929,
+        "joint_flood_cost": 0.4828,
+        "private_cost": 2.91,
+        "per_dam": {
+          "idukki": {
+            "private_cost": 2.7633,
+            "peak_level_m": 728.508,
+            "min_freeboard_m": 3.922,
+            "revenue_cr": 128.16,
+            "breaches_frl": false
+          },
+          "idamalayar": {
+            "private_cost": 0.1468,
+            "peak_level_m": 164.095,
+            "min_freeboard_m": 4.905,
+            "revenue_cr": 9.92,
+            "breaches_frl": false
+          }
+        }
+      },
+      "joint": {
+        "policies": {
+          "idukki": {
+            "target_level_m": 728.433,
+            "start_hour": 124,
+            "max_rate_cumecs": 630.9
+          },
+          "idamalayar": {
+            "target_level_m": 163.469,
+            "start_hour": 249,
+            "max_rate_cumecs": 242.9
+          }
+        },
+        "joint_peak_cumecs": 1148.3,
+        "joint_cost": 3.066,
+        "joint_flood_cost": 0.029,
+        "private_cost": 3.037,
+        "per_dam": {
+          "idukki": {
+            "private_cost": 2.8874,
+            "peak_level_m": 728.554,
+            "min_freeboard_m": 3.876,
+            "revenue_cr": 127.18,
+            "breaches_frl": false
+          },
+          "idamalayar": {
+            "private_cost": 0.1496,
+            "peak_level_m": 164.095,
+            "min_freeboard_m": 4.905,
+            "revenue_cr": 9.92,
+            "breaches_frl": false
+          }
+        },
+        "converged": true,
+        "sweeps": 2,
+        "history": [
+          {
+            "sweep": 0,
+            "moved": null,
+            "total": 3.3929,
+            "joint_peak_cumecs": 1310.9
+          },
+          {
+            "sweep": 1,
+            "moved": "idukki",
+            "total": 3.0712,
+            "joint_peak_cumecs": 1162.9
+          },
+          {
+            "sweep": 1,
+            "moved": "idamalayar",
+            "total": 3.066,
+            "joint_peak_cumecs": 1148.3
+          }
+        ]
+      },
+      "joint_changed_the_policies": true,
+      "peak_reduction_pct": 12.4
+    },
+    {
+      "lateral_cumecs": 500.0,
+      "observed_joint_peak_cumecs": 903.4,
+      "independent": {
+        "policies": {
+          "idukki": {
+            "target_level_m": 728.433,
+            "start_hour": 166,
+            "max_rate_cumecs": 828.0
+          },
+          "idamalayar": {
+            "target_level_m": 163.469,
+            "start_hour": 249,
+            "max_rate_cumecs": 314.3
+          }
+        },
+        "joint_peak_cumecs": 1410.9,
+        "joint_cost": 4.4243,
+        "joint_flood_cost": 1.5143,
+        "private_cost": 2.91,
+        "per_dam": {
+          "idukki": {
+            "private_cost": 2.7633,
+            "peak_level_m": 728.508,
+            "min_freeboard_m": 3.922,
+            "revenue_cr": 128.16,
+            "breaches_frl": false
+          },
+          "idamalayar": {
+            "private_cost": 0.1468,
+            "peak_level_m": 164.095,
+            "min_freeboard_m": 4.905,
+            "revenue_cr": 9.92,
+            "breaches_frl": false
+          }
+        }
+      },
+      "joint": {
+        "policies": {
+          "idukki": {
+            "target_level_m": 727.958,
+            "start_hour": 166,
+            "max_rate_cumecs": 532.3
+          },
+          "idamalayar": {
+            "target_level_m": 163.469,
+            "start_hour": 249,
+            "max_rate_cumecs": 171.4
+          }
+        },
+        "joint_peak_cumecs": 1203.6,
+        "joint_cost": 3.5438,
+        "joint_flood_cost": 0.1797,
+        "private_cost": 3.3641,
+        "per_dam": {
+          "idukki": {
+            "private_cost": 3.1379,
+            "peak_level_m": 728.544,
+            "min_freeboard_m": 3.886,
+            "revenue_cr": 128.58,
+            "breaches_frl": false
+          },
+          "idamalayar": {
+            "private_cost": 0.2262,
+            "peak_level_m": 164.118,
+            "min_freeboard_m": 4.882,
+            "revenue_cr": 9.92,
+            "breaches_frl": false
+          }
+        },
+        "converged": true,
+        "sweeps": 3,
+        "history": [
+          {
+            "sweep": 0,
+            "moved": null,
+            "total": 4.4243,
+            "joint_peak_cumecs": 1410.9
+          },
+          {
+            "sweep": 1,
+            "moved": "idukki",
+            "total": 3.6897,
+            "joint_peak_cumecs": 1262.9
+          },
+          {
+            "sweep": 1,
+            "moved": "idamalayar",
+            "total": 3.6206,
+            "joint_peak_cumecs": 1230.9
+          },
+          {
+            "sweep": 2,
+            "moved": "idukki",
+            "total": 3.5438,
+            "joint_peak_cumecs": 1203.6
+          }
+        ]
+      },
+      "joint_changed_the_policies": true,
+      "peak_reduction_pct": 14.7
+    }
+  ],
+  "first_lateral_that_changes_the_policies": 300.0,
+  "finding": "On the data as held the joint objective is inert: the combined peak never reaches periyar_lower's bankfull, so the shared flood term is identically zero, the objective reduces to the sum of the private costs, and the independent optima already minimise that. Coordinate descent converges in zero moves. This is not evidence that a joint objective is worthless - it is evidence that this dataset cannot exercise one, because the shared reach never appears threatened without the ungauged lateral inflow nobody has measured.",
+  "caveats": [
+    "Coordinate descent converges to a best-response equilibrium - a local optimum where neither dam can unilaterally improve. A jointly better pair requiring both to move at once may exist.",
+    "The lateral sensitivity is an ASSUMPTION, not a measurement. A constant baseline flow is a crude stand-in for a real tributary hydrograph, and the threshold it produces is indicative of the order of magnitude only.",
+    "Two dams' contribution plus whatever lateral inflow is assumed. Do not read the zero-lateral cumec figures against bankfull or danger thresholds as though they were total river discharge.",
+    "Routing K and x are anchored to CWC's published 8 h travel time, not gauge-calibrated (r2 = 0.005 on daily data). Downstream discharge is indicative.",
+    "One event, October 2021, and one cascade."
+  ]
+}
