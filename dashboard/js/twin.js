@@ -104,6 +104,8 @@ async function init() {
   await adoptServerConstants();
   bindControls();
   connect();
+  pollRig();
+  setInterval(pollRig, 1000);
   animate();
 }
 
@@ -407,6 +409,77 @@ function bindControls() {
     source.textContent = 'source: telemetry';
     clearWhatIf();
   });
+}
+
+// --------------------------------------------------------------------------
+// scale rig
+// --------------------------------------------------------------------------
+
+/**
+ * Poll the bench rig and render it in its own units.
+ *
+ * Deliberately a separate card from the reservoir readouts. The rig is a
+ * 400 mm tank; Idukki is a 60 km² reservoir. Putting a tank depth anywhere
+ * near the m MSL readout, even in the same column, invites a reader to treat
+ * one as the other.
+ */
+/** Mirror a rig fault onto the 3D view, where it cannot be missed. */
+function setStageAlert(faults) {
+  const el = document.getElementById('stage-alert');
+  if (!el) return;
+  el.textContent = faults.length ? `RIG FAULT — ${faults[0]}` : '';
+  el.hidden = faults.length === 0;
+}
+
+async function pollRig() {
+  const state = document.getElementById('rig-state');
+  const warn = document.getElementById('rig-warn');
+  const set = (id, text) => { document.getElementById(id).textContent = text; };
+
+  try {
+    const r = await fetch('/api/rig', { signal: AbortSignal.timeout(2500) });
+    if (!r.ok) throw new Error(String(r.status));
+    const s = await r.json();
+
+    const live = s.source === 'LIVE';
+    state.textContent = live ? 'LIVE' : s.source === 'STALE' ? 'STALE' : 'OFFLINE';
+    state.className = `chip ${live ? 'chip-live' : s.source === 'STALE' ? 'chip-stale' : 'chip-off'}`;
+
+    const d = s.reading;
+    if (!d) {
+      for (const id of ['rig-level', 'rig-flow', 'rig-sensors', 'rig-gate-cmd',
+        'rig-gate-ver', 'rig-chain']) set(id, '—');
+      warn.hidden = true;
+      document.getElementById('rig-note').textContent = s.status;
+      return;
+    }
+
+    set('rig-level', d.level_m == null ? '—' : `${d.level_m.toFixed(3)} m`);
+    set('rig-flow', d.flow_lpm == null ? '—' : `${d.flow_lpm.toFixed(2)} L/min`);
+    set('rig-sensors', d.sensors_agree === false ? 'DISAGREE' : 'agree');
+    set('rig-gate-cmd', d.gate_commanded_pct == null ? '—' : `${d.gate_commanded_pct.toFixed(0)} %`);
+    set('rig-gate-ver', d.gate_verified_pct == null ? '—' : `${d.gate_verified_pct.toFixed(0)} %`);
+    set('rig-chain', `${s.audit_chain.verified} verified · ${s.audit_chain.breaks} breaks`);
+
+    const faults = [];
+    if (d.actuator_disagreement) {
+      faults.push(
+        `ACTUATOR DISAGREEMENT — commanded ${d.gate_commanded_pct.toFixed(0)}%, ` +
+        `verified ${d.gate_verified_pct.toFixed(0)}%. The gate is not where it was told to be.`);
+    }
+    if (d.gate_jammed) faults.push('Gate reports JAMMED.');
+    if (d.sensors_agree === false) {
+      faults.push('Level sensors disagree — the estimate is running on one channel.');
+    }
+    warn.textContent = faults.join(' ');
+    warn.hidden = faults.length === 0;
+    setStageAlert(faults);
+  } catch {
+    state.textContent = 'OFFLINE';
+    state.className = 'chip chip-off';
+    warn.hidden = true;
+    setStageAlert([]);
+  }
 }
 
 // --------------------------------------------------------------------------

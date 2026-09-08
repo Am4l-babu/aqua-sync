@@ -84,9 +84,27 @@
       <p class="note" id="wi-advice"></p>
       <p class="note" id="whatif-status">Move the slider to test a constant release.</p>
     </section>
+
+    <section class="card" id="rig-card">
+      <h2>Scale rig <span id="rig-state" class="chip chip-off">OFFLINE</span></h2>
+      <dl class="kv">
+        <dt>Tank level</dt><dd id="rig-level">—</dd>
+        <dt>Flow</dt><dd id="rig-flow">—</dd>
+        <dt>Sensors</dt><dd id="rig-sensors">—</dd>
+        <dt>Gate commanded</dt><dd id="rig-gate-cmd">—</dd>
+        <dt>Gate verified</dt><dd id="rig-gate-ver">—</dd>
+        <dt>Record chain</dt><dd id="rig-chain">—</dd>
+      </dl>
+      <p class="warn-line" id="rig-warn" hidden></p>
+      <p class="note" id="rig-note">
+        Bench rig, in its own units — a 400 mm tank, not the reservoir.
+        These readings are never converted to m MSL.
+      </p>
+    </section>
   </aside>
 
   <main id="stage">
+    <div id="stage-alert" class="stage-alert" hidden></div>
     <p id="scene-note" class="scene-note">Loading terrain…</p>
   </main>
 
