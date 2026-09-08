@@ -2,135 +2,97 @@
 
 The next fourteen days, concretely. Written for a solo build.
 
-**As of Monday 31 August 2026.** Phases 0–3 are done and **Week 1 is
-complete** — the twin runs, is calibrated on two episodes, and its headline
-result has a measured error bar on two storms rather than a disclosed caveat.
-What follows is the work that turns that into a submission — and it starts
-with two things that are not engineering.
+**As of Wednesday 9 September 2026.** Every software task that does not need
+the rig is finished. The Decision Engine is 7 / 7, the last open modelling
+item is closed, and the twin, the API, the 3D dashboard, Crisis Commander and
+the what-if panel have all been driven end to end in a real browser. **The
+bench is now the entire critical path**, and it has not been started.
 
-A note on dates: the previous version of this plan called 31 August a Sunday
-and started Week 2 on "Mon 2 Sep", which is a Wednesday. The calendar below
-is checked against the actual calendar. **Week 2 is this week.**
+A note on dates: this calendar is checked against the actual calendar. An
+earlier version of this plan dated Week 2 to "Mon 2 Sep", which is a
+Wednesday.
 
 ---
 
-## Week 1 result
+## What closed since 31 August
 
-The gate was: *every headline number has a stated error bar, and the
-perfect-foresight caveat is resolved rather than disclosed.* **Met, twice.**
+Both of the things only the team could do are done, and the software list
+emptied behind them.
 
-| Question | Answer now on record |
+| Was blocking | Closed |
 |---|---|
-| What if the forecast is wrong? | Measured at five lead times on **two storms**, on the optimiser's own objective. October 2021: a real ensemble matches hindsight **exactly to 48 h**, then ramps to about **+69%** by 90 h. August 2022: matches **to 90 h** (within +5%), then **+158%** at 120 h. Same structure, different shape — do not average them. Hedging is better in one run of ten, by 0.16 points |
-| Was the model tuned to one event? | No. August 2022 replays at **0.319 m** against October 2021's 0.303 m |
-| Can the two dams be scheduled jointly? | Not the way it looked. Optimising them independently puts the joint peak **126% above** what happened; retiming recovers 9%. It is an objective-function problem |
-| Are K and x calibrated? | No, and now quantified: the fit fails on daily data (**r² = 0.005**). The CWC 8 h anchor stands |
-| Does the runoff chain work? | It did not — it produced no runoff hourly. Fixed, pinned by a test, and the forecast study re-run. Now: volume right, amplitude not (NSE 0.07) |
-
-Four claims were **retracted** during the week when more data broke them, and
-every retraction is in the document where the claim was made. That record is
-worth more to a sceptical judge than the findings would have been.
-
-All of it is in [docs/validation.md](docs/validation.md); the two that
-change the headline are in the dossier at §4.4 and §4.5. Figures, dossier,
-abstract, research report and ICFOSS analysis all regenerate byte-identically
-from `scripts/`.
+| Order the V1 components | Ordered and **received 8 Sep**. Two SX1278 LoRa modules and further components followed on 9 Sep |
+| Confirm the expo entry | **Confirmed 8 Sep** |
+| Crisis Commander never seen rendered | Driven through a real browser over the DevTools protocol, 8 Sep. There *is* a headless browser on this machine — earlier notes were wrong |
+| What-if slider unwired | Wired to `POST /api/whatif` and browser-verified, 8 Sep |
+| 3D twin drawn, not measured | Rebuilt on real DEM terrain, 8 Sep |
+| Rig telemetry unsubscribed | `aquasync.api.rig` bridges MQTT, follows the SHA-256 record chain, serves `GET /api/rig`. Receive-only |
+| Second storm not in the dossier | §4.4 and Figure 6 carry both storms, 9 Sep — separate axes, never one merged curve |
+| Joint cascade objective | Built 8 Sep. Inert on the data as held, and that is the finding |
 
 ---
 
-## Do these two things first
+## The one open question
 
-Everything else can wait a day. These cannot.
+**What is the presentation date?** The entry is confirmed but the date is not
+recorded anywhere in this repository, and three deadlines below hang on it:
+when the poster must go to print (expo minus 3 days), when the offline
+rehearsal has to be finished, and how much slack the bench build actually
+has. Everything downstream of "expo minus N" is written relative until
+somebody writes the date into [PROGRESS.md](PROGRESS.md).
 
-### 1 · Order the V1 components — today
-
-Open since **26 August** — five days. Delivery is 3–5 days from Robu.in and
-Amazon.in, and every hardware task is blocked behind it. The full list is in
-[hardware/bom/](hardware/bom/README.md) with live vendor links in
-[bom.html](hardware/bom/bom.html); the minimum order is ₹6,250.
-
-**Week 2 is this week and it is the entire rig build.** Ordering today means
-parts land Wednesday to Friday, which costs the first half of the week and
-is survivable. Ordering later means Week 2 has no hardware in it at all, and
-EVOKE is an IoT club event — a software-only submission underperforms
-regardless of how good the modelling is.
-
-Do not sequence the build so a ₹90 part blocks a demo. Order one spare ESP32.
-
-### 2 · Confirm the expo entry status
-
-Registration closed on **Saturday 22 August** — nine days ago — and this has
-not been answered. Before investing three more weeks, establish where the
-team actually stands: whether the entry went in, whether late consideration
-is possible, and what the presentation date is.
-
-### 2b · If the answer on the expo is no
-
-Read this before deciding the project failed. The work stands on its own: a
-calibrated twin, a measured forecast-error result on two storms, a negative
-cascade finding worth publishing, and four documents that regenerate from
-public data. Other venues exist, and the schedule below simply loses its
-deadline. What changes is *sequencing*, not value — with no expo date, the
-joint cascade objective is worth more than the rig, and Weeks 2–4 invert.
+If it turns out to be sooner than three weeks, cut in this order: the LoRa
+link first, then Crisis Commander polish, then the poster's third figure.
+**Do not cut fault injection.**
 
 ---
 
-## Monday 31 August · desk work while the parts are in transit
+## Week 2 result · Mon 31 Aug – Sun 6 Sep
 
-None of this needs hardware. In this order.
+The gate was: *pour water in and the gate opens before FRL, untouched.* **Not
+met — the bench was not built.** The week went into software instead, which
+was worth doing and is now finished, but it means the rig build starts a week
+late with the same amount of work in front of it.
 
-| # | Task | Output |
-|---|---|---|
-| 1 | Order the parts (10 minutes) | An order number |
-| 2 | Ask about the expo entry | An answer, or a date for one |
-| 3 | **Open Crisis Commander in a browser** — `uvicorn aquasync.api.main:app --port 8000 --app-dir backend`, then `/crisis.html` | The page has been seen by a human. Fix what looks wrong |
-| 4 | Close the `.gitignore` hole: `**/data/raw/` and `**/data/external/`; delete the stray `backend/data/raw/` | `git check-ignore backend/data/raw/Idukki.json` succeeds |
-| 5 | Commit the second storm and the refreshed documents. **Full** `python scripts/check.py` first — this touches `data/processed/`. `PROGRESS.md` goes on `main` directly; everything else on a branch off `development`, PR in | Ten forecast-error files and ten documents on `development`; a clean `git status` |
-| 6 | Read the dossier end to end as a stranger would | Nothing in it contradicts anything else in the repository. Note where §4.4 still says "one storm" |
+That is the honest position and it should shape the fortnight below: there is
+no longer a software task to fall back on when the hardware is frustrating.
 
 ---
 
-## Week 2 · Mon 31 Aug – Sun 6 Sep · Build the rig
+## Week 3 · Wed 9 – Sun 13 Sep · Build the bench
 
-**This week is entirely contingent on the order going in today.** Parts land
-Wednesday to Friday at the earliest, so Monday and Tuesday are desk days and
-the physical build compresses into the back half. If parts will not arrive
-at all, do not leave the week empty — fall through to Weeks 3–4 and bring
-the what-if wiring and the dossier update forward, since neither needs
-hardware.
+Parts are in hand, so nothing here waits on delivery. Test each component
+alone **before** assembly: debugging a sensor that was never verified, inside
+a rig that is already glued and full of water, costs more than a day.
 
 | Day | Task | Output |
 |---|---|---|
-| Mon 31 | Desk list above | Parts ordered; Crisis Commander seen; second storm committed |
-| Tue 1 | Wire the what-if slider to `POST /api/whatif` (both ends exist) | Dragging the slider changes the level trace from the live model, not the client-side approximation |
-| Wed 2 | ✅ Done 9 Sep. Second storm into dossier §4.4 and Figure 6 (October qualified, not replaced); full `check.py` green | A dossier that says "two storms" and a Figure 6 with two **rows** — separate axes, never one merged curve |
-| Wed 2 – Thu 3 | **Parts land.** Bench-test every component individually before assembly | Each part confirmed working alone. Set the LM2596 to 5.0 V *before* it meets the ESP32 |
-| Fri 4 | Cut and cement the acrylic tanks; plumb the pump loop | Water circulates, nothing leaks |
-| Sat 5 | Sluice gate: NEMA 17, rack-and-pinion, limit switches. Level sensing: JSN-SR04T + DS18B20 compensation + EKF | Gate travels full range and homes reliably; level stable to ±2 mm on a moving surface |
-| Sun 6 | Telemetry: ESP32 → MQTT → twin (Mosquitto is already installed). Close the loop **on the bench**: twin computes a policy, the rig's model sluice executes it | Live level on the 3D dashboard; the rig's gate opens ahead of a simulated storm. **This loop exists on the bench and nowhere else** — see [ROADMAP.md](ROADMAP.md) §Never in scope |
+| Wed 9 | Bench-test every component individually. Set the LM2596 to **5.0 V before it meets the ESP32** | Each part confirmed working alone, on the desk |
+| Thu 10 | Flash the fixed firmware to the ESP32; confirm it publishes to `aquasync/reservoir/01/telemetry` and the bridge verifies the hash chain | `GET /api/rig` shows `source: LIVE`, chain verified, 0 breaks — against real hardware for the first time |
+| Fri 11 | Cut and cement the acrylic tanks; plumb the pump loop | Water circulates, nothing leaks. Leave the glue to cure overnight |
+| Sat 12 | Sluice gate: NEMA 17, A4988, rack-and-pinion, limit switches | The gate travels its full range and homes reliably from either end |
+| Sun 13 | Level sensing: JSN-SR04T + DS18B20 compensation + EKF | Level stable to ±2 mm on a *moving* surface, not a still one |
 
-**Week 2 gate:** pour water into the upstream tank and the gate opens *before*
-the reservoir tank reaches its FRL line — without anyone touching a keyboard.
-
-Fault injection moves to the first day of Week 3. It is the most important
-beat of the demo and it should not be built at midnight on a Sunday.
-
-A note on sequencing: test each component alone before assembly. Debugging a
-sensor that was never verified, inside a rig that is already glued together
-and full of water, costs more than a day.
+**Week 3 gate:** pour water into the upstream tank and the rig's gate opens
+*before* the reservoir tank reaches its FRL line — without anyone touching a
+keyboard. This is the bench loop only; see [ROADMAP.md](ROADMAP.md) §Never in
+scope.
 
 ---
 
-## Weeks 3–4 · Mon 7 – Sun 20 Sep · The demo, and the polish
+## Week 4 · Mon 14 – Sun 20 Sep · The beat that wins the room, then rehearse
 
-| Priority | Task | Notes |
-|---|---|---|
-| 1 | **Fault injection**: sensor-failure and gate-jam switches (Mon 7) | The twin detects the disagreement, falls back to mass-balance state estimation, keeps controlling. Build this even if something else has to be cut |
-| 2 | Crisis Commander polish, on a tablet, with a stranger | Beat 5 of the demo. If it needs the network, it is not ready |
-| 3 | Full offline rehearsal | Pull the network cable and run the entire demo, twice |
-| 4 | A1 poster | Figures 1, 4 and 5 carry it. Print by expo minus 3 days |
-| 5 | Pitch rehearsal, out loud, ten times | Script is in the dossier §12 |
-| 6 | **Joint cascade objective** | The largest open modelling item. Only worth starting if the rig is on track — or if there is no expo date, in which case it is priority 1 |
+| Priority | Day | Task | Notes |
+|---|---|---|---|
+| **1** | Mon 14 | **Fault injection**: sensor-failure and gate-jam switches | The twin detects the disagreement, falls back to mass-balance state estimation, and keeps controlling. The dashboard half is already built — a rig fault raises a banner across the 3D view, and `sensors_agree` / `gate_jammed` / commanded-vs-verified already arrive over MQTT. What is left is the physical switches and the firmware paths behind them. **Build this even if something else has to be cut** |
+| 2 | Tue 15 | Close the bench loop: twin computes a policy, the rig's model sluice executes it | Live level on the 3D dashboard, driven by real water |
+| 3 | Wed 16 | Full offline rehearsal — pull the network cable and run the whole demo, twice | Everything keeps running. If it needs the network, it is not ready |
+| 4 | Thu 17 | Crisis Commander on a tablet, with a stranger who has not seen it | Beat 5. Watch where they hesitate; fix that, not what you assumed |
+| 5 | Fri 18 | A1 poster — Figures 1, 4 and 5 carry it | **Print by expo minus 3 days**, whenever that turns out to be |
+| 6 | Sat 19 – Sun 20 | Pitch, out loud, ten times. Script is in the dossier §12 | Out loud, timed. Reading it silently does not count |
+
+**Slack:** the LoRa link is the only thing in the fortnight that can be
+dropped without weakening the demo. It is a V2 item and stays bench-only.
 
 ---
 
