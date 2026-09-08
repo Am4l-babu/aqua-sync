@@ -8,6 +8,12 @@ every session.
 hydropower optimisation on the Periyar basin.
 **Target:** EVOKE 26 Project Expo · Track 2, Climate Resilience & Disaster
 Preparedness · MACE IoT Club, Kothamangalam.
+**Scope:** advisory, permanently. **AquaSync never operates a real dam gate.**
+Kerala's gates are operated by KSEB and the district administration, and there
+is no path from this system to them — the API's command topic is deliberately
+not wired. The only gate anything here actuates is the model sluice on the
+bench rig. Every gate-control row below means that one.
+
 **Last updated:** Wednesday 9 September 2026.
 
 **At a glance** — as `python scripts/status.py` counts it from the tables
@@ -106,13 +112,13 @@ task that does not need the rig is now either merged or in review.
 |---|---|---|---|---|
 | BOM & sourcing | ✅ Done | Am4l-babu | `feature/project-scaffold` | 4 tiers, ₹6,250 for V1 (corrected 28 Aug 2026 — was ₹6,150, didn't match its own line items). Shoppable HTML with live vendor links. See [hardware/bom/](hardware/bom/) |
 | Firmware skeleton | ✅ Done | Am4l-babu | `fix/firmware-defects` | PlatformIO, sensor fusion + safety interlock structure. Still untested on hardware. **Five defects fixed 8 Sep before the board is flashed:** non-finite floats printed as bare `nan` (invalid JSON) now emit `null`; Wi-Fi never reconnected after a drop; gate state shared with an ISR was neither `volatile` nor `portMUX`-guarded; the stepper enable pin was left asserted after a move; and the air-vs-water temperature approximation is now documented rather than implied. [PR #17](https://github.com/Am4l-babu/aqua-sync/pull/17) |
-| Order V1 components | ✅ Done | Am4l-babu | — | **Ordered and received — components in hand, confirmed 8 Sep.** Unblocks every remaining hardware row |
+| Order V1 components | ✅ Done | Am4l-babu | — | **Ordered and received — components in hand, confirmed 8 Sep.** Unblocks every remaining hardware row. **9 Sep: two SX1278 LoRa modules and further components ordered**, which pulls the V2 radio link forward — see the LoRa row |
 | Two-tank rig build | 📋 Todo | — | — | Acrylic tanks, pump loop, sluice gate |
 | Level sensing + EKF | 📋 Todo | — | — | JSN-SR04T + DS18B20 temperature compensation |
-| Stepper gate control | 📋 Todo | — | — | NEMA 17 + A4988 + limit switches |
+| Stepper gate control | 📋 Todo | — | — | NEMA 17 + A4988 + limit switches. **This actuates the bench rig's model sluice gate and nothing else.** Kerala's dam gates are operated by KSEB and the district administration; AquaSync has no path to them, is advisory permanently, and the command topic on the live API is deliberately not wired |
 | Telemetry (MQTT/WebSocket) | ✅ Done | Am4l-babu | `feature/rig-mqtt-bridge` | The firmware had published to `aquasync/reservoir/01/telemetry` since it was written and nothing subscribed. `aquasync.api.rig` now parses the frames, follows the SHA-256 record chain and serves `GET /api/rig`; opt-in via `AQUASYNC_MQTT_HOST` so the offline demo stays offline. Rig values carry `scope: SCALE_RIG` and are never converted to m MSL — a 400 mm tank is not a reservoir. Verified end to end against mosquitto: chain 2/2, 0 breaks, a jammed frame reporting commanded 70% vs verified 21%. Receive-only; the command topic is deliberately not wired. [PR #14](https://github.com/Am4l-babu/aqua-sync/pull/14) |
 | Fault injection demo | 📋 Todo | — | — | Sensor-failure and gate-jam switches. **This is the beat that wins the room.** The dashboard side is ready: a rig fault now raises a banner across the 3D view, and `sensors_agree` / `gate_jammed` / commanded-vs-verified already arrive over MQTT. What is left is the physical switches and the firmware paths behind them |
-| LoRa fallback (V2) | 📋 Todo | — | — | SX1278 @ 433 MHz — India ISM band, not the 868 MHz usually recommended online |
+| LoRa fallback (V2) | 🔄 Ongoing | Am4l-babu | — | **Two SX1278 (Ra-02) modules ordered 9 Sep** — 433 MHz, the legal ISM band in India, not the 868 MHz modules widely recommended online, which are the European allocation. Two is the right count: a radio link needs both ends. Deferred to V2 by [ROADMAP.md](ROADMAP.md), so this is bench-only until the V1 rig runs end to end — it must not displace fault injection |
 
 ## Interface
 
