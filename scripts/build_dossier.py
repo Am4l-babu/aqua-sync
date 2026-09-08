@@ -419,8 +419,14 @@ def section_results(f: dict) -> list:
                    fe.get("leads_h", []), fe.get("issue_dates", []),
                    fe.get("ev_excess_cost_pct", []), fe.get("mm_excess_cost_pct", []),
                    fe.get("ev_m", []), fe.get("mm_m", []), strict=True)]
+    aug = f.get("forecast_error_aug_2022", {})
+    aug_rows = [[f"{h:.0f} h", issued, f"{ec:+.0f}%", f"{mc:+.0f}%", f"{em:+.2f} m", f"{mmm:+.2f} m"]
+                for h, issued, ec, mc, em, mmm in zip(
+                    aug.get("leads_h", []), aug.get("issue_dates", []),
+                    aug.get("ev_excess_cost_pct", []), aug.get("mm_excess_cost_pct", []),
+                    aug.get("ev_m", []), aug.get("mm_m", []), strict=True)]
     rv = f.get("runoff_validation", {})
-    forecast_block = _forecast_error_block(fe, fe_rows) if fe_rows else []
+    forecast_block = _forecast_error_block(fe, fe_rows, aug, aug_rows) if fe_rows else []
     cascade_block = _cascade_block(cc) if cc else []
     runoff_block = _runoff_block(rv) if rv else []
 
@@ -509,14 +515,12 @@ def section_results(f: dict) -> list:
     ] + forecast_block + cascade_block + runoff_block
 
 
-def _forecast_error_block(fe: dict, rows: list) -> list:
+def _forecast_error_block(fe: dict, rows: list, aug: dict, aug_rows: list) -> list:
     """4.4 - what the counterfactual is worth once the forecast is real."""
     perfect = fe.get("perfect_m", 3.111)
     pf_rev = fe.get("perfect_revenue_cr", 1.94)
     ev_cost = fe.get("ev_excess_cost_pct", [0.0])
     mm_cost = fe.get("mm_excess_cost_pct", [19.4])
-    best = fe.get("best_excess_cost_pct", 0.0)
-    worst = fe.get("worst_excess_cost_pct", 84.7)
     return [
         PageBreak(),
         para("4.4 \u00b7 What survives once the forecast is real", "h2"),
@@ -547,9 +551,12 @@ def _forecast_error_block(fe: dict, rows: list) -> list:
             f"actually delivered. Perfect foresight gains {perfect:.2f} m while earning "
             f"Rs {pf_rev:+.2f} crore against observed operation.", "caption"),
         figure("fig6_forecast_error.png",
-               "Figure 6 \u2014 Left: what deciding without hindsight costs on the full "
-               "objective. Right: every forecast-driven policy earns less than the hindsight "
-               "optimum - the extra cushion in the table was bought, not found."),
+               "Figure 6 \u2014 One row per storm, and deliberately not one shared axis: the "
+               "two episodes are not equally hard and their curves must not be averaged. Left: "
+               "what deciding without hindsight costs on the full objective. Right: what the "
+               "cushion cost in revenue. October (top) ramps; August (bottom) holds flat and "
+               "then jumps. Every forecast-driven policy earns less than the hindsight optimum "
+               "- the extra cushion in the tables was bought, not found."),
         callout(
             "At one day out, a real forecast is as good as hindsight. Three days out, it is "
             "not.",
@@ -588,13 +595,118 @@ def _forecast_error_block(fe: dict, rows: list) -> list:
             f"reproduces the hindsight-optimal policy exactly. <b>An earlier three-point "
             f"version of this section said the opposite</b>, on a sample too small to tell "
             f"the two apart."),
+    ] + _second_storm_block(fe, aug, aug_rows)
+
+
+def _second_storm_block(fe: dict, aug: dict, rows: list) -> list:
+    """4.4, continued - the same five lead times on a second, independent storm.
+
+    Returns the closing paragraph of the October study alone if the August
+    runs are not on disk, so a clone without them still builds.
+    """
+    best, worst = fe.get("best_excess_cost_pct", 0.0), fe.get("worst_excess_cost_pct", 84.7)
+    if not rows:
+        return [para(
+            f"<b>What would settle the rest.</b> These are five points from a single storm, "
+            f"and the transition between 48 and 90 hours rests on one run at 72 h. A second "
+            f"storm in another monsoon is what would turn this from a result into a curve "
+            f"worth relying on. Until then the range to quote is {best:+.0f}% to "
+            f"{worst:+.0f}% excess cost, with the caveat that it rests on one event.")]
+
+    a_ev = aug["ev_excess_cost_pct"]
+    a_mm = aug["mm_excess_cost_pct"]
+    a_leads = aug["leads_h"]
+    # The runs where hedging wins, found rather than remembered - there is
+    # exactly one across both storms, and the claim below depends on that.
+    every_run = [("August 2022", *r) for r in zip(a_leads, a_ev, a_mm, strict=True)]
+    every_run += [("October 2021", *r) for r in
+                  zip(fe["leads_h"], fe["ev_excess_cost_pct"], fe["mm_excess_cost_pct"],
+                      strict=True)]
+    hedge_wins = [r for r in every_run if r[3] < r[2]]
+    n_runs = len(every_run)
+    hedge = hedge_wins[0] if hedge_wins else None
+    flat = [lh for lh, e in zip(a_leads, a_ev, strict=True) if e <= 6.0]
+    worst_i = a_ev.index(max(a_ev))
+
+    return [
+        PageBreak(),
+        para("4.4, continued · A second storm, and what it changed", "h3"),
         para(
-            f"<b>What would settle the rest.</b> These are still five points from a single "
-            f"storm, and the transition between 48 and 90 hours rests on one run at 72 h. A "
-            f"second storm in another monsoon is what would turn this from a result into a "
-            f"curve worth relying on, and it is the next thing this study needs. Until then "
-            f"the range to quote is {best:+.0f}% to {worst:+.0f}% excess cost, with the "
-            f"caveat that it rests on one event."),
+            f"The five runs above are one storm. The same five lead times were therefore run "
+            f"against the August 2022 episode of §4.2 — the same ensemble source, the "
+            f"same bias correction against IMD, the same chain, the same scoring — for "
+            f"{n_runs} runs in total. This is the second episode the model was never tuned on, "
+            f"and it is the easier of the two: October came within about a metre of FRL, "
+            f"August peaked nearly 5 m below it. Perfect foresight costs "
+            f"{aug.get('perfect_cost', 0.75):.2f} here against "
+            f"{fe.get('perfect_cost', 1.96):.2f} in October, and it "
+            f"<i>gains</i> {aug['perfect_m']:+.2f} m of cushion — on this episode the "
+            f"hindsight-optimal policy ends <b>higher</b> than the operators did, because "
+            f"there was no flood worth paying for."),
+        data_table(
+            ["Lead time", "Ensemble issued", "Expected value", "Minimax regret",
+             "EV cushion", "MM cushion"],
+            rows, widths=[20 * mm, 30 * mm, 26 * mm, 26 * mm,
+                          (CONTENT_W - 102 * mm) / 2, (CONTENT_W - 102 * mm) / 2],
+            align_right=(2, 3, 4, 5)),
+        Spacer(1, 6),
+        para(
+            "August 2022, scored exactly as the October table above. A negative cushion means "
+            "the policy ends higher than observed operation, which on this episode is what "
+            "hindsight itself does.", "caption"),
+        callout(
+            "The structure reproduces. The shape does not.",
+            f"Both storms have a flat region where a real ensemble is as good as hindsight, "
+            f"and then degradation. <b>The horizon is not the same</b>: October ramps from 48 h "
+            f"(+37% at 72 h) to a +{max(fe['ev_excess_cost_pct']):.0f}% plateau, while August "
+            f"holds within +{max(e for e in a_ev if e <= 6.0):.0f}% out to "
+            f"{max(flat):.0f} h and then jumps to +{max(a_ev):.0f}% in a single 30-hour step "
+            f"— a cliff, not a ramp.<br/><br/>"
+            f"So the general statement this study supports is narrower than either storm alone "
+            f"suggests: <i>a real ensemble matches hindsight up to some horizon, beyond which "
+            f"committing to its policy costs substantially more than doing nothing clever.</i> "
+            f"That horizon moves between storms, and the penalty past it is not bounded by "
+            f"October's +{max(fe['ev_excess_cost_pct']):.0f}%. <b>Do not describe the "
+            f"degradation as gradual, and do not average the two storms into one curve.</b>",
+            accent=GREEN, tint="#eefbf1"),
+        callout(
+            "A premature reading is on the record, and this is the fourth time.",
+            f"With three of these five runs in, an earlier draft of this study said the "
+            f"October degradation “does not reproduce”. The "
+            f"{a_leads[worst_i]:.0f} h run reversed it — that is the point carrying the "
+            f"shape, and it was still downloading when the sentence was written. It also has "
+            f"the <b>smallest bias correction of all {n_runs} runs</b> "
+            f"({aug['bias_min']:.2f}×, the only one below 1) and the worst outcome, which "
+            f"is further evidence that bias magnitude does not predict decision quality.<br/><br/>"
+            f"This is the fourth claim on this project stated early and broken by the next data "
+            f"point. The working rule it produced is now written into the contributor "
+            f"guide: <b>treat any conclusion drawn from a partial run set as provisional until "
+            f"the set is complete.</b>",
+            accent=RED, tint="#fdeef0"),
+        para(
+            f"<b>Both retractions get stronger.</b> Across all {n_runs} runs, minimax regret is "
+            + (f"better than expected value in exactly one — {hedge[0]} at "
+               f"{hedge[1]:.0f} h, by {hedge[2] - hedge[3]:.2f} percentage points "
+               f"({hedge[3]:+.2f}% against {hedge[2]:+.2f}%), a tie in everything but sign "
+               f"— and worse everywhere else, sometimes heavily "
+               f"(August 72 h: {a_mm[2]:+.0f}% hedged against {a_ev[2]:+.0f}%). "
+               if hedge else "never better than expected value. ")
+            + "Hedging still buys cushion by over-releasing and still pays for it in revenue, "
+              "on a second storm that had no part in the correction that produced the "
+              "original reversal."),
+        para(
+            f"<b>What is still open.</b> Two storms, {n_runs} runs, and a break point that "
+            f"differs between them by about two days. Part of why August stays flat longer is "
+            f"plausibly that less was at stake, not that the forecast was better, so the "
+            f"horizon should be qualified by reservoir state whenever it is quoted. A third "
+            f"storm — ideally a hard one, with the reservoir near FRL as in October — "
+            f"is what would say whether the horizon tracks reservoir state, lead time, or "
+            f"something else. The whole study also inherits whatever error the "
+            f"rainfall-runoff chain carries, and that chain scores NSE 0.07 on daily "
+            f"amplitude (§4.6). Quote the two storms separately: "
+            f"{best:+.0f}% to {worst:+.0f}% excess cost in October, "
+            f"{aug['best_excess_cost_pct']:+.0f}% to {aug['worst_excess_cost_pct']:+.0f}% in "
+            f"August."),
     ]
 
 
@@ -906,6 +1018,7 @@ def section_limits(f: dict) -> list:
     rc = f.get("routing_cal", {})
     ev = fe.get("ev_excess_cost_pct", [0.0])
     mmx = fe.get("mm_excess_cost_pct", [84.7])
+    aug = f.get("forecast_error_aug_2022", {})
     return [
         PageBreak(),
         para("9 · Limitations", "h1"), rule(),
@@ -918,9 +1031,14 @@ def section_limits(f: dict) -> list:
               f"The optimiser sees the true inflow when choosing a policy, so every "
               f"perfect-foresight number here is a <b>ceiling</b>. Driven from a real 30-member "
               f"ensemble the decision costs {min(ev):+.0f}% to {max(mmx):+.0f}% more than "
-              f"hindsight on the full objective, and the penalty grows with lead time (\u00a74.4)",
-              "Measured rather than assumed. Quote the excess-cost range operationally, "
-              "and note the value concentrates inside about 24 h. Remaining gap: one storm"],
+              f"hindsight on the full objective in October 2021, and "
+              f"{aug.get('best_excess_cost_pct', 0.1):+.0f}% to "
+              f"{aug.get('worst_excess_cost_pct', 177.2):+.0f}% in August 2022. A real "
+              f"ensemble matches hindsight up to some horizon and costs substantially more "
+              f"beyond it; <b>that horizon moves between storms</b> (\u00a74.4)",
+              "Measured rather than assumed, on two storms. Quote the two ranges separately "
+              "\u2014 never averaged \u2014 and note the value concentrates inside about "
+              "24 h. Remaining gap: a third storm, with the reservoir near FRL"],
              ["Daily input resolution",
               "Bulletin data is one reading per day, interpolated to hourly. Sub-daily peaks "
               "are smoothed away; peak timing carries roughly ±12 h",

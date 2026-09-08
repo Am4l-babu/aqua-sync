@@ -318,10 +318,24 @@ between them by about two days. A third storm - ideally a harder one, with
 the reservoir near FRL as in October - is what would say whether the horizon
 tracks reservoir state, lead time, or something else. Note also that the
 whole study inherits whatever error the rainfall-runoff chain carries, and
-that chain scores NSE 0.07 on daily amplitude - see below. **The August
-results are on the record here, in `PROGRESS.md` and in `ROADMAP.md`; the
-dossier's §4.4 and Figure 6 still show October only** - a builder change
-and a rebuild, not started.
+that chain scores NSE 0.07 on daily amplitude - see below.
+
+**The August results are now in the dossier as well**, as of 8 September
+2026: §4.4 carries a second-storm subsection with this table and these four
+findings, and Figure 6 grew a second row. The two storms are drawn on
+separate axes with separate y-limits, deliberately — they are not equally
+hard, and the penalties beyond the flat region differ by more than a factor
+of two, so a shared scale would imply a point-by-point comparison the data
+does not support.
+
+Fixing that turned up **two more unfiltered globs of the same kind** as the
+one `make_figures.py` carried. `build_abstract.py` counted study *files* as
+lead times and reported "across 10 lead times" when there are five, run
+twice; `build_icfoss_analysis.py` merged both storms' excess-cost values into
+a single min-max range. Both now filter by scenario and quote the two storms
+separately. The pattern is worth naming: **any `glob("forecast_error_study_*")`
+without a scenario filter is a defect**, and it stayed invisible for as long
+as only one storm was on disk.
 
 Reproduce, one run per lead time:
 

@@ -110,10 +110,10 @@ that catch a committed PDF built from older code.
 
 | File | Builder |
 |---|---|
-| `docs/AquaSync_Project_Dossier.pdf` (21 pp) | `scripts/build_dossier.py` |
+| `docs/AquaSync_Project_Dossier.pdf` (24 pp) | `scripts/build_dossier.py` |
 | `docs/AquaSync_Abstract.pdf` (4 pp) | `scripts/build_abstract.py` |
 | `docs/AquaSync_Research_Report.pdf` (59 pp, 144 sources) | `scripts/build_research_report.py` |
-| `docs/AquaSync_ICFOSS_Analysis.pdf` (9 pp) | `scripts/build_icfoss_analysis.py` |
+| `docs/AquaSync_ICFOSS_Analysis.pdf` (10 pp) | `scripts/build_icfoss_analysis.py` |
 | `docs/assets/fig1..fig8*.png` | `scripts/make_figures.py` |
 
 `docs/AquaSync.pdf` (19 pp, committed 27 August) has no builder in
