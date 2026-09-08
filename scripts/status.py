@@ -87,9 +87,16 @@ def bar(done: int, total: int, width: int = 28, colour: str | None = None) -> st
 
 
 def sh(cmd: list[str]) -> str:
+    """Run a git command and return its stdout, decoded as UTF-8.
+
+    The encoding is explicit because `text=True` decodes with the console
+    codepage, which on Windows is cp1252. Reading PROGRESS.md through
+    `git show` that way silently dropped every status glyph, and the board
+    reported a finished project as 0% done.
+    """
     try:
-        p = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, timeout=20)
-        return p.stdout.strip()
+        p = subprocess.run(cmd, cwd=ROOT, capture_output=True, timeout=20)
+        return p.stdout.decode("utf-8", errors="replace").strip()
     except Exception:  # noqa: BLE001
         return ""
 
@@ -102,14 +109,63 @@ def head(title: str) -> str:
 # collectors
 # --------------------------------------------------------------------------
 
+# Ongoing first, then blocked, then not started: the order someone
+# picking the project up should care about them.
+_OPEN = (("🔄", "ongoing"), ("🚫", "blocked"), ("📋", "todo"))
+
+
+def progress_source() -> str:
+    """PROGRESS.md as `main` has it, not as this branch has it.
+
+    PROGRESS.md is updated directly on `main` and never through a feature
+    branch, so the copy in a branch's working tree is however stale that
+    branch is. Reading it from disk made this board report a finished test
+    suite as Todo. CLAUDE.md tells humans to run `git show main:PROGRESS.md`
+    for exactly this reason; the tool should not need telling.
+
+    Falls back to the working tree when there is no git or no `main` - a
+    tarball of the source should still print a board.
+    """
+    out = sh(["git", "show", "main:PROGRESS.md"])
+    if out.strip():
+        return out
+    p = ROOT / "PROGRESS.md"
+    return p.read_text(encoding="utf-8") if p.exists() else ""
+
+
+def open_rows(limit: int = 4) -> list[str]:
+    """The components PROGRESS.md says are not done, most urgent first."""
+    text = progress_source()
+    if not text:
+        return []
+    found: dict[str, list[str]] = {k: [] for _, k in _OPEN}
+    section = None
+    for line in text.splitlines():
+        if line.startswith("## "):
+            section = line[3:].strip()
+        elif section and line.startswith("| ") and "---" not in line:
+            cells = [c.strip() for c in line.strip("|").split("|")]
+            if len(cells) < 2 or cells[0] == "Component":
+                continue
+            for glyph, key in _OPEN:
+                if glyph in cells[1]:
+                    name = cells[0].replace("*", "").replace("`", "")
+                    found[key].append(f"{name} ({section.split(' (')[0].lower()})")
+                    break
+    out: list[str] = []
+    for _, key in _OPEN:
+        out.extend(found[key])
+    return out[:limit]
+
+
 def progress_md() -> dict[str, tuple[int, int]]:
     """Parse PROGRESS.md tables into per-section (done, total) counts."""
-    p = ROOT / "PROGRESS.md"
-    if not p.exists():
+    text = progress_source()
+    if not text:
         return {}
     out: dict[str, tuple[int, int]] = {}
     section = None
-    for line in p.read_text(encoding="utf-8").splitlines():
+    for line in text.splitlines():
         if line.startswith("## "):
             section = line[3:].strip()
             if section.lower().startswith(("status legend", "open risks", "verified facts")):
@@ -154,12 +210,20 @@ def acquisition() -> tuple[int, int, float]:
 
 
 def tests() -> tuple[int, str]:
-    """Count test functions statically - running pytest here would be slow."""
-    f = ROOT / "backend" / "tests" / "test_twin.py"
-    if not f.exists():
-        return 0, "no test file"
-    n = len(re.findall(r"^\s+def test_", f.read_text(encoding="utf-8"), re.M))
-    return n, "run: cd backend && python -m pytest tests/ -q"
+    """Count test functions statically - running pytest here would be slow.
+
+    Every `test_*.py`, not just `test_twin.py`: the suite grew a rig-bridge
+    file and a telemetry-provenance file, and counting only the first one
+    written under-reported by a fifth. The number is still a floor, because
+    parameterised tests collect as more than one case - which is why the
+    hint tells the reader how to get the real figure.
+    """
+    files = sorted((ROOT / "backend" / "tests").glob("test_*.py"))
+    if not files:
+        return 0, "no test files"
+    n = sum(len(re.findall(r"^\s+def test_", f.read_text(encoding="utf-8"), re.M))
+            for f in files)
+    return n, f"{len(files)} files - pytest collects more (parameterised)"
 
 
 def git_state() -> dict:
@@ -254,8 +318,11 @@ def render() -> str:
         nxt.append(f"{g['unpushed']} commit(s) to push")
     if g["ahead_of_main"] != "0":
         nxt.append(f"open PR development -> main ({g['ahead_of_main']} commits)")
-    nxt.append("order V1 hardware (Rs 6,250, 3-5 day delivery)")
-    nxt.append("forecast-error study - closes the perfect-foresight gap")
+    # Hard-coded next steps go stale silently - this printed "order V1
+    # hardware" for a day after the parts were in hand, and pointed at a
+    # forecast-error study that had been finished for a week. Read the open
+    # rows out of PROGRESS.md instead, which is the file that wins anyway.
+    nxt.extend(open_rows())
     for i, t in enumerate(nxt[:6], 1):
         L.append(f"  {C.GRY}{i}.{C.R} {t}")
 
