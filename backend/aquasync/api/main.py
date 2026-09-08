@@ -41,6 +41,8 @@ from ..twin.crisis import Decision
 from ..twin.crisis import briefing as crisis_briefing
 from ..twin.crisis import score as crisis_score
 from ..twin.scenarios import SCENARIOS, load_scenario_series, run_counterfactual
+from .rig import RigBridge
+from .rig import from_env as rig_from_env
 
 ROOT = Path(__file__).resolve().parents[3]
 DATA_RAW = ROOT / "data" / "raw"
@@ -119,6 +121,7 @@ class Broadcaster:
 
 broadcaster = Broadcaster()
 _replay_task: asyncio.Task | None = None
+_rig: RigBridge | None = None
 
 
 def _advice(level: float, spill: float) -> str:
@@ -175,11 +178,21 @@ async def _replay_loop() -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global _replay_task
+    global _replay_task, _rig
     _replay_task = asyncio.create_task(_replay_loop())
+
+    # The rig bridge is opt-in: without AQUASYNC_MQTT_HOST the demo runs
+    # exactly as it did, offline, with no broker anywhere near it.
+    _rig = rig_from_env()
+    if _rig is not None and not _rig.start():
+        _rig = None
+
     yield
+
     if _replay_task:
         _replay_task.cancel()
+    if _rig is not None:
+        _rig.stop()
 
 
 app = FastAPI(
@@ -320,6 +333,27 @@ async def crisis_play(key: str, decision: CrisisDecision) -> dict:
         )
     except FileNotFoundError as exc:
         raise HTTPException(503, f"data not cached - run scripts/fetch_data.py ({exc})") from exc
+
+
+@app.get("/api/rig")
+async def rig_state() -> dict:
+    """The scale rig, in the rig's own units.
+
+    Always answers, whether or not a node is connected - a dashboard that
+    shows nothing when the hardware is absent cannot tell you the hardware is
+    absent. Values are tank-scale and labelled `SCALE_RIG`; nothing here is
+    converted into a reservoir reading.
+    """
+    if _rig is None:
+        return {
+            "scope": "SCALE_RIG",
+            "source": "UNAVAILABLE",
+            "status": "bridge not configured - set AQUASYNC_MQTT_HOST to enable",
+            "link": {"broker_connected": False, "frames": 0,
+                     "malformed": 0, "last_frame_age_s": None},
+            "reading": None,
+        }
+    return _rig.snapshot()
 
 
 @app.get("/api/tide")
