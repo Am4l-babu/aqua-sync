@@ -498,6 +498,11 @@ Demonstrating a system *failing correctly* is what convinces an engineer it
 was built by someone who expected it to be used. Build the fault-injection
 switches even if something else has to be cut.
 
+**Until the rig is built, use the software-only sequence in
+[ACTION_PLAN.md](ACTION_PLAN.md#until-the-rig-is-built-the-software-only-sequence)**
+— seven beats, no hardware, every one of them already driven through a real
+browser. Beats 1, 3 and 4 above need the rig, which is 5 / 10.
+
 ---
 
 ## 9 · Questions to have an answer ready for
