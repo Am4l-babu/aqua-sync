@@ -30,6 +30,17 @@
 #define ULTRASONIC_TIMEOUT_US    30000UL
 
 // -- pressure transducer ----------------------------------------------------
+// The V1 BOM (hardware/bom/README.md) does not include a hydrostatic
+// transducer - it is a V3 add-on (hardware/bom/bom.html, +Rs 1,800). Leave
+// HAS_PRESSURE_SENSOR undefined until one is actually wired to PIN_PRESSURE.
+// Defined-but-not-present is the dangerous state: a floating ESP32 ADC pin
+// does not read as obviously broken, it reads as noise that can land inside
+// a plausible range and get trusted. See firmware/bench/README.md and the
+// "Level sensing + EKF" row in PROGRESS.md for the decision this is waiting
+// on.
+//
+// #define HAS_PRESSURE_SENSOR
+
 #define ADC_REF_VOLTS            3.30f
 #define ADC_DIVIDER_RATIO        2.00f   // 0-5V sensor into a 3.3V ADC
 #define TRANSDUCER_OFFSET_V      0.50f   // output at zero pressure
