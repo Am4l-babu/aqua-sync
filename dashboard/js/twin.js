@@ -104,8 +104,7 @@ async function init() {
   await adoptServerConstants();
   bindControls();
   connect();
-  pollRig();
-  setInterval(pollRig, 1000);
+  scheduleRigPoll(0);
   animate();
 }
 
@@ -459,6 +458,17 @@ function setStageAlert(faults) {
   el.hidden = faults.length === 0;
 }
 
+const RIG_POLL_MS = 1000;
+const RIG_POLL_MAX_MS = 15000;
+let rigBackoffMs = RIG_POLL_MS;
+let rigTimer = null;
+
+/** Poll again after `delay` ms, replacing any pending poll. */
+function scheduleRigPoll(delay) {
+  clearTimeout(rigTimer);
+  rigTimer = setTimeout(pollRig, delay);
+}
+
 async function pollRig() {
   const state = document.getElementById('rig-state');
   const warn = document.getElementById('rig-warn');
@@ -468,6 +478,7 @@ async function pollRig() {
     const r = await fetch('/api/rig', { signal: AbortSignal.timeout(2500) });
     if (!r.ok) throw new Error(String(r.status));
     const s = await r.json();
+    rigBackoffMs = RIG_POLL_MS;
 
     const live = s.source === 'LIVE';
     state.textContent = live ? 'LIVE' : s.source === 'STALE' ? 'STALE' : 'OFFLINE';
@@ -507,6 +518,13 @@ async function pollRig() {
     state.className = 'chip chip-off';
     warn.hidden = true;
     setStageAlert([]);
+    // No backend at all is a supported state - the expo demo runs with the
+    // network cable pulled. Polling every second then means a 404 per second
+    // for as long as the page is open, which buries anything worth seeing in
+    // the console. Back off instead, and recover the moment it answers.
+    rigBackoffMs = Math.min(rigBackoffMs * 2, RIG_POLL_MAX_MS);
+  } finally {
+    scheduleRigPoll(rigBackoffMs);
   }
 }
 
