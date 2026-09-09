@@ -130,6 +130,61 @@ body {
 .spark { height: 32px; margin-top: 12px; }
 .spark svg { width: 100%; height: 100%; }
 
+/* -- charts -------------------------------------------------------------- */
+
+/* Charts stretch to the panel width and are read at a glance. The SVG is
+   drawn in a 100-unit box and scaled with preserveAspectRatio="none", so
+   strokes carry vector-effect="non-scaling-stroke" to stop the horizontal
+   stretch thickening them. */
+.chart {
+  height: 46px;
+  margin-top: 10px;
+  background: #0c1a26;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.chart svg { display: block; width: 100%; height: 100%; }
+
+.chart-empty {
+  margin: 0;
+  padding: 14px 10px;
+  font-size: 10.5px;
+  line-height: 1.4;
+  color: var(--muted);
+  text-align: center;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-top: 7px;
+  font-size: 10px;
+  color: var(--muted);
+}
+.legend-item { display: inline-flex; align-items: center; gap: 5px; }
+.sw { width: 11px; height: 2px; border-radius: 1px; display: inline-block; }
+.sw-obs { background: var(--amber); }
+.sw-opt { background: var(--green); }
+.sw-frl { background: rgba(226, 86, 79, .75); }
+
+/* The one number a skimmer must not miss, per card. Stated to the precision
+   the error bar allows - whole metres, not two decimals. */
+.headline {
+  margin: 8px 0 0;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--ink);
+}
+.headline.good { color: var(--green); }
+
+/* The policy the optimiser actually found. Mono so its numbers line up with
+   every other number in the panel. Empty until there is one, and the
+   `.note:empty` rule below keeps it from leaving a gap. */
+.mono-note { font-family: var(--mono); font-size: 9.5px; line-height: 1.5; }
+.note:empty { display: none; }
+
 /* Secondary copy inside any card. This was previously scoped to #advice-card
    only, so the what-if status line rendered at full body size. */
 .note { margin: 8px 0 0; font-size: 10.5px; line-height: 1.5; color: var(--muted); }
@@ -148,6 +203,29 @@ body {
 .chip-live { color: var(--green); border-color: rgba(53, 192, 122, .4); background: rgba(53, 192, 122, .1); }
 .chip-stale{ color: var(--amber); border-color: rgba(224, 165, 58, .4); background: rgba(224, 165, 58, .1); }
 .chip-off  { color: var(--muted); border-color: var(--line); }
+/* A model output, not a measurement: blue, never the green reserved for live
+   instrumentation. The tide is a harmonic prediction and the counterfactual
+   is hindsight; neither may borrow the colour that means "measured now". */
+.chip-model{ color: var(--blue); border-color: rgba(74, 163, 223, .4); background: rgba(74, 163, 223, .1); }
+
+/* -- gate commanded vs verified ------------------------------------------ */
+
+/* Two bars rather than two numbers: a separation between them is the whole
+   fault-injection beat, and the eye catches a gap faster than it reads a
+   difference between 70 and 21. */
+.gatebar { margin-top: 12px; display: grid; gap: 5px; }
+.gatebar-row { display: grid; grid-template-columns: 26px 1fr; align-items: center; gap: 8px; }
+.gatebar-label {
+  font-family: var(--mono); font-size: 9px; color: var(--muted); letter-spacing: .5px;
+}
+.gatebar-track {
+  height: 7px; border-radius: 999px; background: #0c1a26;
+  border: 1px solid var(--line); overflow: hidden;
+}
+.gatebar-fill { height: 100%; border-radius: 999px; transition: width .35s ease; }
+.gatebar-fill.cmd { background: var(--blue); }
+.gatebar-fill.ver { background: var(--green); }
+.gatebar.disagree .gatebar-fill.ver { background: var(--red); }
 
 /* The fault the demo is built around: commanded and verified disagree. It
    gets its own line rather than a colour change, because "the gate did not do

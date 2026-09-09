@@ -21,6 +21,7 @@ from __future__ import annotations
 import asyncio
 import json
 from contextlib import asynccontextmanager
+from functools import lru_cache
 from pathlib import Path
 
 import numpy as np
@@ -263,15 +264,17 @@ async def scenarios() -> list[dict]:
     ]
 
 
-@app.get("/api/scenarios/{key}/counterfactual")
-async def counterfactual(key: str) -> dict:
-    if key not in SCENARIOS:
-        raise HTTPException(404, f"unknown scenario: {key}")
-    try:
-        out = await asyncio.to_thread(run_counterfactual, key, DATA_RAW)
-    except FileNotFoundError as exc:
-        raise HTTPException(503, f"data not cached - run scripts/fetch_data.py ({exc})") from exc
+@lru_cache(maxsize=8)
+def _counterfactual_payload(key: str, cache_dir: str) -> dict:
+    """The counterfactual, shaped for a client, computed once per scenario.
 
+    The exhaustive policy search behind this takes 11-17 s on this machine and
+    nothing in it depends on the request: the same scenario over the same
+    cached data returns the same answer every time. Uncached, every page load
+    and every reload during a demo pays that cost again - which is the same
+    mistake `twin/crisis.py` made before it grew its own cache.
+    """
+    out = run_counterfactual(key, cache_dir)
     ev = out["evaluations"]
     return {
         "summary": out["summary"],
@@ -283,6 +286,16 @@ async def counterfactual(key: str) -> dict:
         },
         "policy": ev["optimised"].metadata.get("policy"),
     }
+
+
+@app.get("/api/scenarios/{key}/counterfactual")
+async def counterfactual(key: str) -> dict:
+    if key not in SCENARIOS:
+        raise HTTPException(404, f"unknown scenario: {key}")
+    try:
+        return await asyncio.to_thread(_counterfactual_payload, key, str(DATA_RAW))
+    except FileNotFoundError as exc:
+        raise HTTPException(503, f"data not cached - run scripts/fetch_data.py ({exc})") from exc
 
 
 @app.post("/api/whatif")
