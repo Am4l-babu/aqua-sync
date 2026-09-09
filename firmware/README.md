@@ -25,12 +25,23 @@ pio device monitor
 Edit `src/config.h` before the first flash. `SENSOR_MOUNT_HEIGHT_M` must be
 *measured*, not estimated - every depth reading is differenced against it.
 
+**Test each part alone first.** [`firmware/bench/`](bench/) has six
+standalone PlatformIO projects, one per sensor/actuator in the V1 BOM, each
+with a wiring diagram and pass/fail criteria lifted from this firmware's own
+constants. Flash and pass all six before wiring anything into
+`node_reservoir` as one assembled node.
+
 ## Design notes
 
-**Two sensors, different physics.** Ultrasonic time-of-flight and hydrostatic
-pressure fail differently and for different reasons. Two ultrasonic sensors
-that agree tell you nothing; they fail together. The Kalman filter fuses them,
-and their disagreement is the fault signal.
+**Two sensors, different physics — on paper.** Ultrasonic time-of-flight and
+hydrostatic pressure fail differently and for different reasons. Two
+ultrasonic sensors that agree tell you nothing; they fail together. The
+Kalman filter fuses them, and their disagreement is the fault signal.
+⚠️ **The V1 BOM does not include the pressure transducer.** It is a V3 line
+item (`hardware/bom/bom.html`, ₹1,800). Until that is resolved,
+`PIN_PRESSURE` floats and must not be wired to anything — see
+[`firmware/bench/README.md`](bench/README.md) for what that means and why
+none of the six bench tests touch it.
 
 **Temperature compensation is mandatory.** The speed of sound changes about
 0.6 m/s per degree C - a ~2.5% range error across a 15 C day. That is
