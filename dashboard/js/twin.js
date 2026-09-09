@@ -136,9 +136,22 @@ function captionProvenance(meta) {
   const el = document.getElementById('scene-note');
   if (!el) return;
   const km = (meta.span_m / 1000).toFixed(0);
+
+  // Claimed only when a texture actually loaded. scene.js leaves this null if
+  // the asset is missing or fails to decode, so the caption can never run
+  // ahead of what is on screen and describe a photograph that is not there.
+  const img = meta.imagery;
+  const ground = img
+    ? `<strong>Ground: measured.</strong> Sentinel-2 true colour, ` +
+      `${img.captured}, ${img.native_gsd_m} m — brightened, nothing moved or ` +
+      `recoloured. Its shoreline is frozen on that date, so it is never drawn ` +
+      `over the water. Contains modified Copernicus Sentinel data. `
+    : '';
+
   el.innerHTML =
     `<strong>Terrain: measured.</strong> ${km} km of the Periyar valley from the ` +
     `${meta.source}, ${meta.metres_per_sample.toFixed(0)} m posting. ` +
+    ground +
     `<strong>Structures: schematic.</strong> No bathymetry exists for the reservoir, ` +
     `so the bed is not drawn and water is shaded by distance from the bank, not depth.`;
 }

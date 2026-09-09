@@ -1,0 +1,32 @@
+{
+  "source": "Sentinel-2 L2A true colour (TCI), AWS Open Data mirror",
+  "scene_id": "S2A_43PGL_20240207_0_L2A",
+  "captured": "2024-02-07",
+  "scene_cloud_cover_pct": 1.28,
+  "licence": "Contains modified Copernicus Sentinel data 2024, processed by ESA. Free to use with attribution.",
+  "native_gsd_m": 10.0,
+  "texture_px": 1792,
+  "metres_per_pixel": 10.045,
+  "registration": "EPSG:3857, same window as terrain_idukki.png, pixel-aligned",
+  "bounds": {
+    "north": 9.924438,
+    "south": 9.762742,
+    "west": 76.894144,
+    "east": 77.058256
+  },
+  "tone": {
+    "note": "Contrast and brightness only. No pixel is moved, and no colour is invented - but this is a stretched picture, not raw radiance, and nothing quantitative is read off it.",
+    "percentile_clip": [
+      1.0,
+      99.0
+    ],
+    "clip_points": [
+      11.0,
+      99.0
+    ],
+    "gamma": 1.08,
+    "saturation": 1.1,
+    "jpeg_quality": 92
+  },
+  "caveat": "A photograph of one morning. The shoreline in it is frozen at the level the reservoir held on that date, so the twin does not draw it over the water: inside the reservoir mask the dynamic water surface keeps ownership, and only the land is textured."
+}
