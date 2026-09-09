@@ -388,6 +388,15 @@ function renderWhatIf(r) {
   document.getElementById('wi-peak').textContent = `${peak.toFixed(2)} m`;
   document.getElementById('wi-cushion').textContent = `${cushion.toFixed(2)} m`;
 
+  // The peak and the end of the horizon are different moments, and under a
+  // release big enough to draw the reservoir back down they are far apart.
+  // Showing only the peak next to an advice line computed at 72 h read as a
+  // contradiction - "cushion at peak 1.56 m" directly above "3.72 m freeboard
+  // remaining" - so both are stated, each labelled with when it happens.
+  const final = Number(r.final_level);
+  document.getElementById('wi-final').textContent =
+    Number.isFinite(final) ? `${final.toFixed(2)} m` : '—';
+
   const breach = document.getElementById('wi-breach');
   breach.textContent = r.breaches_frl ? 'yes' : 'no';
   breach.classList.toggle('crit', !!r.breaches_frl);
@@ -395,7 +404,8 @@ function renderWhatIf(r) {
   document.getElementById('wi-ttf').textContent =
     Number.isFinite(ttf) && ttf > 0 ? `${ttf.toFixed(0)} h` : '—';
 
-  document.getElementById('wi-advice').textContent = r.advice || '';
+  document.getElementById('wi-advice').textContent =
+    r.advice ? `At 72 h: ${r.advice}` : '';
   document.getElementById('whatif-status').textContent =
     'Constant inflow and release, 72 h. Advisory — a named operator approves every release.';
   out.hidden = false;
