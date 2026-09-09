@@ -156,11 +156,49 @@ export class TwinScene {
     this.mask = mask;
     this.n = n;
 
+    // Real ground cover, if it has been baked. Awaited rather than left to
+    // arrive whenever, so the provenance caption can state what is actually
+    // on screen instead of what was hoped for - a missing or broken asset
+    // must not produce a caption claiming a photograph.
+    this.imagery = await this._loadImagery(base);
+    meta.imagery = this.imagery ? this.imagery.meta : null;
+
     this._buildGround();
     this._buildWater(base);
     this._buildStructures();
     this._frameCamera();
     return meta;
+  }
+
+  /**
+   * Fetch the Sentinel-2 ground texture and its provenance, or null.
+   *
+   * Null is a supported outcome, not an error: a clone that has not run
+   * `scripts/build_imagery.py` still renders, on the procedural shading the
+   * ground had before. Both halves must arrive - a texture with no sidecar
+   * cannot be captioned honestly, and a sidecar with no texture would caption
+   * something that is not being drawn.
+   */
+  async _loadImagery(base) {
+    try {
+      const res = await fetch(`${base}/terrain_idukki_imagery.json`);
+      if (!res.ok) return null;
+      const meta = await res.json();
+
+      const tex = await new Promise((resolve, reject) => {
+        new THREE.TextureLoader().load(
+          `${base}/terrain_idukki_imagery.jpg`, resolve, undefined, reject);
+      });
+
+      // Colour, so it wants the sRGB transfer function - unlike the heightmap
+      // and the mask, which are packed data and must stay linear.
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
+      tex.anisotropy = this.renderer?.capabilities?.getMaxAnisotropy?.() ?? 1;
+      return { tex, meta };
+    } catch {
+      return null;
+    }
   }
 
   async _decode(url, size) {
@@ -222,9 +260,26 @@ export class TwinScene {
     }
     geo.setAttribute('color', new THREE.BufferAttribute(colours, 3));
 
-    this.ground = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({
-      vertexColors: true, roughness: 0.97, metalness: 0.0,
-    }));
+    // With imagery the photograph carries the colour and the DEM's own normals
+    // carry the relief, so the procedural palette steps aside rather than
+    // multiplying into it and tinting the ground green twice over. The vertex
+    // colours stay on the geometry as the fallback when no texture was baked.
+    //
+    // The mesh already has no triangles inside the reservoir - they are
+    // dropped above - so draping this cannot paint over the water. That
+    // matters: the image freezes the shoreline on 7 February 2024 and the
+    // twin moves the water level, so the photograph is never allowed to state
+    // where the bank is. The dynamic water surface owns that, and a dry-season
+    // scene means the strip between the two reads as the bare drawdown zone it
+    // actually is.
+    const material = new THREE.MeshStandardMaterial({
+      vertexColors: !this.imagery,
+      map: this.imagery ? this.imagery.tex : null,
+      roughness: 0.97,
+      metalness: 0.0,
+    });
+
+    this.ground = new THREE.Mesh(geo, material);
     this.ground.receiveShadow = true;
     this.ground.castShadow = true;
     this.scene.add(this.ground);

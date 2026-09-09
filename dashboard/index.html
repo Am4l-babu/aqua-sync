@@ -86,6 +86,47 @@
       <p class="note" id="whatif-status">Move the slider to test a constant release.</p>
     </section>
 
+    <section class="card" id="sim-card">
+      <h2>Twin simulation <span id="sim-state" class="chip chip-off">…</span></h2>
+      <p class="headline" id="sim-headline">Running the optimiser…</p>
+      <div class="chart" id="sim-chart"></div>
+      <div class="legend">
+        <span class="legend-item"><i class="sw sw-obs"></i>what happened</span>
+        <span class="legend-item"><i class="sw sw-opt"></i>AquaSync</span>
+        <span class="legend-item"><i class="sw sw-frl"></i>FRL</span>
+      </div>
+      <dl class="kv" id="sim-out" hidden>
+        <dt>Peak, the day</dt><dd id="sim-peak-obs">—</dd>
+        <dt>Peak, AquaSync</dt><dd id="sim-peak-opt">—</dd>
+        <dt>Cushion, the day</dt><dd id="sim-fb-obs">—</dd>
+        <dt>Cushion, AquaSync</dt><dd id="sim-fb-opt">—</dd>
+        <dt>Revenue vs the day</dt><dd id="sim-rev">—</dd>
+      </dl>
+      <p class="note mono-note" id="sim-policy"></p>
+      <p class="note" id="sim-note">
+        Replays the recorded episode, then re-runs it under the optimiser's
+        release policy. Hindsight, not forecast — it sees the inflow that
+        actually arrived.
+      </p>
+    </section>
+
+    <section class="card" id="tide-card">
+      <h2>Tide at the river mouth <span id="tide-state" class="chip chip-off">…</span></h2>
+      <div class="chart" id="tide-chart"></div>
+      <dl class="kv" id="tide-out" hidden>
+        <dt>Spring range</dt><dd id="tide-range">—</dd>
+        <dt>Next low-tide window</dt><dd id="tide-next">—</dd>
+        <dt>Windows in 72 h</dt><dd id="tide-count">—</dd>
+      </dl>
+      <p class="note" id="tide-note">
+        Harmonic prediction for the Kochi port station, five constituents —
+        a model, not a measurement, and metres about mean sea level, never
+        the reservoir's m MSL. At high tide the sea holds the mouth up and the
+        same release sits higher upstream; the shaded bands are when a given
+        volume moves downstream most cheaply.
+      </p>
+    </section>
+
     <section class="card" id="rig-card">
       <h2>Scale rig <span id="rig-state" class="chip chip-off">OFFLINE</span></h2>
       <dl class="kv">
@@ -96,6 +137,19 @@
         <dt>Gate verified</dt><dd id="rig-gate-ver">—</dd>
         <dt>Record chain</dt><dd id="rig-chain">—</dd>
       </dl>
+
+      <div class="gatebar" id="rig-gatebar" hidden>
+        <div class="gatebar-row">
+          <span class="gatebar-label">cmd</span>
+          <div class="gatebar-track"><div class="gatebar-fill cmd" id="rig-bar-cmd"></div></div>
+        </div>
+        <div class="gatebar-row">
+          <span class="gatebar-label">ver</span>
+          <div class="gatebar-track"><div class="gatebar-fill ver" id="rig-bar-ver"></div></div>
+        </div>
+      </div>
+      <div class="spark" id="rig-spark"></div>
+
       <p class="warn-line" id="rig-warn" hidden></p>
       <p class="note" id="rig-note">
         Bench rig, in its own units — a 400 mm tank, not the reservoir.

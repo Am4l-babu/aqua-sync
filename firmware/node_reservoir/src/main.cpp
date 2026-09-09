@@ -24,9 +24,12 @@
  *    no parser bug and no crashed main loop can drive the gate somewhere
  *    physically unsafe.
  *
- * 4. IT DEGRADES INSTEAD OF FAILING.  Wi-Fi -> LoRa -> local SD. If telemetry
- *    is lost entirely the node assumes a conservative worst case rather than
- *    holding its last command.
+ * 4. DEGRADATION IS STAGED, NOT ALL BUILT YET.  Wi-Fi/MQTT is what runs
+ *    today; a LoRa and then a local-SD fallback are the design (see the
+ *    TODO(phase-4) at the one call site that would use them), not yet
+ *    implemented. Losing MQTT currently falls back to printing the frame
+ *    to serial, which is the honest interim behaviour, not the finished
+ *    three-rung ladder this comment used to claim as built.
  *
  * Target: ESP32-WROOM-32 (38-pin). Build with PlatformIO.
  */

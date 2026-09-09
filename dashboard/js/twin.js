@@ -52,6 +52,7 @@ const target = { level: RES.rule, gate: 0, inflow: 0, turbine: 0, spill: 0 };
 const shown = { level: RES.rule, gate: 0, spill: 0, turbine: 0 };
 
 const history = [];
+const rigHistory = [];
 let twin = null;
 let replayTimer = null;
 let manualOverride = false;
@@ -106,6 +107,12 @@ async function init() {
   connect();
   scheduleRigPoll(0);
   animate();
+
+  // Analysis panels, after first paint and deliberately not awaited. The tide
+  // is instant; the counterfactual runs an exhaustive policy search and takes
+  // seconds on a cold server. Neither may hold up the scene or the telemetry.
+  loadTide();
+  loadCounterfactual();
 }
 
 /** Replace the mirrored constants with the API's, when it is reachable. */
@@ -129,9 +136,22 @@ function captionProvenance(meta) {
   const el = document.getElementById('scene-note');
   if (!el) return;
   const km = (meta.span_m / 1000).toFixed(0);
+
+  // Claimed only when a texture actually loaded. scene.js leaves this null if
+  // the asset is missing or fails to decode, so the caption can never run
+  // ahead of what is on screen and describe a photograph that is not there.
+  const img = meta.imagery;
+  const ground = img
+    ? `<strong>Ground: measured.</strong> Sentinel-2 true colour, ` +
+      `${img.captured}, ${img.native_gsd_m} m — brightened, nothing moved or ` +
+      `recoloured. Its shoreline is frozen on that date, so it is never drawn ` +
+      `over the water. Contains modified Copernicus Sentinel data. `
+    : '';
+
   el.innerHTML =
     `<strong>Terrain: measured.</strong> ${km} km of the Periyar valley from the ` +
     `${meta.source}, ${meta.metres_per_sample.toFixed(0)} m posting. ` +
+    ground +
     `<strong>Structures: schematic.</strong> No bathymetry exists for the reservoir, ` +
     `so the bed is not drawn and water is shaded by distance from the bank, not depth.`;
 }
@@ -450,6 +470,49 @@ function bindControls() {
  * near the m MSL readout, even in the same column, invites a reader to treat
  * one as the other.
  */
+/**
+ * The rig's own trend, and its gate disagreement drawn rather than listed.
+ *
+ * The commanded/verified pair is the fault-injection beat: two bars that
+ * visibly separate say "the gate is not where it was told to be" faster than
+ * two numbers in a list do. Tank depth in its own units, on its own axis -
+ * never anywhere near the reservoir's m MSL.
+ */
+function drawRigVisuals(d) {
+  if (Number.isFinite(d.level_m)) {
+    rigHistory.push(d.level_m);
+    if (rigHistory.length > 90) rigHistory.shift();
+  }
+
+  const spark = document.getElementById('rig-spark');
+  if (spark) {
+    spark.innerHTML = rigHistory.length > 1
+      ? lineChart([{ values: rigHistory, colour: '#4aa3df', width: 1.6 }], { height: 32 })
+      : '';
+  }
+
+  const bar = document.getElementById('rig-gatebar');
+  if (!bar) return;
+  const cmd = d.gate_commanded_pct;
+  const ver = d.gate_verified_pct;
+  if (!Number.isFinite(cmd) || !Number.isFinite(ver)) { bar.hidden = true; return; }
+
+  const clamp = (v) => Math.max(0, Math.min(100, v));
+  document.getElementById('rig-bar-cmd').style.width = `${clamp(cmd)}%`;
+  document.getElementById('rig-bar-ver').style.width = `${clamp(ver)}%`;
+  bar.classList.toggle('disagree', !!d.actuator_disagreement);
+  bar.hidden = false;
+}
+
+/** No rig means no trace. A stale trend stitched onto new data would lie. */
+function clearRigVisuals() {
+  rigHistory.length = 0;
+  const spark = document.getElementById('rig-spark');
+  if (spark) spark.innerHTML = '';
+  const bar = document.getElementById('rig-gatebar');
+  if (bar) bar.hidden = true;
+}
+
 /** Mirror a rig fault onto the 3D view, where it cannot be missed. */
 function setStageAlert(faults) {
   const el = document.getElementById('stage-alert');
@@ -489,6 +552,7 @@ async function pollRig() {
       for (const id of ['rig-level', 'rig-flow', 'rig-sensors', 'rig-gate-cmd',
         'rig-gate-ver', 'rig-chain']) set(id, '—');
       warn.hidden = true;
+      clearRigVisuals();
       document.getElementById('rig-note').textContent = s.status;
       return;
     }
@@ -499,6 +563,7 @@ async function pollRig() {
     set('rig-gate-cmd', d.gate_commanded_pct == null ? '—' : `${d.gate_commanded_pct.toFixed(0)} %`);
     set('rig-gate-ver', d.gate_verified_pct == null ? '—' : `${d.gate_verified_pct.toFixed(0)} %`);
     set('rig-chain', `${s.audit_chain.verified} verified · ${s.audit_chain.breaks} breaks`);
+    drawRigVisuals(d);
 
     const faults = [];
     if (d.actuator_disagreement) {
@@ -517,6 +582,7 @@ async function pollRig() {
     state.textContent = 'OFFLINE';
     state.className = 'chip chip-off';
     warn.hidden = true;
+    clearRigVisuals();
     setStageAlert([]);
     // No backend at all is a supported state - the expo demo runs with the
     // network cable pulled. Polling every second then means a 404 per second
@@ -525,6 +591,208 @@ async function pollRig() {
     rigBackoffMs = Math.min(rigBackoffMs * 2, RIG_POLL_MAX_MS);
   } finally {
     scheduleRigPoll(rigBackoffMs);
+  }
+}
+
+// --------------------------------------------------------------------------
+// charts
+// --------------------------------------------------------------------------
+
+const CHART_W = 100;
+
+/** Reduce a long series to at most `n` points, keeping the first and last. */
+function downsample(values, n = 120) {
+  if (values.length <= n) return values;
+  const step = (values.length - 1) / (n - 1);
+  return Array.from({ length: n }, (_, i) => values[Math.round(i * step)]);
+}
+
+/**
+ * A compact multi-series line chart as inline SVG.
+ *
+ * Deliberately axis-less. The panel is 320 px wide, these are read at a
+ * glance, and every number that matters is in the key-value list underneath
+ * where it carries its unit - an axis at this size would be unreadable and
+ * would invite the eye to measure off it.
+ *
+ * `bands` shades index ranges behind the lines; `rules` draws horizontal
+ * reference lines in data units.
+ */
+function lineChart(series, opts = {}) {
+  const H = opts.height ?? 36;
+  const pad = 2;
+  const drawn = series.map((s) => ({ ...s, values: downsample(s.values) }));
+  const all = drawn.flatMap((s) => s.values).filter((v) => Number.isFinite(v));
+  if (all.length < 2) return '';
+
+  const ruleVals = (opts.rules ?? []).map((r) => r.at).filter((v) => Number.isFinite(v));
+  const lo = Number.isFinite(opts.min) ? opts.min : Math.min(...all, ...ruleVals);
+  const hi = Number.isFinite(opts.max) ? opts.max : Math.max(...all, ...ruleVals);
+  const range = Math.max(1e-6, hi - lo);
+  const yOf = (v) => H - pad - ((v - lo) / range) * (H - 2 * pad);
+
+  // Bands are given in original-series indices, so they are scaled against
+  // the pre-downsample domain, not the drawn point count.
+  const domain = opts.domain ?? (Math.max(...series.map((s) => s.values.length)) - 1);
+
+  const bands = (opts.bands ?? []).map(([a, b]) =>
+    `<rect x="${((a / domain) * CHART_W).toFixed(2)}" y="0" ` +
+    `width="${(((b - a) / domain) * CHART_W).toFixed(2)}" height="${H}" ` +
+    `fill="${opts.bandFill ?? 'rgba(74,163,223,.16)'}"/>`).join('');
+
+  const rules = (opts.rules ?? []).map((r) =>
+    `<line x1="0" x2="${CHART_W}" y1="${yOf(r.at).toFixed(2)}" y2="${yOf(r.at).toFixed(2)}" ` +
+    `stroke="${r.colour}" stroke-width=".7" stroke-dasharray="3 2.5"/>`).join('');
+
+  const lines = drawn.filter((s) => s.values.length > 1).map((s) => {
+    const pts = s.values.map((v, i) =>
+      `${((i / (s.values.length - 1)) * CHART_W).toFixed(2)},${yOf(v).toFixed(2)}`).join(' ');
+    return `<polyline points="${pts}" fill="none" stroke="${s.colour}" ` +
+      `stroke-width="${s.width ?? 1.4}" vector-effect="non-scaling-stroke"` +
+      `${s.dash ? ` stroke-dasharray="${s.dash}"` : ''}/>`;
+  }).join('');
+
+  return `<svg viewBox="0 0 ${CHART_W} ${H}" preserveAspectRatio="none">` +
+    `${bands}${rules}${lines}</svg>`;
+}
+
+/** Replace a chart's contents with a reason it is not there. */
+function chartUnavailable(id, reason) {
+  const el = document.getElementById(id);
+  if (el) el.innerHTML = `<p class="chart-empty">${reason}</p>`;
+}
+
+// --------------------------------------------------------------------------
+// tide
+// --------------------------------------------------------------------------
+
+/**
+ * The downstream constraint, drawn once.
+ *
+ * The tide is why release timing is a decision at all: at high tide the sea
+ * holds the river mouth up and the same discharge sits higher upstream, so
+ * there is a free, predictable window roughly twice a day when a given volume
+ * moves downstream at materially lower flood cost.
+ *
+ * Metres about mean sea level at Kochi. Deliberately never mixed into the
+ * reservoir's m MSL readout, for the same reason the rig's tank depth is not:
+ * they share a unit and nothing else.
+ */
+async function loadTide() {
+  const state = document.getElementById('tide-state');
+  const out = document.getElementById('tide-out');
+
+  try {
+    const r = await fetch('/api/tide?hours=72', { signal: AbortSignal.timeout(4000) });
+    if (!r.ok) throw new Error(String(r.status));
+    const d = await r.json();
+
+    document.getElementById('tide-chart').innerHTML = lineChart(
+      [{ values: d.level_m, colour: '#4aa3df', width: 1.5 }],
+      {
+        height: 40,
+        bands: d.low_tide_windows,
+        rules: [{ at: 0, colour: 'rgba(139,166,189,.4)' }],
+      },
+    );
+
+    const next = d.low_tide_windows[0];
+    document.getElementById('tide-range').textContent = `${d.spring_range_m.toFixed(1)} m`;
+    document.getElementById('tide-next').textContent =
+      next ? `h+${next[0]} to h+${next[1]}` : 'none in 72 h';
+    document.getElementById('tide-count').textContent = String(d.low_tide_windows.length);
+    out.hidden = false;
+
+    state.textContent = 'PREDICTED';
+    state.className = 'chip chip-model';
+  } catch {
+    // Offline is a supported state. Say what is missing and stop - there is
+    // nothing here worth retrying in a loop.
+    state.textContent = 'OFFLINE';
+    state.className = 'chip chip-off';
+    out.hidden = true;
+    chartUnavailable('tide-chart', 'Needs the API — /api/tide is not reachable.');
+  }
+}
+
+// --------------------------------------------------------------------------
+// twin simulation (counterfactual)
+// --------------------------------------------------------------------------
+
+/** Crore rupees, from rupees. The dashboard speaks the operators' unit. */
+function crore(inr) {
+  return `${inr >= 0 ? '+' : '−'}₹${Math.abs(inr / 1e7).toFixed(1)} cr`;
+}
+
+/**
+ * Replay the episode against the optimiser's policy and draw both.
+ *
+ * Two disciplines are load-bearing here:
+ *
+ * 1. **The headline is cushion, never peak reduction.** This episode never
+ *    reached downstream bankfull, so "peak reduction" is −277% and means
+ *    nothing; the API says as much in `headline_note` and names
+ *    `freeboard_gained_m` as the metric. That note is shown verbatim.
+ * 2. **Round to what the error bar allows.** Replay MAE is 0.30 m, so the
+ *    gain is stated as whole metres - "about 3 m", not "3.08 m".
+ *
+ * The search behind this takes seconds, so it is kicked off after first paint
+ * and cached server-side; a reload is instant.
+ */
+async function loadCounterfactual(key = 'periyar_oct_2021') {
+  const state = document.getElementById('sim-state');
+  const headline = document.getElementById('sim-headline');
+  const out = document.getElementById('sim-out');
+
+  try {
+    const r = await fetch(`/api/scenarios/${key}/counterfactual`,
+      { signal: AbortSignal.timeout(90000) });
+    if (!r.ok) throw new Error(String(r.status));
+    const d = await r.json();
+    const s = d.summary;
+
+    document.getElementById('sim-chart').innerHTML = lineChart(
+      [
+        { values: d.series.observed_level, colour: '#e0a53a', width: 1.5 },
+        { values: d.series.optimised_level, colour: '#35c07a', width: 1.5 },
+      ],
+      { height: 46, rules: [{ at: RES.frl, colour: 'rgba(226,86,79,.55)' }] },
+    );
+
+    const gain = s.freeboard_gained_m;
+    const dRev = s.revenue_delta_inr;
+    headline.textContent =
+      `About ${Math.round(gain)} m more cushion than the day` +
+      (dRev >= 0 ? ', with more revenue, not less.' : ', at a cost in revenue.');
+    headline.className = `headline ${gain > 0 ? 'good' : ''}`;
+
+    const m = (v) => (Number.isFinite(v) ? `${v.toFixed(2)} m` : '—');
+    document.getElementById('sim-peak-obs').textContent = m(s.peak_level_baseline);
+    document.getElementById('sim-peak-opt').textContent = m(s.peak_level_optimised);
+    document.getElementById('sim-fb-obs').textContent = m(s.min_freeboard_baseline_m);
+    document.getElementById('sim-fb-opt').textContent = m(s.min_freeboard_optimised_m);
+    document.getElementById('sim-rev').textContent = crore(dRev);
+    document.getElementById('sim-policy').textContent = d.policy
+      ? `Policy: draw down to ${d.policy.target_level_m.toFixed(2)} m from ` +
+        `h+${d.policy.start_hour}, at up to ${d.policy.max_rate_cumecs.toFixed(0)} cumecs.`
+      : '';
+    out.hidden = false;
+
+    // The API's own caveat, verbatim - it is the thing that stops this chart
+    // being read as a bigger claim than it is.
+    document.getElementById('sim-note').textContent =
+      `Hindsight, not forecast: the optimiser sees the inflow that actually ` +
+      `arrived. ${s.headline_note}`;
+
+    state.textContent = 'HINDSIGHT';
+    state.className = 'chip chip-model';
+  } catch {
+    state.textContent = 'OFFLINE';
+    state.className = 'chip chip-off';
+    out.hidden = true;
+    headline.textContent = 'Needs the API.';
+    headline.className = 'headline';
+    chartUnavailable('sim-chart', 'The optimiser runs on the backend — not available offline.');
   }
 }
 

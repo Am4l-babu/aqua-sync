@@ -801,7 +801,7 @@
     '<div class="pin-grid">' + PINMAP.map(function (p) {
       return '<div class="pin-row"><span class="pin-fn">' + p.fn + " <span class=\"mono\" style=\"opacity:0.7\">(" + p.part + ")</span></span><span class=\"pin-val\">" + p.pin + "</span></div>";
     }).join("") + "</div>" +
-    '<div class="callout" style="margin-top:1rem;"><p><strong>Two traps worth flagging.</strong> Ultrasonic echo pins output 5&nbsp;V and the ESP32 is 3.3&nbsp;V tolerant only — a divider (marked *) is not optional. GPIO&nbsp;34/35 are input-only with no internal pull-ups, so limit switches need external ones. GPIO&nbsp;21 is shared with I²C SDA, so the stepper’s <em>dir</em> line moves to GPIO&nbsp;25.</p></div>';
+    '<div class="callout" style="margin-top:1rem;"><p><strong>Two traps worth flagging.</strong> Ultrasonic echo pins output 5&nbsp;V and the ESP32 is 3.3&nbsp;V tolerant only — a divider (marked *) is not optional. GPIO&nbsp;34/35 are input-only with no internal pull-ups, so limit switches need external ones. GPIO&nbsp;21 is shared with I²C SDA, so the stepper’s <em>dir</em> line moves to GPIO&nbsp;25.</p><p><strong>Three rows above are parts with no firmware yet.</strong> <code>node_reservoir</code> does not read the tailwater ultrasonic pair, does not read the BMP280, and does not drive the pump relay — wiring them does no harm, but do not expect telemetry or control from them until that code exists. See <code>firmware/README.md</code>.</p></div>';
 
   document.getElementById("v2").innerHTML =
     "<h2>V2 <span class=\"tier-chip\">Optional</span> <span class=\"tier-cost\">+" + money(COST.v2) + " &middot; +1 week</span></h2>" +
