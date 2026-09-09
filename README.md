@@ -230,7 +230,7 @@ uvicorn aquasync.api.main:app --port 8000 --app-dir backend   # from the repo ro
 
 | URL | What |
 |---|---|
-| `http://localhost:8000/` | The 3D twin — Three.js, no build step, 1 Hz telemetry with lerp smoothing. Carries the tide's low-water windows, the hindsight counterfactual and the rig's sensor trace |
+| `http://localhost:8000/` | The 3D twin — Three.js, no build step, 1 Hz telemetry with lerp smoothing. Real DEM terrain under Sentinel-2 ground imagery. Carries the tide's low-water windows, the hindsight counterfactual and the rig's sensor trace |
 | `http://localhost:8000/crisis.html` | Crisis Commander |
 
 ```
