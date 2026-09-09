@@ -80,17 +80,25 @@ motorised sluice gate, level sensing, and live telemetry to the twin.
 
 ### Wiring — ESP32 pin map
 
-| Function | Part | ESP32 pin | Note |
-|---|---|---|---|
-| Reservoir level trig | JSN-SR04T | GPIO 5 | |
-| Reservoir level echo | JSN-SR04T | GPIO 18 | 5 V→3.3 V divider **required** |
-| Tailwater trig/echo | HC-SR04 | GPIO 17 / 16 | divider on echo |
-| Water temperature | DS18B20 | GPIO 4 | 4.7 kΩ pull-up to 3.3 V |
-| Barometric | BMP280 | I²C: SDA 21, SCL 22 | |
-| Gate step / dir / enable | A4988 | GPIO 19 / 21 / 23 | 21 is shared with I²C SDA — **move dir to GPIO 25** |
-| Gate limit switches | SPDT ×2 | GPIO 34, 35 | input-only pins, external pull-ups needed |
-| Flow sensor | YF-S201 | GPIO 27 | hardware interrupt; 5 V→3.3 V divider |
-| Pump relay | Relay/MOSFET | GPIO 26 | |
+| Function | Part | ESP32 pin | In `node_reservoir` firmware? | Note |
+|---|---|---|---|---|
+| Reservoir level trig | JSN-SR04T | GPIO 5 | ✅ | |
+| Reservoir level echo | JSN-SR04T | GPIO 18 | ✅ | 5 V→3.3 V divider **required** |
+| Tailwater trig/echo | HC-SR04 | GPIO 17 / 16 | 📋 Not wired | `main.cpp` reads one ultrasonic channel only. Bench-testable alone — see [`firmware/bench/02_ultrasonic/`](../../firmware/bench/02_ultrasonic/) — but nothing reads this pin pair in the assembled node yet |
+| Water temperature | DS18B20 | GPIO 4 | ✅ | 4.7 kΩ pull-up to 3.3 V |
+| Barometric | BMP280 | I²C: SDA 21, SCL 22 | 📋 Not wired | Squall pre-detection (air pressure), never a level input. Bench-testable alone — see [`firmware/bench/04_bmp280/`](../../firmware/bench/04_bmp280/) — but not read by the assembled node yet |
+| Gate step / dir / enable | A4988 | GPIO 19 / 25 / 23 | ✅ | DIR is GPIO 25, **not** GPIO 21 — 21 is I²C SDA, shared with the BMP280 row above |
+| Gate limit switches | SPDT ×2 | GPIO 34, 35 | ✅ | input-only pins, external pull-ups needed |
+| Flow sensor | YF-S201 | GPIO 27 | ✅ | hardware interrupt; 5 V→3.3 V divider |
+| Pump relay | Relay/MOSFET | GPIO 26 | 📋 Not wired | Nothing in `node_reservoir` drives this pin. Run the pump from a manual switch on the 12 V rail until relay control is written, rather than wiring it to GPIO 26 and finding it inert |
+
+Rows marked 📋 are real BOM parts with no corresponding firmware yet — wire
+them if you like (they do no harm sitting unconnected), but do not expect
+`node_reservoir` to read or drive them until that code exists. This is not
+the same gap as the pressure transducer (see
+[`firmware/bench/README.md`](../../firmware/bench/README.md)): these three
+were simply never implemented, rather than implemented against a part the
+V1 kit does not include.
 
 > **Two traps worth flagging.** Ultrasonic echo pins output 5 V and the
 > ESP32 is 3.3 V tolerant only — a divider is not optional. And GPIO 34/35
