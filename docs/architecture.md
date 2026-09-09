@@ -41,7 +41,7 @@ anything resembling a real deployment — see [Trust boundary](#trust-boundary).
                           │      LAYER 1 - INGESTION             │
                           │  KSEB bulletin · IMD/Open-Meteo      │
                           │  INCOIS tide · Sentinel-1 SAR        │
-                          │  ESP32 field nodes (MQTT/LoRa)       │
+                          │  ESP32 field nodes (MQTT; LoRa TODO) │
                           └──────────────────────────────────────┘
 ```
 
@@ -264,29 +264,42 @@ the network is down?*
 ```
   ┌────────────────────────────────────────────┐
   │ ESP32 reservoir node                       │
-  │  JSN-SR04T ultrasonic ──┐                  │
-  │  Hydrostatic pressure ──┼─► EKF fusion     │
-  │  BMP280 barometric ─────┘   → level state  │
+  │  JSN-SR04T ultrasonic ──► EKF ► level state│
+  │  (hydrostatic pressure: V3 BOM item,       │
+  │   fuses in once wired — see below)         │
   │  DS18B20 temperature (sound-speed comp.)   │
+  │  BMP280 barometric (squall pre-detection,  │
+  │   air pressure — not a level input)        │
   │                                            │
-  │  Wi-Fi/MQTT  (primary)                     │
-  │  LoRa SX1278 (fallback, no infrastructure) │
-  │  SD card     (last resort, always logs)    │
+  │  Wi-Fi/MQTT  (built)                       │
+  │  LoRa SX1278 (planned, phase 4)            │
+  │  SD card     (planned, phase 4)            │
   └────────────────────────────────────────────┘
 ```
 
-Three things make it more than a sensor demo:
+Three things make it more than a sensor demo. Read each claim below for what
+is actually running today versus what the code is staged for — a demo is
+weaker for overclaiming a fallback than for naming it honestly as next.
 
-**Sensor fusion, not a single reading.** Ultrasonic sensors flutter ±2 cm on
-a wavy surface and their speed of sound drifts with temperature. A 1-D
-Kalman filter fusing ultrasonic with hydrostatic pressure, temperature-
-compensated, yields a level estimate stable enough to act on, and — more
-usefully — a *disagreement signal* that flags a failing sensor.
+**Sensor fusion, not a single reading — once both sensors exist.** Ultrasonic
+sensors flutter ±2 cm on a wavy surface and their speed of sound drifts with
+temperature; the DS18B20 compensates for that, and this part is built and
+running on ultrasonic alone. The V1 BOM does not include a hydrostatic
+pressure transducer (it is a V3 add-on, ₹1,800), so the *fused, two-physics*
+reading with its disagreement signal is designed and coded but currently
+inactive — `readPressureDepth()` returns a deliberate `NAN` rather than
+trusting an unconnected pin, and the node runs on the one real sensor
+honestly rather than presenting a phantom cross-check. BMP280 is a separate,
+unrelated sensor (air pressure, for squall pre-detection) and is not part of
+the level estimate at all — it is not yet wired into the firmware either.
 
-**Degradation, not failure.** Wi-Fi → LoRa → local SD, and if telemetry is
-lost entirely the node falls back to a conservative worst-case profile. A
-tool that only works when the internet is up is not a disaster-management
-tool.
+**Degradation, staged rather than built end-to-end.** Wi-Fi/MQTT is what
+runs today. LoRa and local SD logging are the next two rungs of the fallback
+ladder and are designed into the code as a marked `TODO(phase-4)`, not yet
+implemented — the node currently prints to serial if MQTT is unreachable,
+which is the honest interim behaviour, not the finished one. A tool that
+only works when the internet is up is not a disaster-management tool; this
+is the reason that matters, staged rather than skipped.
 
 **Tamper-evident logging.** Each record is chained by SHA-256 to its
 predecessor. After the 2018 floods there were public disputes about whether
@@ -304,8 +317,8 @@ backend/aquasync/
     crisis.py     Crisis Commander scoring — same optimiser, same objective
     scenarios.py  Oct 2021, Nov–Dec 2021, Aug 2022 episodes
   io/           data adapters, with validation
-  api/          FastAPI: eight REST routes + telemetry WebSocket
-backend/tests/  75 physics and behaviour tests
+  api/          FastAPI: nine REST routes + telemetry WebSocket
+backend/tests/  97 physics and behaviour tests
 dashboard/      Three.js 3D twin + Crisis Commander, no build step
 firmware/       ESP32 nodes (PlatformIO)
 hardware/       BOM (four tiers, shoppable HTML), wiring, CAD
