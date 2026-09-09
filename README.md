@@ -353,6 +353,12 @@ Beat 4 is the one that wins the room. Anyone can demo a system working.
 Demonstrating a system *failing correctly* is what convinces an engineer it
 was built by someone who expected it to be used.
 
+The rig is 5 / 10, so beats 1, 3 and 4 need hardware not yet built. Until
+then, [ACTION_PLAN.md](ACTION_PLAN.md#until-the-rig-is-built-the-software-only-sequence)
+carries a seven-beat sequence that needs none — the twin, the tide and
+simulation panels, Crisis Commander, and the same fault injected over MQTT
+against a simulated node, all already driven through a real browser.
+
 ## Licence
 
 MIT for the code. Data belongs to its sources — see

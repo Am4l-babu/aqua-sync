@@ -151,6 +151,37 @@ Demonstrating a system *failing correctly* is what convinces an engineer that
 it was built by someone who expected it to be used. Build the fault-injection
 switches even if something else has to be cut.
 
+### Until the rig is built: the software-only sequence
+
+The six beats above assume the bench rig, which is 5 / 10 in
+[PROGRESS.md](PROGRESS.md) — the two-tank build, level sensing and stepper
+gate are still 📋 Todo. Beats 1, 3 and 4 cannot be performed today. This is
+the version that can, entirely on the laptop, and every beat in it has been
+driven through a real browser (9 Sep):
+
+1. Open on the twin. The badge reads **REPLAY**, not LIVE: *"the socket
+   being open only proves the backend is reachable — not that anything is
+   measured."*
+2. Point at the terrain caption: measured DEM, measured Sentinel-2 ground,
+   schematic structures.
+3. **Twin simulation panel.** *"About 3 m more cushion than the day, with
+   more revenue, not less."* Volunteer the weak metric before anyone asks
+   for it: peak reduction is −277% on this episode and means nothing,
+   because neither schedule reached bankfull.
+4. **Tide panel.** *"Twice a day the sea lets you move the same water
+   cheaply."* One chart carries the whole thesis on release timing.
+5. Hand over the what-if slider, then Crisis Commander: *"You have the duty
+   desk. It's 8 October 2021."*
+6. **Fault injection over MQTT.** A simulated node publishes a hash-chained
+   gate jam; the commanded/verified bars separate blue and red, and the
+   banner fires. *"The switches are what's left — the software they will
+   drive is already proven."* This is the substitute for beat 4 above.
+7. Pull the network cable. Nothing changes.
+
+Roughly three and a half minutes. Lead with credibility (1–2), volunteer the
+weak result before being caught by it (3), close with failure and resilience
+(6–7) — the ordering the rig-based sequence already gets right.
+
 ---
 
 ## Anticipated questions

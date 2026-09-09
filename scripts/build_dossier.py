@@ -1237,7 +1237,13 @@ def section_pitch() -> list:
             "Beat 4 is the one that wins the room. Anyone can demonstrate a system working; "
             "demonstrating a system <i>failing correctly</i> is what convinces an engineer that "
             "it was built by someone who expected it to be used."),
-        Spacer(1, 12),
+        Spacer(1, 10),
+        para(
+            "The rig above is next. Today's demonstration runs on the software alone: the twin, "
+            "the fault banner over MQTT, the what-if sandbox and Crisis Commander have each been "
+            "driven end to end in a real browser and need no hardware. The full sequence is in "
+            "<font face='Courier' size='8.5'>ACTION_PLAN.md</font>.", "caption"),
+        Spacer(1, 10),
         rule(colour=INK),
         para(
             "<b>Repository</b> · <font face='Courier' size='8.5'>PROGRESS.md</font> for live status, "
