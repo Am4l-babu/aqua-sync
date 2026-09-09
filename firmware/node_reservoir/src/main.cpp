@@ -5,10 +5,15 @@
  * gate, and publishes telemetry. Four design decisions are worth explaining,
  * because they are what separate this from a sensor demo:
  *
- * 1. TWO SENSORS, DIFFERENT PHYSICS.  Ultrasonic time-of-flight and
- *    hydrostatic pressure fail in different ways for different reasons. Two
- *    ultrasonic sensors that agree tell you nothing - they fail together.
- *    A Kalman filter fuses them; their disagreement is the fault signal.
+ * 1. TWO SENSORS, DIFFERENT PHYSICS - WHEN BOTH ARE PRESENT.  Ultrasonic
+ *    time-of-flight and hydrostatic pressure fail in different ways for
+ *    different reasons. Two ultrasonic sensors that agree tell you nothing -
+ *    they fail together. A Kalman filter fuses them; their disagreement is
+ *    the fault signal. The V1 BOM does not include the pressure transducer
+ *    (it is a V3 item - see config.h's HAS_PRESSURE_SENSOR), so as shipped
+ *    this node runs on ultrasonic alone, honestly: readPressureDepth()
+ *    returns NAN rather than trusting a floating ADC pin, and no code path
+ *    downstream of that treats NAN pressure as a valid measurement.
  *
  * 2. TEMPERATURE COMPENSATION IS NOT OPTIONAL.  The speed of sound changes
  *    about 0.6 m/s per degree C. Across a 15 C day that is a ~2.5% range
@@ -152,12 +157,28 @@ float readUltrasonicMedian(float air_temp_c, uint8_t n = 5) {
   return s[valid / 2];
 }
 
-/** Hydrostatic depth from a 0-5V pressure transducer: h = P / (rho * g). */
+/**
+ * Hydrostatic depth from a 0-5V pressure transducer: h = P / (rho * g).
+ *
+ * Returns NAN when HAS_PRESSURE_SENSOR is not defined (config.h) - i.e. on
+ * every V1 rig as currently ordered. This is deliberate, not a placeholder:
+ * PIN_PRESSURE floats without the transducer, and a floating ESP32 ADC pin
+ * does not reliably read as broken - RF and PWM noise can land it inside a
+ * plausible depth range, which would make updateLevelEstimate() below trust
+ * noise over the one real sensor. NAN propagates cleanly through pr_ok
+ * (any comparison against NAN is false) and through jsonF() in
+ * publishTelemetry(), which already renders a non-finite float as JSON
+ * `null` rather than losing the frame.
+ */
 float readPressureDepth() {
+#ifdef HAS_PRESSURE_SENSOR
   const uint16_t raw = analogRead(PIN_PRESSURE);
   const float volts = (raw / 4095.0f) * ADC_REF_VOLTS * ADC_DIVIDER_RATIO;
   const float pascals = (volts - TRANSDUCER_OFFSET_V) * TRANSDUCER_PA_PER_VOLT;
   return pascals / (1000.0f * 9.80665f);
+#else
+  return NAN;
+#endif
 }
 
 /**
@@ -184,10 +205,21 @@ void updateLevelEstimate(float dt_s) {
   g_level.variance += PROCESS_NOISE * dt_s;
 
   const bool us_ok = !isnan(us);
+  // NAN comparisons are always false in IEEE 754, so on a build without
+  // HAS_PRESSURE_SENSOR (readPressureDepth() returns NAN), pr_ok is false
+  // on every call, unconditionally - not measured, structural.
   const bool pr_ok = pr > 0.0f && pr < US_MAX_RANGE_M;
 
+#ifdef HAS_PRESSURE_SENSOR
   g_level.sensors_agree =
       (us_ok && pr_ok) ? (fabsf(us - pr) < SENSOR_DISAGREE_THRESHOLD_M) : false;
+#else
+  // No second physics channel exists on this build - there is nothing to
+  // disagree with, so unconditionally reporting false here would raise a
+  // fault the fault-injection demo never caused, on every single frame.
+  // The one channel this build actually has still has to be valid.
+  g_level.sensors_agree = us_ok;
+#endif
 
   auto fuse = [](float measurement, float noise) {
     const float k = g_level.variance / (g_level.variance + noise);
@@ -199,8 +231,11 @@ void updateLevelEstimate(float dt_s) {
     fuse(us, US_NOISE);
     fuse(pr, PRESSURE_NOISE);
   } else if (pr_ok) {
-    // Pressure is the more trustworthy fallback: it does not care about
-    // surface waves, foam, spray or air temperature.
+    // Pressure is the more trustworthy fallback when it exists: it does not
+    // care about surface waves, foam, spray or air temperature. This branch
+    // is structurally unreachable without HAS_PRESSURE_SENSOR - pr_ok is
+    // always false above - and is left in place rather than #ifdef'd out,
+    // so defining that flag is the only change needed to re-enable it.
     fuse(pr, PRESSURE_NOISE * 2.0f);
   } else if (us_ok) {
     fuse(us, US_NOISE * 2.0f);
@@ -429,9 +464,21 @@ void setup() {
   analogReadResolution(12);
   analogSetPinAttenuation(PIN_PRESSURE, ADC_11db);
 
+#ifdef HAS_PRESSURE_SENSOR
   // Seed the filter from pressure - it does not need a plausible prior the
   // way the ultrasonic median does.
   g_level.level_m = readPressureDepth();
+#else
+  // No pressure sensor on this build (see config.h's HAS_PRESSURE_SENSOR) -
+  // seeding from it would seed the entire filter from NAN. Take one
+  // ultrasonic reading instead, at the struct's default temperature prior
+  // (water_temp_c is not read from the DS18B20 until the first
+  // updateLevelEstimate() call). If even that fails, leave the struct's
+  // zero default in place: the filter's variance starts high (1.0f) and
+  // corrects within a few real samples rather than trusting a guess.
+  const float boot_us = readUltrasonicMedian(g_level.water_temp_c);
+  if (!isnan(boot_us)) g_level.level_m = boot_us;
+#endif
 
   Serial.println("homing gate ...");
   Serial.println(homeGate() ? "gate homed" : "GATE HOMING FAILED - refusing to operate");
