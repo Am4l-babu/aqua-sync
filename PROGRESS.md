@@ -26,9 +26,9 @@ below (✅ rows over all rows):
 | Decision engine | 7 / 7 | `██████████` |
 | Scenarios & validation | 5 / 6 | `████████░░` |
 | Hardware (V1 rig) | 5 / 10 | `█████░░░░░` |
-| Interface | 4 / 5 | `████████░░` |
-| Documentation | 11 / 14 | `████████░░` |
-| **Overall** | **46 / 59** | `████████░░` |
+| Interface | 6 / 7 | `█████████░` |
+| Documentation | 12 / 14 | `█████████░` |
+| **Overall** | **49 / 61** | `████████░░` |
 
 The software is a finished, validated, twice-retracted-and-corrected piece of
 work. **Both of the things only the team could do are now done — the components
@@ -43,6 +43,8 @@ is inert, because the combined peak never reaches bankfull. Every software
 task that does not need the rig is now either merged or in review.
 
 **All three demo paths have been driven in a real browser (9 Sep)** — the fault banner against a simulated node over MQTT, the what-if panel against `/api/whatif`, and the offline beat with no backend running at all. Two defects came out of that and are fixed: the dashboard was labelling a 2021 recording **LIVE**, and it logged a 404 every second when offline.
+
+**Two more routes reached the dashboard on 9 Sep**: the counterfactual and the tide, both built and tested earlier and never called from the page. The ground is now a real Sentinel-2 photograph rather than a procedural shading, kept off the water so its frozen shoreline cannot disagree with the level the twin animates. A third defect surfaced and is fixed: the what-if card's peak and its 72-hour advice line read as contradictory under a large release; both moments are now labelled. See the Interface rows for detail and their PRs.
 
 ---
 
