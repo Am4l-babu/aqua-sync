@@ -1,8 +1,9 @@
 # AquaSync — Handover
 
-**A single self-contained brief: what exists, what it actually proves, what
-is on disk but not yet committed, and what is left.** Written 30 August 2026;
-refreshed **Monday 31 August 2026**.
+**A single self-contained brief: what exists, what it actually proves, and
+what is left.** Written 30 August 2026; refreshed **Wednesday 9 September
+2026**, when the software list emptied and the bench became the whole
+critical path.
 
 This file is a snapshot for someone picking the project up cold. The living
 documents stay authoritative for their own areas:
@@ -71,6 +72,7 @@ GET  /api/scenarios/{key}/counterfactual
 POST /api/whatif
 GET  /api/crisis/{key}          briefing
 POST /api/crisis/{key}          score a decision
+GET  /api/rig                   scale-rig telemetry, opt-in via AQUASYNC_MQTT_HOST
 GET  /api/tide
 WS   /ws/telemetry
 ```
@@ -82,14 +84,25 @@ root**: `uvicorn aquasync.api.main:app --port 8000 --app-dir backend`.
 ### Interface — `dashboard/`
 
 - `index.html` + `js/twin.js` — Three.js 3D twin, no build step, WebSocket
-  telemetry with lerp smoothing; falls back to a bundled October 2021 replay
-  when the API is down. The what-if slider is client-side only —
-  `POST /api/whatif` exists and is **not wired to it**.
+  telemetry with time-based easing; falls back to a bundled October 2021
+  replay when the API is down. Terrain is **measured**: `build_terrain.py`
+  bakes 18 km of the real Periyar valley out of the DEM tiles the catchment
+  work already caches, and the reservoir footprint comes from the DEM's flat
+  water sheet, so the shoreline walks up actual topography as the level moves.
+  The what-if slider **is** wired to `POST /api/whatif`.
+- **Provenance is declared by the server, never inferred from the socket.**
+  Every telemetry frame carries `source`, defaulting to `REPLAY`; only `LIVE`
+  is styled green. This was a defect — the badge lit `LIVE` on connect while
+  a 2021 recording streamed underneath it — and it is pinned by tests.
 - `crisis.html` + `js/crisis.js` + `css/crisis.css` — Crisis Commander (§5)
 
 ### Tests, lint, and the gate
 
-**75 tests** in `backend/tests/test_twin.py`, all passing (31 August, 25 s).
+**97 tests** across `backend/tests/` — `test_twin.py` (physics and
+behaviour), `test_rig.py` (the MQTT bridge and its honesty rules) and
+`test_api_telemetry.py` (provenance). All passing, 9 September. Get today's
+number from `cd backend && python -m pytest --collect-only -q`, never from a
+document.
 
 ```bash
 python scripts/check.py           # the single gate: ruff + pytest + glyph audit
@@ -125,8 +138,12 @@ that should go, or it needs a builder; nobody has said which.
 PlatformIO firmware skeleton (sensor fusion + safety interlock structure) for
 `node_reservoir`; `node_downstream` is a placeholder. BOM in four tiers;
 **V1 is ₹6,250** with live vendor links in `hardware/bom/bom.html`.
-**Nothing is ordered**, and has not been since the BOM was written on
-26 August.
+**Ordered and received 8 September** — the components are in hand, and two
+SX1278 (Ra-02) 433 MHz LoRa modules followed on 9 September. The firmware has
+not been flashed to real hardware yet; five defects were fixed in it first
+(bare `nan` in JSON, no Wi-Fi reconnect, unguarded ISR state, the stepper
+enable pin left asserted, and an undocumented air-vs-water temperature
+approximation).
 
 ---
 
@@ -248,10 +265,21 @@ is plausibly that there was less at stake, not that the forecast was better.
 above 100% because the policies over-release; it scores freeboard alone, one
 axis of a four-part objective. Read `excess_cost_vs_perfect_foresight_pct`.
 
-**Where the August numbers are, as of 31 August:** `PROGRESS.md`,
-`ROADMAP.md` item 1, `docs/validation.md` §4, and this file. **Not yet in the
-dossier §4.4 or Figure 6**, which still read October only — a builder change
-and a full `check.py` rebuild, not started.
+**Where the August numbers are, as of 9 September:** everywhere — the
+dossier's §4.4 carries a second-storm subsection and Figure 6 grew a second
+row, alongside `PROGRESS.md`, `ROADMAP.md` item 10, `docs/validation.md` §4
+and this file. The two storms are drawn on **separate axes with separate
+y-limits**, deliberately: they are not equally hard and the penalties past
+the flat region differ by more than a factor of two, so a shared scale would
+imply a point-by-point comparison the data does not support.
+
+Landing them turned up **two more unfiltered globs** of the kind
+`make_figures.py` had carried: `build_abstract.py` counted study *files* as
+lead times and reported "across 10 lead times" when there are five run twice,
+and `build_icfoss_analysis.py` merged both storms into a single min–max
+range. Both filter by scenario now. The rule is worth carrying: **any
+`glob("forecast_error_study_*")` without a scenario filter is a defect**, and
+it stays invisible for as long as only one storm is on disk.
 
 ### Cascade coordination — a negative result, and it is load-bearing
 
@@ -355,11 +383,16 @@ Implementation notes for whoever touches it next:
   the expo network is not a dependency worth trusting
 - Validation returns 422 on out-of-range, 404 on unknown scenario
 
-> ⚠️ **Not visually verified.** There is no headless browser on the machine
-> that built it. The page was checked functionally — HTML/CSS/JS all serve,
-> JS syntax parses, endpoints return correct data — but **nobody has seen it
-> rendered**. Open it and look at it before relying on it for a demo. It is
-> the first desk task in `ACTION_PLAN.md`.
+> ✅ **Visually verified 8 September**, driven through a real browser over
+> the DevTools protocol: the briefing loads, the sliders take an order, and
+> committing renders the three-way outcome table with its verdict and colour
+> coding. Re-checked 9 September with zero console errors.
+>
+> An earlier version of this note said there was **no headless browser on
+> this machine**. That was wrong — Chrome is installed, and so are cached
+> Playwright binaries. The claim went unchecked for over a week and was the
+> stated reason two features shipped unverified. Check before you record an
+> impossibility.
 
 To run it:
 
@@ -370,99 +403,81 @@ uvicorn aquasync.api.main:app --port 8000 --app-dir backend   # from the repo ro
 
 ---
 
-## 6 · On disk but not committed, as of 31 August
+## 6 · Everything is committed
 
-```
- M data/processed/forecast_error_cross_matrix_2021-10-15_18z.csv
- M data/processed/forecast_error_study_2021-10-15_18z.json
-?? data/processed/forecast_error_*_2022-08-0{3,5,6,7}_*      the second storm, ten files
-?? backend/data/raw/Idukki.json                               a stray cache, see below
-?? HANDOVER.md                                                this file
- M README.md ROADMAP.md PROGRESS.md ACTION_PLAN.md CLAUDE.md  refreshed 31 Aug
- M docs/validation.md docs/architecture.md docs/data-sources.md
- M data/README.md notebooks/README.md
-```
+As of 9 September the working tree is clean and nothing of value sits
+uncommitted. The backlog this section used to track — the second storm's ten
+forecast-error files, the refreshed planning documents, this file — all
+landed between 7 and 9 September.
 
-The two modified October files differ only in two provenance fields
-(`scenario`, `storm_peak`) added by the scenario-awareness refactor. Every
-computed value reproduced exactly; this was checked.
+Two things worth carrying forward from it:
 
-**Committing them:** `PROGRESS.md` goes on `main` directly, per the workflow.
-Everything else goes on a branch off `development` and in by PR. Run the
-**full** `python scripts/check.py` first — the regeneration check walks
-`data/processed/`.
+**The `.gitignore` hole is closed.** The rule was `data/raw/`, and a pattern
+with a slash in the middle is anchored to the directory holding the
+`.gitignore` — so it matched `/data/raw/` and **not** `backend/data/raw/`,
+where a stray 740 KB third-party cache had been left by something run with a
+relative default from inside `backend/`. It is now `**/data/raw/` and
+`**/data/external/`. This is why the standing rule says never `git add -A`.
 
-### ⚠️ A `.gitignore` hole worth closing first
-
-Something run with a relative `data/raw` default from inside `backend/`
-left a stray **`backend/data/raw/Idukki.json`** (740 KB) — and **it is not
-ignored:**
-
-```bash
-$ git check-ignore -v backend/data/raw/Idukki.json
-$ echo $?
-1        # not matched by any ignore rule
-```
-
-The rule in `.gitignore` is `data/raw/`. A pattern with a slash in the middle
-is anchored to the directory holding the `.gitignore`, so it matches
-`/data/raw/` and **not** `backend/data/raw/`. The project's stated invariant is
-that `data/raw/` is never committed while `data/processed/` is committed on
-purpose; this hole quietly breaks it, and a `git add -A` would commit a raw
-third-party cache.
-
-**Still not fixed** — it is a repo-config change and nobody has asked for one.
-The fix is one line (`**/data/raw/`, and the same for `data/external/`), and
-the stray file is re-fetchable, so deleting it costs nothing.
+**PROGRESS.md lives on `main` and only on `main`.** A feature branch's copy is
+however stale that branch is, so read it with `git show main:PROGRESS.md`.
+`scripts/status.py` used to read the working tree and reported a finished test
+suite as Todo; it now reads `main` too.
 
 ---
 
 ## 7 · What is left
 
-### Blocked on the team, and both are urgent
+### Nothing is blocked on anyone but the bench
 
-| # | Task | Why it is urgent |
-|---|---|---|
-| 1 | **Order the ₹6,250 of V1 components** | 3–5 day delivery. Every hardware task is behind it, and Week 2 — **this week, Mon 31 Aug – Sun 6 Sep** — is the rig build. Open since 26 August. Order a spare ESP32 — do not let a ₹90 part block a demo |
-| 2 | **Confirm the expo entry status** | Registration closed **Saturday 22 August**; nine days without an answer. Whether the entry went in changes the whole schedule |
+Both items this section used to list as urgent and blocked on the team closed
+on 8 September: the components were ordered and received, and the expo entry
+was confirmed. Every software task that does not need the rig is done.
 
-If the expo answer is no, the work is not wasted — the schedule simply loses
-its deadline, and the joint cascade objective becomes worth more than the rig.
-
-### Immediate technical work
+### The critical path
 
 | # | Task | Notes |
 |---|---|---|
-| 3 | ~~Finish the Aug 2022 runs~~ | **Done.** All ten runs complete, 30 Aug |
-| 4 | ~~Interpret the second storm honestly~~ | **Done.** §3 above; PROGRESS, ROADMAP item 1, validation.md §4 |
-| 5 | Put the second storm into dossier §4.4 and Figure 6 | `_forecast_error_block` in `build_dossier.py` and `fig6` in `make_figures.py` read October only. Qualify, do not replace |
-| 6 | `python scripts/check.py` (full), commit, push | See §6 for what is uncommitted and where each piece goes |
-| 7 | **Look at Crisis Commander in a browser** | See §5 |
-| 8 | Wire the what-if panel to `/api/whatif` | Slider and endpoint both exist, unconnected. The only `🔄 Ongoing` engineering item |
-| 9 | Close the `.gitignore` hole | One line. See §6 — `backend/data/raw/` is currently committable |
-| 10 | Decide what `docs/AquaSync.pdf` is | No builder, not gated. Delete it or give it one |
+| 1 | **Build the two-tank bench** | Acrylic tanks, pump loop, sluice gate. Test each component alone *before* assembly — debugging a sensor that was never verified, inside a rig already glued and full of water, costs more than a day |
+| 2 | **Flash the firmware to real hardware** | The five defects are fixed; nothing has been on a board yet. Success is `GET /api/rig` showing `source: LIVE`, chain verified, 0 breaks — the first time that badge will be *true* |
+| 3 | **Fault injection** | Sensor-failure and gate-jam switches. **The beat that wins the room.** The dashboard half is done and verified in a browser against a simulated node; what is left is the physical switches and the firmware paths behind them |
+| 4 | A1 poster, pitch rehearsal, offline rehearsal | Expo deliverables, not started. Print by expo minus 3 days |
 
-### Largest open modelling item
+### What was finished since the last refresh
 
-**Joint cascade objective.** Score each dam's policy against the *combined*
-downstream discharge rather than its own reach. §3 shows this is an
-objective-function problem; a bigger timing search will not fix it. A joint
-six-parameter grid at the current density is 1,344² combinations and not
-tractable, so the design question is which parameters to hold. Worth
-starting only if the rig is on track, or if there is no expo date.
+| Item | Outcome |
+|---|---|
+| Joint cascade objective | Built — and **inert on the data as held**. The combined peak never reaches bankfull, so the shared flood term is identically zero and coordinate descent converges in zero moves. The blocker is the ungauged lateral inflow, not the objective's structure |
+| Second storm into the dossier | §4.4 and Figure 6 carry both storms, on separate axes. Two more unfiltered globs found and fixed on the way |
+| What-if panel | Wired to `/api/whatif`, browser-verified |
+| Crisis Commander | Seen rendered, driven end to end |
+| 3D twin | Rebuilt on measured DEM terrain |
+| Rig telemetry | MQTT bridge, SHA-256 record chain, `GET /api/rig`. Receive-only — the command topic is deliberately not wired |
+| Research report determinism | It embedded its build date, so every rebuild differed. Now an 8-character digest of the parsed index files |
 
-### Expo deliverables not started
+### One open question nobody has answered
 
-- Fault injection on the rig — the beat that wins the room (needs the parts)
-- A1 poster (figures 1, 4 and 5 carry it; print by expo minus 3 days)
-- Pitch rehearsal out loud, ten times (script is in dossier §12)
-- Full offline rehearsal — pull the network cable and run the whole demo
+**What is the expo presentation date?** The entry is confirmed but the date is
+recorded nowhere in this repository, and three deadlines hang on it — poster
+print, offline rehearsal, and how much slack the bench build has.
+
+### One standing decision
+
+`docs/AquaSync.pdf` (19 pp, committed 27 August) has no builder in `scripts/`
+and is not checked by `check.py`. Audited 9 September: it carries no
+contradicted claims and its trust-boundary diagram correctly says a gate
+command is *never issued by the system*. But it is unmaintained and predates
+the second storm, the joint cascade result and the rig bridge. Either delete
+it or give it a builder; nobody has said which.
 
 ### Deliberately not being built
 
 2D inundation (LISFLOOD-FP / HEC-RAS), Sentinel-1 SAR extent validation,
 Malayalam alerting, a continuous soil-moisture runoff model, paid deployment
-infrastructure. See [ROADMAP.md](ROADMAP.md) for each reason.
+infrastructure. **And, permanently: operating a real dam gate.** Kerala's
+gates are KSEB's and the district administration's; the only gate anything
+here actuates is the model sluice on the bench. See [ROADMAP.md](ROADMAP.md)
+§Never in scope.
 
 ---
 
@@ -557,13 +572,17 @@ in §6 happened.
 
 | Risk | Severity | Where it stands |
 |---|---|---|
-| Expo entry status unknown | 🔴 High | Nine days since registration closed. Changes the whole schedule |
-| Hardware ordering delay blocks the rig | 🔴 High | Still unordered on Monday 31 Aug — the rig-build week. Software is fully demonstrable without it, but EVOKE is an IoT club event |
-| Independent per-dam optimisation makes the shared downstream peak worse | 🔴 High | Measured at 126% above observed. Do not ship per-dam optimisation as if it degrades gracefully. Fix is a joint objective |
+| ~~Expo entry status unknown~~ | ✅ Closed | **Confirmed 8 September** |
+| Expo presentation date unknown | 🟠 Medium | The entry is in; the date is recorded nowhere. Poster print, rehearsal and bench slack all hang on it |
+| ~~Hardware ordering delay blocks the rig~~ | ✅ Closed | **Received 8 September**, LoRa modules 9 September |
+| The bench is now the whole critical path | 🔴 High | Every software task that does not need the rig is done, so there is nothing left to fall back on when the hardware is frustrating. The build has not started, and it starts a week later than planned |
+| Firmware has never run on real hardware | 🟠 Medium | Five defects fixed before flashing, but nothing has been on a board. First contact is the risk |
+| Independent per-dam optimisation makes the shared downstream peak worse | 🟠 Medium | Measured at 126% above observed. Do not ship per-dam optimisation as if it degrades gracefully. A joint objective was built on 8 September and is **inert on the data as held** — the combined peak never reaches bankfull, so the shared flood term is identically zero. The blocker is the ungauged lateral inflow, not the objective |
 | Forecast-error result rests on two storms of very different difficulty | 🟠 Medium | Degradation reproduces in both, but Oct 2021 breaks at 48 h and plateaus at +69%, while Aug 2022 stays flat to 90 h then jumps to +158%. Aug 2022 sat nearly 5 m below FRL. Qualify by reservoir state; never average the two |
-| Crisis Commander never seen rendered | 🟠 Medium | Functionally checked. Open it before any demo |
+| ~~Crisis Commander never seen rendered~~ | ✅ Closed | Driven through a real browser 8 September; re-checked 9 September with zero console errors |
+| The dashboard labelled a recording LIVE | ✅ Closed | The badge lit on socket-open, not on measurement. Provenance is now declared per frame and pinned by tests |
 | Routing K/x anchored, not calibrated, so downstream discharge is indicative | 🟠 Medium | Calibration failed on daily data (r² = 0.005); the CWC 8 h anchor stands. Needs the 15-minute feed |
 | Runoff amplitude unvalidated (NSE 0.07, no recession limb) | 🟠 Medium | Disclosed in validation.md. Shape is usable, amplitude is not |
-| `backend/data/raw/` is committable | 🟠 Medium | One-line `.gitignore` fix, see §6 |
+| ~~`backend/data/raw/` is committable~~ | ✅ Closed | Now `**/data/raw/` and `**/data/external/`. The rule against `git add -A` stands anyway |
 | Feature creep across 25 candidate upgrades | 🟠 Medium | Phases 0–3 plus the V1 rig is the scope |
 | Upstream dataset changes or disappears | 🟢 Low | `data/processed/` is committed |
