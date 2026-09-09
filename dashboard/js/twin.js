@@ -104,8 +104,7 @@ async function init() {
   await adoptServerConstants();
   bindControls();
   connect();
-  pollRig();
-  setInterval(pollRig, 1000);
+  scheduleRigPoll(0);
   animate();
 }
 
@@ -152,6 +151,25 @@ function setLink(state, text) {
   el.textContent = text;
 }
 
+/**
+ * Show the provenance the server declared, never an inference from the
+ * transport. Only LIVE is green: a recorded episode and a rig that has gone
+ * quiet must both be visibly not-live, because the one thing this dashboard
+ * must never do is present a simulated value as a measured one.
+ */
+const SOURCE_STYLE = {
+  LIVE: ['ok', 'LIVE'],
+  REPLAY: ['warn', 'REPLAY'],
+  STALE: ['warn', 'STALE'],
+  SIMULATED: ['warn', 'SIMULATED'],
+};
+
+function showSource(source) {
+  const [state, label] = SOURCE_STYLE[source] || ['warn', String(source || 'UNKNOWN')];
+  setLink(state, label);
+  return label;
+}
+
 function connect() {
   let ws;
   try {
@@ -164,7 +182,10 @@ function connect() {
     if (ws.readyState !== WebSocket.OPEN) { ws.close(); startReplay('backend unreachable'); }
   }, 2500);
 
-  ws.onopen = () => { clearTimeout(giveUp); setLink('ok', 'LIVE'); };
+  // Connecting proves the backend is reachable, nothing more. The badge
+  // stays neutral until a frame arrives and states its own provenance -
+  // this used to light up LIVE here while a 2021 replay streamed beneath it.
+  ws.onopen = () => { clearTimeout(giveUp); setLink('warn', 'CONNECTED'); };
   ws.onmessage = (e) => { try { apply(JSON.parse(e.data)); } catch { /* ignore */ } };
   ws.onerror = () => { clearTimeout(giveUp); startReplay('websocket error'); };
   ws.onclose = () => { if (!replayTimer) startReplay('backend closed'); };
@@ -282,6 +303,12 @@ function updatePanel(t) {
   if (t.advice) document.getElementById('advice').textContent = t.advice;
   if (t.timestamp) document.getElementById('clock').textContent = t.timestamp;
   if (t.scenario) document.getElementById('scenario').textContent = `scenario: ${t.scenario}`;
+  if (t.source && !manualOverride) {
+    const label = showSource(t.source);
+    document.getElementById('source').textContent =
+      t.source === 'REPLAY' ? 'source: replay (recorded episode, not live)'
+        : `source: ${label.toLowerCase()}`;
+  }
 
   const card = document.getElementById('advice-card');
   card.classList.toggle('alert', target.level >= RES.rule && target.spill === 0);
@@ -431,6 +458,17 @@ function setStageAlert(faults) {
   el.hidden = faults.length === 0;
 }
 
+const RIG_POLL_MS = 1000;
+const RIG_POLL_MAX_MS = 15000;
+let rigBackoffMs = RIG_POLL_MS;
+let rigTimer = null;
+
+/** Poll again after `delay` ms, replacing any pending poll. */
+function scheduleRigPoll(delay) {
+  clearTimeout(rigTimer);
+  rigTimer = setTimeout(pollRig, delay);
+}
+
 async function pollRig() {
   const state = document.getElementById('rig-state');
   const warn = document.getElementById('rig-warn');
@@ -440,6 +478,7 @@ async function pollRig() {
     const r = await fetch('/api/rig', { signal: AbortSignal.timeout(2500) });
     if (!r.ok) throw new Error(String(r.status));
     const s = await r.json();
+    rigBackoffMs = RIG_POLL_MS;
 
     const live = s.source === 'LIVE';
     state.textContent = live ? 'LIVE' : s.source === 'STALE' ? 'STALE' : 'OFFLINE';
@@ -479,6 +518,13 @@ async function pollRig() {
     state.className = 'chip chip-off';
     warn.hidden = true;
     setStageAlert([]);
+    // No backend at all is a supported state - the expo demo runs with the
+    // network cable pulled. Polling every second then means a 404 per second
+    // for as long as the page is open, which buries anything worth seeing in
+    // the console. Back off instead, and recover the moment it answers.
+    rigBackoffMs = Math.min(rigBackoffMs * 2, RIG_POLL_MAX_MS);
+  } finally {
+    scheduleRigPoll(rigBackoffMs);
   }
 }
 

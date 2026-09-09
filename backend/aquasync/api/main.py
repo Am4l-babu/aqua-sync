@@ -63,6 +63,19 @@ class Telemetry(BaseModel):
     timestamp: str
     scenario: str
     advice: str
+    source: str = "REPLAY"
+    """Where these numbers came from, in the dashboard's own vocabulary.
+
+    The socket being open says the backend is reachable. It says nothing
+    about whether anything is being measured, and the dashboard used to
+    conflate the two - it lit a LIVE badge on connect while streaming a
+    2021 replay underneath it. The provenance is decided here, by whatever
+    fills the frame, and the dashboard displays what it is told.
+
+    REPLAY   a recorded episode being played back
+    LIVE     measurements arriving now, from the rig
+    STALE    the rig was live and has gone quiet
+    """
 
 
 class WhatIfRequest(BaseModel):
@@ -171,6 +184,8 @@ async def _replay_loop() -> None:
                     timestamp=str(row["date"]),
                     scenario="periyar_oct_2021",
                     advice=_advice(level, spill),
+                    # October 2021, recorded. Never labelled live.
+                    source="REPLAY",
                 ).model_dump()
             )
             await asyncio.sleep(0.25)
