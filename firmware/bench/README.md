@@ -16,25 +16,32 @@ pio device monitor
 Do them in order. Each one either shares a pin with, or is a prerequisite
 for trusting, the one after it.
 
-## ⚠️ Read this before wiring anything to GPIO36
+## The V1 kit has no water-pressure sensor, and the firmware now knows it
 
-**There is no bench test here for the water-pressure sensor `main.cpp`
-depends on, because the V1 BOM does not include one.** `readPressureDepth()`
-in [`node_reservoir/src/main.cpp`](../node_reservoir/src/main.cpp) reads
-`PIN_PRESSURE` (GPIO36) expecting a 0–5 V hydrostatic transducer, and uses it
-to **seed the entire boot-time level estimate** and as the **more trustworthy
-fallback** whenever it disagrees with the ultrasonic reading. That
-transducer is a `hardware/bom/bom.html` **V3** line item (₹1,800,
-"Hydrostatic level transmitter... Independent physics → real sensor
-fusion") — the BOM's own words say plainly that genuine sensor fusion needs
-it, and V1 does not have it.
+`readPressureDepth()` in
+[`node_reservoir/src/main.cpp`](../node_reservoir/src/main.cpp) reads
+`PIN_PRESSURE` (GPIO36) expecting a 0–5 V hydrostatic transducer, and — when
+one is actually present — uses it to **seed the boot-time level estimate**
+and as the **more trustworthy fallback** whenever it disagrees with the
+ultrasonic reading. That transducer is a `hardware/bom/bom.html` **V3** line
+item (₹1,800, "Hydrostatic level transmitter... Independent physics → real
+sensor fusion") — the BOM's own words say plainly that genuine sensor fusion
+needs it, and V1 does not have it.
 
-Left as-is, GPIO36 floats. A floating ESP32 ADC pin does not fail loudly —
-it can land inside the plausible 0–0.45 m range from RF/PWM noise alone, so
-the firmware's `pr_ok` check can pass on nothing, and `sensors_agree` can
-flip on its own with no fault switch touched. That directly undermines the
-one demo beat everyone is counting on. **Do not wire anything to GPIO36
-until this is resolved** — see the open question logged in
+**This used to be dangerous.** A floating ESP32 ADC pin does not fail
+loudly — it can land inside the plausible 0–0.45 m range from RF/PWM noise
+alone, so the old `pr_ok` check could pass on nothing, and `sensors_agree`
+could flip with no fault switch touched.
+
+**It no longer is.** `HAS_PRESSURE_SENSOR` in `config.h` is undefined by
+default (matching the V1 BOM as actually ordered). With it undefined,
+`readPressureDepth()` returns `NAN` rather than reading the floating pin,
+which propagates cleanly: the boot seed falls back to a real ultrasonic
+reading, `pr_ok` is always false, and `sensors_agree` reports the one real
+sensor's validity instead of a permanent phantom disagreement. **`GPIO36` is
+now safe to leave unconnected.** Ordering the V3 transducer and defining
+`HAS_PRESSURE_SENSOR` restores the original dual-sensor behaviour exactly —
+that business decision is still open, logged in
 [PROGRESS.md](../../PROGRESS.md) under Hardware (V1 rig).
 
 None of the six tests below touch that pin. They cover everything that *is*

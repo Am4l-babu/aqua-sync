@@ -33,14 +33,20 @@ constants. Flash and pass all six before wiring anything into
 
 ## Design notes
 
-**Two sensors, different physics — on paper.** Ultrasonic time-of-flight and
-hydrostatic pressure fail differently and for different reasons. Two
-ultrasonic sensors that agree tell you nothing; they fail together. The
-Kalman filter fuses them, and their disagreement is the fault signal.
+**Two sensors, different physics — when both exist.** Ultrasonic
+time-of-flight and hydrostatic pressure fail differently and for different
+reasons. Two ultrasonic sensors that agree tell you nothing; they fail
+together. The Kalman filter fuses them, and their disagreement is the fault
+signal.
 ⚠️ **The V1 BOM does not include the pressure transducer.** It is a V3 line
-item (`hardware/bom/bom.html`, ₹1,800). Until that is resolved,
-`PIN_PRESSURE` floats and must not be wired to anything — see
-[`firmware/bench/README.md`](bench/README.md) for what that means and why
+item (`hardware/bom/bom.html`, ₹1,800) — a cost/schedule decision logged in
+`PROGRESS.md`, not yet made. The firmware defends against the gap rather than
+assuming it is closed: `HAS_PRESSURE_SENSOR` in `config.h` is undefined by
+default, `readPressureDepth()` returns `NAN` rather than trusting a floating
+pin, and the boot-time seed and `sensors_agree` both fall back to
+ultrasonic-only honestly. **`PIN_PRESSURE` is still safe to leave
+unconnected** on this firmware; it was not, before this fix. See
+[`firmware/bench/README.md`](bench/README.md) for the full reasoning and why
 none of the six bench tests touch it.
 
 **Temperature compensation is mandatory.** The speed of sound changes about
