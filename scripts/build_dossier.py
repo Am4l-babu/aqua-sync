@@ -1228,7 +1228,7 @@ def section_pitch() -> list:
                    "rise and opens the gate <i>before</i> the reservoir tank reaches its FRL line", "40 s"],
              ["4", "Flip the ‘sensor failure’ switch. The twin detects the disagreement, "
                    "falls back to mass-balance state estimation, and keeps controlling", "30 s"],
-             ["5", "Hand over the tablet: “You are the operator. It is 16 October 2021.” "
+             ["5", "Hand over the tablet: “You are the operator. It is 8 October 2021.” "
                    "Let them try to save Aluva, then show them the optimiser's answer", "40 s"],
              ["6", "Pull the network cable. Everything keeps running on LoRa and the local Pi", "20 s"]],
             widths=[8 * mm, CONTENT_W - 30 * mm, 22 * mm]),
