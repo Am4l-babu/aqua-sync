@@ -221,15 +221,24 @@ export class TwinScene {
     for (let i = 0; i < this.elev.length; i++) pos.setY(i, this.elevToY(this.elev[i]));
     pos.needsUpdate = true;
 
-    // Drop every triangle that lies wholly inside the reservoir. There is no
-    // bathymetry to draw there, so rather than invent a bed the mesh simply
-    // ends at the bank and the water surface covers the gap.
-    const core = (i) => this.mask[i * 4] > 127;
+    // Drop the triangles there is genuinely no ground for, and only those.
+    //
+    // The mask's red channel is the full-supply footprint, not the water
+    // surface: this DEM has a median 3.6 m of relief inside it and its cells
+    // run from 718 m to 734 m, so half of it is bank that stands above the
+    // sheet the data captured. Dropping all of it deleted that bank, which is
+    // the ground the shoreline is supposed to walk up as the level moves.
+    //
+    // What is actually unknown is the bed under the captured sheet. So the
+    // test is depth, not membership: a cell is undrawable only where the DEM
+    // is reporting a water surface rather than ground.
+    const sheet = this.meta.reservoir.captured_sheet_level_m;
+    const submerged = (i) => this.mask[i * 4] > 127 && this.elev[i] <= sheet + 0.5;
     const idx = [];
     for (let r = 0; r < n - 1; r++) {
       for (let c = 0; c < n - 1; c++) {
         const a = r * n + c, b = a + 1, d = a + n, e = d + 1;
-        if (core(a) && core(b) && core(d) && core(e)) continue;
+        if (submerged(a) && submerged(b) && submerged(d) && submerged(e)) continue;
         idx.push(a, d, b, b, d, e);
       }
     }
@@ -310,6 +319,7 @@ export class TwinScene {
       uHeight: { value: heightTex },
       uMask: { value: maskTex },
       uLevel: { value: this.meta.reservoir.frl_m },
+      uSheet: { value: this.meta.reservoir.captured_sheet_level_m },
       uTime: { value: 0 },
       uSun: { value: this.sun.position.clone().normalize() },
       uDeep: { value: new THREE.Color(0x1b4a63) },
@@ -339,6 +349,7 @@ export class TwinScene {
         uniform sampler2D uHeight;
         uniform sampler2D uMask;
         uniform float uLevel;
+        uniform float uSheet;
         uniform float uTime;
         uniform vec3 uSun, uDeep, uShallow, uSky, uFogColor;
         uniform float uFogDensity;
@@ -365,8 +376,20 @@ export class TwinScene {
           vec4 m = texture2D(uMask, vUv);
           float e = elevation(vUv);
           float core = smoothstep(0.35, 0.65, m.r);
+
+          // Inside the footprint, wet the ground the level actually covers -
+          // never the whole footprint. Painting all of it made the shoreline
+          // a fixed outline that could not move, so the reservoir only ever
+          // rose and fell inside its own banks like a bathtub, and at a
+          // typical level about 7 km2 of dry bank was drawn as water.
+          //
+          // The floor is the captured sheet. Below that the DEM is reporting
+          // a water surface and the bed under it is unknown, so the sheet
+          // stays wet rather than the twin inventing a beach it cannot see.
+          float wet = max(uLevel, uSheet);
+          bool flooded = core >= 0.02 && e <= wet;
           bool fringe = m.g > 0.5 && e <= uLevel;
-          if (core < 0.02 && !fringe) discard;
+          if (!flooded && !fringe) discard;
 
           // Distance from the bank, not depth - there is no bathymetry. Inside
           // the captured sheet it comes from the baked field; on ground the
