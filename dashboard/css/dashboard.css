@@ -353,6 +353,8 @@ body {
 }
 .sim-transport { display: flex; align-items: center; gap: 10px; }
 .sim-drawer .headline { margin: 8px 0 0; }
+.kbd-hint { margin: 6px 0 0; font-size: 11px; color: var(--muted); font-family: var(--mono); }
+.kbd-hint code { font-family: inherit; color: var(--ink); }
 
 .sim-body {
   display: grid; grid-template-columns: 1fr 300px; gap: 18px;

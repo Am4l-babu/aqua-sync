@@ -181,7 +181,10 @@ driven through a real browser (9 Sep):
    gate jam; the commanded/verified bars separate blue and red, and the
    banner fires. *"The switches are what's left — the software they will
    drive is already proven."* This is the substitute for beat 4 above.
-7. Pull the network cable. Nothing changes.
+7. Pull the network cable. Nothing changes — the simulation drawer included,
+   which now reads the bundle `scripts/bake_dashboard_data.py` writes and
+   says **BUNDLED** on its chip. For an unattended screen, open
+   `?sim=1&demo=1`: it plays and loops.
 
 Roughly three and a half minutes. Lead with credibility (1–2), volunteer the
 weak result before being caught by it (3), close with failure and resilience

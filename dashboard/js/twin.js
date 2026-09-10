@@ -198,21 +198,51 @@ function openSimFromUrl() {
     scenario: q.get('scenario') || undefined,
     trace: q.get('trace') || undefined,
     hour: Number.isFinite(hour) && q.has('hour') ? hour : undefined,
+    storm: q.get('storm') || undefined,
+    demo: q.has('demo'),
   }));
 }
 
-/** The scenario list, from the API, or a rejection when it is not there. */
-async function fetchScenarios() {
-  const r = await fetch('/api/scenarios', { signal: AbortSignal.timeout(4000) });
-  if (!r.ok) throw new Error(String(r.status));
-  return r.json();
+/**
+ * The offline bundle for a scenario, baked by scripts/bake_dashboard_data.py
+ * from the same code the API runs. Used only when the API is unreachable,
+ * and everything read from it is labelled bundled - beat 7 of the demo is
+ * "pull the network cable", and the drawer must survive that too.
+ */
+const bundleCache = new Map();
+function fetchBundle(key) {
+  if (!bundleCache.has(key)) {
+    bundleCache.set(key, fetch(`assets/sim_${key}.json`, { signal: AbortSignal.timeout(4000) })
+      .then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.json(); })
+      .catch((err) => { bundleCache.delete(key); throw err; }));
+  }
+  return bundleCache.get(key);
 }
 
-/** The storm-multiple sweep on disk for a scenario, or a rejection. */
+/** The scenario list, from the API, else the bundled index, else a rejection. */
+async function fetchScenarios() {
+  try {
+    const r = await fetch('/api/scenarios', { signal: AbortSignal.timeout(4000) });
+    if (!r.ok) throw new Error(String(r.status));
+    return await r.json();
+  } catch {
+    const r = await fetch('assets/sim_index.json', { signal: AbortSignal.timeout(4000) });
+    if (!r.ok) throw new Error(String(r.status));
+    return r.json();
+  }
+}
+
+/** The storm-multiple sweep for a scenario: API, else the bundle, else a rejection. */
 async function fetchSweep(key) {
-  const r = await fetch(`/api/scenarios/${key}/stress_sweep`, { signal: AbortSignal.timeout(4000) });
-  if (!r.ok) throw new Error(String(r.status));
-  return r.json();
+  try {
+    const r = await fetch(`/api/scenarios/${key}/stress_sweep`, { signal: AbortSignal.timeout(4000) });
+    if (!r.ok) throw new Error(String(r.status));
+    return await r.json();
+  } catch (err) {
+    const b = await fetchBundle(key);
+    if (!b.sweep) throw err;
+    return { ...b.sweep, bundled: true };
+  }
 }
 
 const cfCache = new Map();
@@ -229,7 +259,18 @@ function fetchCounterfactual(key, scale = 1) {
     const p = fetch(`/api/scenarios/${key}/counterfactual${q}`,
       { signal: AbortSignal.timeout(90000) })
       .then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.json(); })
-      .catch((err) => { cfCache.delete(id); throw err; });
+      .catch(async (err) => {
+        // Only the recorded storm is bundled: a scaled one is another
+        // optimiser run, and the bundle exists for the flagship beat.
+        if (scale !== 1) { cfCache.delete(id); throw err; }
+        try {
+          const b = await fetchBundle(key);
+          return { ...b.counterfactual, bundled: true, bundle_note: b.note };
+        } catch {
+          cfCache.delete(id);
+          throw err;
+        }
+      });
     cfCache.set(id, p);
   }
   return cfCache.get(id);
@@ -1042,7 +1083,7 @@ async function loadCounterfactual(key = 'periyar_oct_2021') {
       `Hindsight, not forecast: the optimiser sees the inflow that actually ` +
       `arrived. ${s.headline_note}`;
 
-    state.textContent = 'HINDSIGHT';
+    state.textContent = d.bundled ? 'HINDSIGHT · BUNDLED' : 'HINDSIGHT';
     state.className = 'chip chip-model';
   } catch {
     state.textContent = 'OFFLINE';

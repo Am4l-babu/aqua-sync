@@ -1,0 +1,29 @@
+[
+  {
+    "key": "periyar_oct_2021",
+    "title": "Periyar cascade, October 2021",
+    "start": "2021-10-08",
+    "end": "2021-10-28",
+    "reservoir": "Idukki",
+    "narrative": "Idukki entered a 168 mm rain day already above its rule level with gates shut, absorbed a 7.6x inflow surge into freeboard, and opened the spillway three days later at 731.0 m - the same day Idamalayar opened its own gates into the same river.",
+    "citation": "KSEB daily dam bulletin via amith-vp/Kerala-Dam-Water-Levels"
+  },
+  {
+    "key": "idukki_dec_2021",
+    "title": "Idukki riding FRL, Nov-Dec 2021",
+    "start": "2021-11-20",
+    "end": "2021-12-15",
+    "reservoir": "Idukki",
+    "narrative": "Idukki held between 731.6 and 732.0 m for three weeks - inside 0.5 m of FRL - with essentially no flood cushion left, purely to protect end-of-year generation.",
+    "citation": "KSEB daily dam bulletin via amith-vp/Kerala-Dam-Water-Levels"
+  },
+  {
+    "key": "idukki_aug_2022",
+    "title": "Idukki monsoon spill, August 2022",
+    "start": "2022-08-01",
+    "end": "2022-08-20",
+    "reservoir": "Idukki",
+    "narrative": "A cleaner, smaller monsoon episode with a genuine multi-day spillway release. Useful as an out-of-sample validation case once the model has been calibrated on October 2021.",
+    "citation": "KSEB daily dam bulletin via amith-vp/Kerala-Dam-Water-Levels"
+  }
+]

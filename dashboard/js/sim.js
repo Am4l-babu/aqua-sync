@@ -97,9 +97,16 @@ export function createSimView(deps) {
     drawChart();
     loadSweep(key);
     // A scaled storm is a stress test, and the chip must not call it
-    // hindsight: hindsight is of something that happened.
+    // hindsight: hindsight is of something that happened. A bundled result
+    // is the same computation done earlier, offline; the chip says so.
     if (st.data.summary.stress_note) setState('STRESS TEST', 'chip-stale');
+    else if (st.data.bundled) setState('HINDSIGHT · BUNDLED', 'chip-model');
     else setState('HINDSIGHT', 'chip-model');
+    if (st.data.bundled) {
+      el.note.textContent = `${st.data.bundle_note || 'Bundled result; the API is not reachable.'} ` +
+        el.note.textContent;
+    }
+    if (st.demo) play();
     const n = st.data.series.observed_level.length;
     el.scrub.max = String(n - 1);
     setIndex(Math.min(st.idx, n - 1), true);
@@ -401,7 +408,10 @@ export function createSimView(deps) {
     // Advance a fractional position, so a slow speed on a fast display still
     // moves rather than rounding back to the same hour every frame.
     st.frac += Number(el.speed.value) * dt;
-    if (st.frac >= n - 1) { setIndex(n - 1); stop(); return; }
+    if (st.frac >= n - 1) {
+      if (st.loop) { st.frac = 0; setIndex(0); st.raf = requestAnimationFrame(tick); return; }
+      setIndex(n - 1); stop(); return;
+    }
     setIndex(st.frac);
     st.raf = requestAnimationFrame(tick);
   }
@@ -428,6 +438,14 @@ export function createSimView(deps) {
     if (opts.scenario) el.scenario.value = opts.scenario;
     if (opts.trace) setTrace(opts.trace);
     if (Number.isFinite(opts.hour)) st.idx = opts.hour;
+    if (opts.storm && [...el.storm.options].some((o) => o.value === String(opts.storm))) {
+      el.storm.value = String(opts.storm);
+    }
+    // Demo mode: an unattended screen at the expo. Plays as soon as the
+    // data is in and loops, so the water is always moving when someone
+    // walks up.
+    st.demo = !!opts.demo;
+    st.loop = !!opts.demo;
     st.open = true;
     drawer.hidden = false;
     el.toggle.classList.add('on');
@@ -462,6 +480,27 @@ export function createSimView(deps) {
   el.run.addEventListener('click', () => run());
   el.scenario.addEventListener('change', () => run());
   el.storm.addEventListener('change', () => run());
+
+  // A link to exactly this view - scenario, schedule, hour, storm - so a
+  // tester or a judge can be sent straight to the moment being discussed.
+  const linkBtn = $('simv-link');
+  if (linkBtn) {
+    linkBtn.addEventListener('click', async () => {
+      const q = new URLSearchParams({
+        sim: '1', scenario: st.key || el.scenario.value, trace: st.trace,
+        hour: String(st.idx), storm: el.storm.value,
+      });
+      const url = `${location.origin}${location.pathname}?${q}`;
+      try {
+        await navigator.clipboard.writeText(url);
+        linkBtn.textContent = 'Link copied';
+      } catch {
+        window.prompt('Copy this link', url);
+        linkBtn.textContent = 'Copy link';
+      }
+      setTimeout(() => { linkBtn.textContent = 'Copy link'; }, 1800);
+    });
+  }
   el.play.addEventListener('click', () => (st.playing ? stop() : play()));
   el.scrub.addEventListener('input', () => { stop(); setIndex(Number(el.scrub.value)); });
   el.trace.addEventListener('click', (e) => {
