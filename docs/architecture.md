@@ -317,7 +317,7 @@ backend/aquasync/
     crisis.py     Crisis Commander scoring — same optimiser, same objective
     scenarios.py  Oct 2021, Nov–Dec 2021, Aug 2022 episodes
   io/           data adapters, with validation
-  api/          FastAPI: nine REST routes + telemetry WebSocket
+  api/          FastAPI: eleven REST routes + telemetry WebSocket
 backend/tests/  97 physics and behaviour tests
 dashboard/      Three.js 3D twin + Crisis Commander, no build step
 firmware/       ESP32 nodes (PlatformIO)

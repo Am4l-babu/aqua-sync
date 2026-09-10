@@ -83,7 +83,7 @@ root**: `uvicorn aquasync.api.main:app --port 8000 --app-dir backend`.
 
 ### Interface — `dashboard/`
 
-- `index.html` + `js/twin.js` — Three.js 3D twin, no build step, WebSocket
+- `index.html` + `js/twin.js` + `js/scene.js` + `js/sim.js` — Three.js 3D twin, no build step, WebSocket. `sim.js` is the simulation drawer: the counterfactual on a real axis, scrubbable hour by hour, driving the 3D water; `?sim=1&scenario=…&trace=opt&hour=N` opens it on load
   telemetry with time-based easing; falls back to a bundled October 2021
   replay when the API is down. Terrain is **measured**: `build_terrain.py`
   bakes 18 km of the real Periyar valley out of the DEM tiles the catchment

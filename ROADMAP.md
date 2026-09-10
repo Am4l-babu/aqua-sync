@@ -335,6 +335,43 @@ up in `build_abstract.py` and `build_icfoss_analysis.py` and were fixed: any
 
 ---
 
+## Reference-source audit — 11 September 2026
+
+Every idea in the two source documents the project grew out of —
+[`reference/source_chats/analyze_1.pdf`](reference/source_chats/analyze_1.pdf)
+(the brief, 17 pp) and the EVOKE chat export beside it — checked against what
+is built. Built means merged or in the working tree and driven in a browser;
+"plan" means a row already in `PROGRESS.md`; "deferred" and "never" point at
+the tables below, where the reason is recorded. Nothing in either source is
+unaccounted for.
+
+| Idea in the sources | Status | Where |
+|---|---|---|
+| Mass-balance twin, SCS-CN runoff, Muskingum lag, tidal backwater, hill-diagram hydropower, multi-objective release policy, grid offtake | ✅ Built and validated | `PROGRESS.md` Simulation Core and Decision Engine |
+| Pre-emptive discharge timed to low-tide windows | ✅ Built | Tide panel, `/api/tide`; the optimiser's flood term routes through the tidal reach |
+| "Replay the historical crisis, then run the optimiser" demo | ✅ Built — October 2021, because 2018 is not in the public dataset | Simulation view, Crisis Commander, dossier §12 |
+| 2D/3D map, live gauges, recommendation panel, what-if slider | ✅ Built | `dashboard/index.html`; the ground is the Sentinel-2 photograph, drawn as photographed (11 Sep) |
+| Timeline slider to scrub the episode, judges try alternatives live | ✅ Built 11 Sep | Simulation drawer: hour-by-hour scrub of recorded, replayed and optimised traces, driving the 3D water; storm × 1.25 / 1.5 / 2 stress test |
+| Colour-coded flood zones on a map | 🟡 Reservoir bands only (dead / rule / FRL) | Street-level zones need 2D inundation — deferred |
+| Cascade of dams as a graph with lags | ✅ Built for the two dams that matter | Cascade and joint-objective rows; a warning, not a win |
+| Tamper-evident release ledger (hash chain) | ✅ Built | SHA-256 record chain in the firmware, verified by `aquasync.api.rig` |
+| Shadow-mode SCADA path, advisory only | ✅ By design | "Never in scope" — no command path exists |
+| Offline-first dashboard on a laptop hotspot | ✅ Built and rehearsed | Offline beat, verified 9 Sep |
+| Crisis Commander serious game | ✅ Built | `dashboard/crisis.html` |
+| EKF / sensor fusion on the node, physical fault-injection switches, predictive gate-jam detection (INA219 current spike) | 📋 Plan, hardware | Hardware rows in `PROGRESS.md`; the dashboard side is verified |
+| LoRa fail-safe mesh | 🔄 Plan, V2 pulled forward | LoRa row; two SX1278 modules ordered 9 Sep |
+| Barometric squall pre-detection (BMP280 dP/dt) | 📋 Plan, hardware — part bought and bench-tested, not read by the assembled node | [hardware/bom/README.md](hardware/bom/README.md) wiring table, `firmware/bench/04_bmp280/` |
+| Rain gauge on the upstream node | 📋 Plan, hardware — not in the V1 tier | BOM tiers |
+| Synthetic 500-year storms, Monte Carlo probability of failure | 🟡 Built as a sensitivity, not a probability: the storm stress test in the drawer, plus `scripts/stress_sweep.py` → `data/processed/stress_sweep_periyar_oct_2021.json` — the day's schedule reaches FRL at ×1.25 of the recorded storm, AquaSync's not by ×3 (it releases more; see the downstream columns). Generative half deferred | Deferred table |
+| Land-use "policy mode" (curve-number slider) | ✅ Built 11 Sep, volume only: the Catchment policy card runs this episode's rain through the SCS-CN chain at a chosen CN against handbook 72 (`/api/scenarios/{key}/runoff?cn=`). The peak is shown greyed and labelled not validated, because the chain's NSE on shape is 0.07 | [validation.md §4](docs/validation.md) |
+| Malayalam last-mile alerting | ✅ Built 11 Sep as template wording: every telemetry frame and what-if answer carries `advice_ml` on the same KSDMA bands as the English advice, shown under the recommendation. **Draft text — a native speaker must read it before any public use** | `_advice_ml` in `api/main.py`, six tests |
+| Economic loss calculator, citizen photo gauge, adaptive siltation curve, demand forecasting in the objective | ⏸ Deferred, with reasons | Deferred table |
+| 2D inundation, SAR calibration, evacuation routing and agent-based evacuation, GNN routing, RL gate policy, PINN surrogates, bathymetry boat, dam-breach mode, thermal seepage, hydrophone and cavitation acoustics, WebXR/AR, post-quantum SCADA, Malayalam social sentinel, TinyML sensor health, LSPIV and camera gauges | ⏸ Deferred, with reasons | Deferred table |
+| LDMC and Kudumbashree mapping, OGC SensorThings output, delivery of the Malayalam line over a real channel | ⏸ Post-expo | "Beyond the expo" table |
+| Insurance premiums, nudge dashboard, smartphone seismic network, irrigation-canal actuation, FPGA gate interlock | 🚫 Rejected | Deferred table, last rows |
+
+---
+
 ## Never in scope
 
 Deferral means *later*. These mean *never*, and they are listed separately so
@@ -365,11 +402,21 @@ Not rejected — deferred, with the reason recorded so it is not re-argued.
 | **Blockchain release ledger** | A SHA-256 hash chain gives the tamper-evidence needed at a fraction of the complexity. Already in the firmware design |
 | **WebXR / AR overlay** | Pure spectacle. Considered only if everything else is finished and rehearsed |
 | **PINN / learned hydraulic surrogates** | Verified reject. Surrogates pay when the physics model is the bottleneck — hours per run. AquaSync's forward model is a power law plus SCS-CN plus Muskingum, effectively instantaneous, which is the only reason the exhaustive policy search is tractable. PINN accuracy for shallow-water problems is still below conventional solvers. Revisit only if 2D inundation is added |
+| **On-device anomaly detection (TinyML) for sensor health** | Deferred, not rejected — but only in one shape. The tractable framing is *sensor-health classification*, not level estimation: an unsupervised detector (e.g. Edge Impulse K-means / GMM on spectral features) trained only on "healthy" windows, that flags when a channel behaves unlike anything it did when working and hands off to the physics filter. It needs no labels, only the normal data the rig already produces, and it would let the fault-injection demo show an anomaly score rising *before* the 30 mm `sensors_agree` threshold trips. Deferred because it is outside Phases 0–3 and the pre-expo path does not need it; the SD store-and-forward it builds on is the `TODO(phase-4)` rung to write first. A learned model that *outputs the level* is a separate idea and is rejected: nothing on the rig measures level better than the sensor being corrected, so there is no target to train against, and it would trade away the explainability the project protects elsewhere (see the RL gate policy row) |
+| **Camera water-level reading (classical CV, not a CNN)** | Deferred. Paint a high-contrast staff gauge on the tank or channel wall, take one region-of-interest strip, and find the water line by column-wise intensity gradient — an independent third measurement through different physics, from the ESP32-CAM already in the V3 BOM, with no model and no training set. A near-zero-cost cross-check against the still-open pressure-transducer purchase. Deferred as outside the expo scope; it fails in darkness and on a fogged lens, so it is a cross-check, not a fusion input. LSPIV surface-velocity from the same camera is the discharge-side version of this and shares the deferral |
 | **Eclipse Ditto / Azure Digital Twins / NVIDIA Omniverse** | Verified reject, all three. Healthy products aimed at problems this project does not have: device-shadow sync across IoT fleets, a DTDL graph over many-noded assets, GPU physics-ML at CFD scale. AquaSync is two reservoirs and one river. "Digital twin" in the title describes what the model *does*, not a mandate to buy a product with the phrase in its marketing |
 | **Google Flood Forecasting API for the hindcast** | Verified reject *for historical work*. India is a supported country and the feed is genuinely useful for live operation, but `queryGaugeForecasts` imposes a hard floor: "Start time cannot be earlier than 2023-10-01". October 2021 is permanently unreachable. Access also needs waitlist approval Google warns "might take several months". Use GRRR instead |
 | **Malayalam NLP social sentinel** | Interesting validation signal, but it confirms a flood after it starts — the twin exists to act before |
 | **Dam-breach mode** | Different hazard class, different regulatory context. Post-expo |
 | **Public deployment on paid infrastructure** | The expo runs offline on a laptop by design. A free-tier public link is optional; paid infrastructure is not happening |
+| **Generative synthetic storms (VAE/GAN) and a Monte Carlo probability of failure** | The tractable half is built (11 Sep 2026): the simulation view's storm stress test scales the recorded inflow by 1.25×, 1.5× or 2× and runs both schedules through the same optimiser, and `scripts/stress_sweep.py` walks a ladder to ×3 and records the first multiple at which each schedule reaches FRL (day ×1.25, AquaSync not by ×3 — because it releases up to 1,500 cumecs, which the downstream columns show) — a scaled copy of one storm, never called a return period. The generative half is deferred: six years of daily bulletins cannot train a weather model, and a "probability of failure" from synthetic storms would be a number the code could not defend in front of a judge |
+| **Economic and infrastructure loss calculator (OSM exposure)** | Needs a water depth at a street before it can count the hospitals in it, so it sits behind 2D inundation. With 1D routing the honest output is river discharge, and that is what the dashboard shows |
+| **Land-use "policy mode" as a hydrograph** | The volume form is built (11 Sep 2026, the Catchment policy card): the chain reproduces seasonal runoff *volume* to within −7 to +38%, so a curve-number what-if on volume is inside what was validated. What stays deferred is any claim about the *peak* — the chain's NSE on shape is 0.07 and its calibration pins at the grid floor — so the card greys the peak and labels it not validated. Revisit the peak once the continuous soil-moisture model exists |
+| **Citizen-science photo gauge (chatbot + CV)** | Shares the camera staff-gauge deferral above, plus a public intake with moderation and abuse handling — a separate product. The KSEB bulletin remains the source of record |
+| **Dynamic siltation calibration (adaptive level–storage curve)** | There is no bathymetry to adapt against; shares the bathymetry-boat deferral. The tractable form is already done: the level–storage exponent is refitted from the bulletin itself (β 1.348, r² 0.996), which is what a silting reservoir would move |
+| **Electricity demand forecasting inside the objective** | The time-of-day tariff and the grid-offtake constraint are in the objective already. A live demand forecast needs a Kerala demand feed there is no public source for |
+| **V2/V3 sensing and actuation set** (mmWave radar level, thermal seepage camera, hydrophone/I2S cavitation, load-cell trash-rack sweeper, siphon spillway, micro-Pelton harvester, EC salt-wedge sensor, FPGA interlock) | Costed and sourced in [hardware/bom/](hardware/bom/) as the V2 and V3 tiers; none of it is needed for the V1 rig or the fault-injection beat, and the FPGA interlock guards an actuation path this project will never have. Post-expo, tier by tier |
+| **Dynamic flood-insurance premiums, a behavioural "nudge" dashboard, a repurposed-smartphone seismic network, downstream irrigation-canal actuation** | Rejected. Each is a different product or a different track; the single-track rule stands |
 
 ---
 

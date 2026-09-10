@@ -574,6 +574,42 @@ INCOIS predictions. The spring range the model produces (1.00 m) and the
 dominant period (12.63 h) are both consistent with published descriptions of
 Cochin as microtidal mixed semi-diurnal — a sanity check, not a validation.
 
+### 🔴 Storm stress test — not validated, by construction
+
+The simulation view can multiply the recorded inflow by 1.25, 1.5 or 2 before
+either schedule sees it (`inflow_scale` on `/api/scenarios/{key}/counterfactual`,
+added 11 September 2026). It is a scaled copy of one hydrograph: the same shape,
+more water. It is **not** a forecast, **not** a return period, and there is no
+observed storm to score it against — which is why the API drops the replay-error
+figures and the recorded level from a scaled run rather than leave a 0.30 m MAE
+on screen beside a storm that never happened. Read it as a comparison between
+two schedules under the same larger storm, and nothing more.
+
+`scripts/stress_sweep.py` walks the multiples 1, 1.25, 1.5, 1.75, 2, 2.5, 3 and
+writes `data/processed/stress_sweep_periyar_oct_2021.json`. On the October
+2021 episode the day's schedule first reaches FRL at **×1.25** and the
+optimiser's schedule does not by ×3 — because it may release up to 1,500
+cumecs, and the routed downstream peak in the same file is where that water
+goes (one dam's contribution, uncalibrated reach, never against bankfull).
+Levels above the crest are the mass balance continuing past it; the twin has
+no overtopping physics. Coarse ladder, so "first multiple" is an upper bound.
+
+### 🟡 Catchment policy (curve-number what-if) — volume only
+
+`/api/scenarios/{key}/runoff?cn=` runs the episode's recorded rain through the
+SCS-CN chain at a chosen curve number and reports runoff **volume** against
+handbook CN 72. That is inside what §4's runoff validation supports: pooled
+volume bias −1%, −7 to +38% by season. The hydrograph peak the same call
+returns is labelled `shape_unvalidated` and greyed on the card, because the
+chain's NSE on shape is 0.07 and has no recession limb. The curve number is
+a handbook land-use lookup, not a measurement of this catchment.
+
+### 🟡 Malayalam advisory — wording not reviewed
+
+`advice_ml` on every telemetry frame and what-if answer is template text on
+the same KSDMA bands as the English advice, pinned to them by test. It has
+**not** been read by a native speaker and must be before any public use.
+
 ---
 
 ## 5 · Unit and physics tests

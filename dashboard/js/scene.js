@@ -275,27 +275,45 @@ export class TwinScene {
     }
     geo.setAttribute('color', new THREE.BufferAttribute(colours, 3));
 
-    // With imagery the photograph carries the colour and the DEM's own normals
-    // carry the relief, so the procedural palette steps aside rather than
-    // multiplying into it and tinting the ground green twice over. The vertex
-    // colours stay on the geometry as the fallback when no texture was baked.
-    //
     // The mesh already has no triangles inside the reservoir - they are
-    // dropped above - so draping this cannot paint over the water. That
-    // matters: the image freezes the shoreline on 7 February 2024 and the
-    // twin moves the water level, so the photograph is never allowed to state
-    // where the bank is. The dynamic water surface owns that, and a dry-season
-    // scene means the strip between the two reads as the bare drawdown zone it
-    // actually is.
-    const material = new THREE.MeshStandardMaterial({
-      vertexColors: !this.imagery,
-      map: this.imagery ? this.imagery.tex : null,
-      roughness: 0.97,
-      metalness: 0.0,
-    });
+    // dropped above - so draping the photograph cannot paint over the water.
+    // That matters: the image freezes the shoreline on 7 February 2024 and
+    // the twin moves the water level, so the photograph is never allowed to
+    // state where the bank is. The dynamic water surface owns that, and a
+    // dry-season scene means the strip between the two reads as the bare
+    // drawdown zone it actually is.
+    let material;
+    if (this.imagery) {
+      // A satellite photograph is already lit - the sun was in it when it
+      // was taken. Running it through the scene's sun, sky fill, shadow map
+      // and filmic tone curve lit it a second time, and the forest came out
+      // a lurid green that the photograph does not contain. So the ground
+      // is drawn unlit and untone-mapped: the pixel on screen is the pixel
+      // in the JPEG, times a gentle hillshade from the DEM's own normals so
+      // the relief stays legible. Fog still applies, for depth.
+      const shade = new Float32Array(this.elev.length * 3);
+      const sun = this.sun.position.clone().normalize();
+      const nv = new THREE.Vector3();
+      for (let i = 0; i < this.elev.length; i++) {
+        nv.set(nrm.getX(i), nrm.getY(i), nrm.getZ(i));
+        const k = 0.74 + 0.26 * THREE.MathUtils.clamp(nv.dot(sun), 0, 1);
+        shade[i * 3] = shade[i * 3 + 1] = shade[i * 3 + 2] = k;
+      }
+      geo.setAttribute('color', new THREE.BufferAttribute(shade, 3));
+      material = new THREE.MeshBasicMaterial({
+        map: this.imagery.tex,
+        vertexColors: true,
+        toneMapped: false,
+      });
+    } else {
+      // No photograph baked: the procedural palette above, lit normally.
+      material = new THREE.MeshStandardMaterial({
+        vertexColors: true, roughness: 0.97, metalness: 0.0,
+      });
+    }
 
     this.ground = new THREE.Mesh(geo, material);
-    this.ground.receiveShadow = true;
+    this.ground.receiveShadow = !this.imagery;
     this.ground.castShadow = true;
     this.scene.add(this.ground);
   }
@@ -328,8 +346,10 @@ export class TwinScene {
       uSheet: { value: this.meta.reservoir.captured_sheet_level_m },
       uTime: { value: 0 },
       uSun: { value: this.sun.position.clone().normalize() },
-      uDeep: { value: new THREE.Color(0x1b4a63) },
-      uShallow: { value: new THREE.Color(0x3e93a4) },
+      // Toned to sit with the photograph: Sentinel-2 sees this reservoir as
+      // a dark teal, not the swimming-pool blue the earlier palette used.
+      uDeep: { value: new THREE.Color(0x163c48) },
+      uShallow: { value: new THREE.Color(0x2f7482) },
       uSky: { value: SKY_HORIZON.clone() },
       uFogColor: { value: SKY_HORIZON.clone() },
       uFogDensity: { value: this.scene.fog.density },

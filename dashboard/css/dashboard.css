@@ -243,6 +243,15 @@ body {
 }
 
 #advice-card p { margin: 0; font-size: 14px; line-height: 1.55; }
+/* The Malayalam last-mile line. Its own paragraph and a slightly larger
+   size: Malayalam glyphs are denser than Latin at the same point size. */
+#advice-card .advice-ml {
+  margin-top: 8px; font-size: 14.5px; line-height: 1.7; color: var(--ink);
+  font-family: "Noto Sans Malayalam", "Manjari", "Nirmala UI", "Kartika", var(--font);
+}
+#advice-card .advice-ml:empty { display: none; }
+/* A value shown for orientation only, not to be read as a result. */
+.kv dd.dim { color: var(--muted); }
 #advice-card .note {
   margin-top: 9px; font-size: 12px; color: var(--muted);
   padding-top: 9px; border-top: 1px solid var(--line);
@@ -267,8 +276,113 @@ body {
 
 /* -- stage --------------------------------------------------------------- */
 
-#stage { grid-area: stage; position: relative; }
-#stage canvas { display: block; }
+/* The stage is the 3D view over an optional simulation drawer. The drawer
+   takes real height rather than overlaying, so the canvas shrinks and the
+   dam stays in the middle of what is left instead of under a panel. */
+#stage {
+  grid-area: stage;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  min-height: 0;
+}
+#view { position: relative; min-height: 0; overflow: hidden; }
+#view canvas { display: block; }
+
+/* -- stage tools: viewpoints and the simulation toggle ------------------- */
+
+.stage-tools {
+  position: absolute;
+  top: 14px; left: 16px;
+  display: flex; align-items: center; gap: 10px;
+  z-index: 2;
+}
+.seg {
+  display: inline-flex; align-items: center;
+  background: rgba(11, 22, 32, .82);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  overflow: hidden;
+}
+.seg button, .tool-btn {
+  font-family: var(--font);
+  font-size: 13px;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  padding: 7px 12px;
+  cursor: pointer;
+}
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button.on { color: var(--ink); background: rgba(74, 163, 223, .18); }
+.seg button:hover, .tool-btn:hover { color: var(--ink); }
+.seg-label { font-size: 12px; color: var(--muted); padding: 0 10px; }
+.tool-btn {
+  background: rgba(11, 22, 32, .82);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+}
+.tool-btn.on { color: var(--ink); border-color: rgba(74, 163, 223, .6); background: rgba(74, 163, 223, .18); }
+
+/* -- simulation drawer --------------------------------------------------- */
+
+/* Fixed share of the stage, scrolling inside itself when the results and
+   the caveats need more than that - clipping a caveat is not an option. */
+.sim-drawer {
+  height: 50vh;
+  min-height: 340px;
+  display: flex; flex-direction: column;
+  padding: 12px 18px 12px;
+  background: var(--panel);
+  border-top: 1px solid var(--line);
+  overflow-y: auto;
+}
+.sim-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 14px; flex-wrap: wrap;
+}
+.sim-title { display: flex; align-items: center; gap: 12px; }
+.sim-title h2 {
+  margin: 0; font-size: 12px; text-transform: uppercase;
+  letter-spacing: 1.1px; color: var(--muted); font-weight: 600;
+}
+.sim-title .chip { float: none; margin-left: 8px; }
+.sim-drawer select {
+  font-family: var(--font); font-size: 13px;
+  color: var(--ink); background: var(--card);
+  border: 1px solid var(--line); border-radius: 7px; padding: 6px 8px;
+}
+.sim-transport { display: flex; align-items: center; gap: 10px; }
+.sim-drawer .headline { margin: 8px 0 0; }
+
+.sim-body {
+  display: grid; grid-template-columns: 1fr 300px; gap: 18px;
+  flex: none; margin-top: 8px;
+}
+.sim-chart-wrap { display: flex; flex-direction: column; min-width: 0; }
+.sim-chart {
+  height: 200px; flex: none;
+  background: #0c1a26; border: 1px solid var(--line); border-radius: 4px;
+}
+.sim-results dd { white-space: nowrap; }
+.sim-chart svg { display: block; }
+.sim-chart .grid { stroke: rgba(35, 57, 77, .9); stroke-width: 1; }
+.sim-chart .tick { fill: var(--muted); font-family: var(--mono); font-size: 10.5px; }
+.sim-chart .axis { fill: var(--muted); font-family: var(--mono); font-size: 10px; }
+#simv-scrub { width: 100%; margin: 8px 0 0; accent-color: var(--blue); }
+.sim-cursor {
+  margin: 4px 0 0; font-family: var(--mono); font-size: 11.5px;
+  color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.sim-results { margin: 0; align-content: start; }
+.sw-rec { background: rgba(200, 214, 226, .7); }
+.sw-in { background: var(--blue); }
+.sw-rule { background: rgba(224, 165, 58, .45); }
+.sim-drawer .note { margin-top: 6px; }
+
+@media (max-width: 1180px) {
+  .sim-body { grid-template-columns: 1fr; }
+  .sim-results { display: none; }
+}
 
 /* Provenance caption. The terrain is measured and the structures are not, and
    the view says which is which rather than letting the render imply it. */
@@ -287,6 +401,17 @@ body {
   pointer-events: none;
 }
 .scene-note strong { color: var(--ink); font-weight: 600; }
+
+/* With the drawer open the view is half its height and the dam sits where
+   the caption used to be, so the caption moves to the top right corner and
+   tightens. It never disappears: the provenance is not optional. */
+#stage.sim-open .scene-note {
+  top: 14px; bottom: auto; left: auto; right: 16px;
+  max-width: 48ch;
+  font-size: 11.5px;
+  line-height: 1.4;
+  padding: 7px 10px;
+}
 
 /* A rig fault has to be visible from across a room, not folded into a panel
    the visitor has to scroll. This is the beat the demo is built around. */
