@@ -374,6 +374,14 @@ body {
   color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .sim-results { margin: 0; align-content: start; }
+/* The storm-multiple sweep, under the results column. */
+.sweep-chart {
+  grid-column: 2; height: 74px; margin-top: 6px;
+  background: #0c1a26; border: 1px solid var(--line); border-radius: 4px;
+}
+.sweep-chart:empty { display: none; }
+.sweep-chart svg { display: block; }
+.sweep-chart .tick { fill: var(--muted); font-family: var(--mono); font-size: 9.5px; }
 .sw-rec { background: rgba(200, 214, 226, .7); }
 .sw-in { background: var(--blue); }
 .sw-rule { background: rgba(224, 165, 58, .45); }

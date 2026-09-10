@@ -230,7 +230,7 @@ uvicorn aquasync.api.main:app --port 8000 --app-dir backend   # from the repo ro
 
 | URL | What |
 |---|---|
-| `http://localhost:8000/` | The 3D twin — Three.js, no build step, 1 Hz telemetry with lerp smoothing. Real DEM terrain under Sentinel-2 ground imagery. Carries the tide's low-water windows, the hindsight counterfactual and the rig's sensor trace |
+| `http://localhost:8000/` | The 3D twin — Three.js, no build step, 1 Hz telemetry with lerp smoothing. Real DEM terrain under Sentinel-2 ground imagery, drawn as photographed. Carries the tide's low-water windows, the hindsight counterfactual and the rig's sensor trace. The **Simulation** button (or `?sim=1&trace=opt&hour=300`) opens the episode on real axes with a scrubber that drives the water hour by hour, a storm stress test, the storm-multiple sweep, and a catchment curve-number what-if; the recommendation carries a Malayalam last-mile line |
 | `http://localhost:8000/crisis.html` | Crisis Commander |
 
 ```
@@ -252,7 +252,7 @@ not a dependency the demo can afford.
 | [`backend/aquasync/twin/`](backend/aquasync/twin/) | Simulation and optimisation core — pure NumPy, imports with no web framework installed (CI enforces it) |
 | [`backend/aquasync/io/`](backend/aquasync/io/) | Data adapters, with the validation layer that matters (see below) |
 | [`backend/aquasync/api/`](backend/aquasync/api/) | FastAPI: REST + telemetry WebSocket, serves the dashboard same-origin |
-| [`backend/tests/`](backend/tests/) | 75 physics and behaviour tests — water is conserved, the search is bit-for-bit deterministic, effective rainfall is timestep-invariant |
+| [`backend/tests/`](backend/tests/) | 139 physics and behaviour tests — water is conserved, the search is bit-for-bit deterministic, effective rainfall is timestep-invariant |
 | [`dashboard/`](dashboard/) | Three.js 3D twin and Crisis Commander — no build step |
 | [`firmware/`](firmware/) | ESP32 rig and field nodes (PlatformIO): sensor fusion, safety interlock below the network, hash-chained log |
 | [`hardware/`](hardware/) | Four-tier BOM (V1 is ₹6,250) with a shoppable HTML version, pin map, and two wiring traps |

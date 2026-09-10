@@ -586,13 +586,32 @@ on screen beside a storm that never happened. Read it as a comparison between
 two schedules under the same larger storm, and nothing more.
 
 `scripts/stress_sweep.py` walks the multiples 1, 1.25, 1.5, 1.75, 2, 2.5, 3 and
-writes `data/processed/stress_sweep_periyar_oct_2021.json`. On the October
-2021 episode the day's schedule first reaches FRL at **×1.25** and the
-optimiser's schedule does not by ×3 — because it may release up to 1,500
-cumecs, and the routed downstream peak in the same file is where that water
-goes (one dam's contribution, uncalibrated reach, never against bankfull).
+writes `data/processed/stress_sweep_<scenario>.json`, one file per scenario.
+The day's schedule first reaches FRL at **×1.25** on October 2021 and on
+November–December 2021, and at **×1.75** on August 2022. The optimiser's
+schedule does not reach FRL by ×3 on the two 2021 episodes and reaches it at
+**×3** on August 2022 — because it may release up to 1,500 cumecs, and the
+routed downstream peak in the same file is where that water goes (one dam's
+contribution, uncalibrated reach, never against bankfull).
 Levels above the crest are the mass balance continuing past it; the twin has
 no overtopping physics. Coarse ladder, so "first multiple" is an upper bound.
+
+### 🟠 August 2022 counterfactual — hindsight is *worse* than the day, and why
+
+The simulation drawer exposes a result the flagship card never had to state:
+on `idukki_aug_2022` the hindsight-optimal schedule holds about **1 m less
+cushion** than the day (peak 728.45 m against 727.40 m) at **−₹21.5 cr**, and
+lowers the routed downstream peak only from 540 to 518 cumecs. It is the
+optimiser's answer, not a display defect, and the mechanism is in
+[optimizer.py](../backend/aquasync/twin/optimizer.py): with neither schedule
+near bankfull and neither near FRL, the flood and dam-safety terms are zero
+for both, and the revenue term counts only revenue **forgone by spilling** —
+water held in storage costs nothing. The day spilled for several days (335
+Mm³ released against the optimiser's 249), so the search prefers holding
+water, and its total cost is lower (1.15 against 2.14) while its generated
+revenue is lower too. Read it as "on a storm with no flood risk the objective
+has nothing to optimise, and the day's operators did fine". The headline in
+the drawer says "less cushion" in words; it is not to be reworded into a win.
 
 ### 🟡 Catchment policy (curve-number what-if) — volume only
 

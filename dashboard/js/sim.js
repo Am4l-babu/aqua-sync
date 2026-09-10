@@ -192,10 +192,42 @@ export function createSimView(deps) {
       if (note) note.textContent =
         `Storm multiple at which FRL is first reached, on a ladder of ×${d.ladder.join(', ×')}: ` +
         `an upper bound, not a threshold, and not a return period.`;
+      drawSweep(d);
     } catch {
       day.textContent = opt.textContent = 'no sweep on disk';
       if (note) note.textContent = 'Run scripts/stress_sweep.py to fill these rows.';
+      const c = $('simv-sw-chart');
+      if (c) c.innerHTML = '';
     }
+  }
+
+  /** Peak level against storm multiple, both schedules, FRL ruled. */
+  function drawSweep(d) {
+    const box = $('simv-sw-chart');
+    if (!box) return;
+    const W = box.clientWidth || 300, H = box.clientHeight || 70;
+    const ml = 34, mr = 8, mt = 6, mb = 16;
+    const rows = d.rows;
+    const xs = rows.map((r) => r.inflow_scale);
+    const ys = rows.flatMap((r) => [r.peak_level_baseline_m, r.peak_level_optimised_m]).concat(d.frl_m);
+    const x0 = Math.min(...xs), x1 = Math.max(...xs);
+    const lo = Math.min(...ys) - 0.5, hi = Math.max(...ys) + 0.5;
+    const x = (v) => ml + ((v - x0) / (x1 - x0)) * (W - ml - mr);
+    const y = (v) => mt + (1 - (v - lo) / (hi - lo)) * (H - mt - mb);
+    const line = (k, colour) =>
+      `<polyline fill="none" stroke="${colour}" stroke-width="1.6" points="` +
+      rows.map((r) => `${x(r.inflow_scale).toFixed(1)},${y(r[k]).toFixed(1)}`).join(' ') + '"/>';
+    const dots = (k, colour) => rows.map((r) =>
+      `<circle cx="${x(r.inflow_scale).toFixed(1)}" cy="${y(r[k]).toFixed(1)}" r="2.2" fill="${colour}"/>`).join('');
+    const ticks = xs.map((v) =>
+      `<text x="${x(v).toFixed(1)}" y="${H - 4}" class="tick" text-anchor="middle">×${v}</text>`).join('');
+    box.innerHTML =
+      `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">` +
+      `<line x1="${ml}" x2="${W - mr}" y1="${y(d.frl_m).toFixed(1)}" y2="${y(d.frl_m).toFixed(1)}" stroke="${RED}" stroke-width="1" stroke-dasharray="4 3"/>` +
+      `<text x="${ml - 4}" y="${(y(d.frl_m) + 3.5).toFixed(1)}" class="tick" text-anchor="end">FRL</text>` +
+      line('peak_level_baseline_m', AMBER) + line('peak_level_optimised_m', GREEN) +
+      dots('peak_level_baseline_m', AMBER) + dots('peak_level_optimised_m', GREEN) +
+      ticks + '</svg>';
   }
 
   // --------------------------------------------------------------- chart
@@ -438,7 +470,9 @@ export function createSimView(deps) {
   });
   addEventListener('resize', () => { if (st.open) drawChart(); });
   addEventListener('keydown', (e) => {
-    if (!st.open || e.target.matches('input, select, textarea')) return;
+    // A focused button fires its own click on Space, so handling Space
+    // here as well toggled play twice - once by us, once by the button.
+    if (!st.open || e.target.matches('input, select, textarea, button')) return;
     if (e.code === 'Space') { e.preventDefault(); st.playing ? stop() : play(); }
     else if (e.code === 'ArrowRight') { stop(); setIndex(st.idx + (e.shiftKey ? 24 : 1)); }
     else if (e.code === 'ArrowLeft') { stop(); setIndex(st.idx - (e.shiftKey ? 24 : 1)); }

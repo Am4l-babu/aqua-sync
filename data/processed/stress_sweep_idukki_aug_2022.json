@@ -1,0 +1,133 @@
+{
+  "scenario": "idukki_aug_2022",
+  "title": "Idukki monsoon spill, August 2022",
+  "frl_m": 732.43,
+  "ladder": [
+    1.0,
+    1.25,
+    1.5,
+    1.75,
+    2.0,
+    2.5,
+    3.0
+  ],
+  "rows": [
+    {
+      "inflow_scale": 1.0,
+      "peak_level_baseline_m": 727.3973682234187,
+      "peak_level_optimised_m": 728.4529868026672,
+      "min_freeboard_baseline_m": 5.032631776581297,
+      "min_freeboard_optimised_m": 3.9770131973327807,
+      "baseline_reaches_frl": false,
+      "optimised_reaches_frl": false,
+      "peak_downstream_baseline_cumecs": 539.5922925830241,
+      "peak_downstream_optimised_cumecs": 518.2977341780933,
+      "policy": {
+        "target_level_m": 728.4330769230769,
+        "start_hour": 196,
+        "max_rate_cumecs": 532.2857142857142
+      }
+    },
+    {
+      "inflow_scale": 1.25,
+      "peak_level_baseline_m": 729.5672771901058,
+      "peak_level_optimised_m": 728.5471646826749,
+      "min_freeboard_baseline_m": 2.862722809894194,
+      "min_freeboard_optimised_m": 3.882835317325089,
+      "baseline_reaches_frl": false,
+      "optimised_reaches_frl": false,
+      "peak_downstream_baseline_cumecs": 539.5922925830241,
+      "peak_downstream_optimised_cumecs": 827.6922050669882,
+      "policy": {
+        "target_level_m": 728.4330769230769,
+        "start_hour": 118,
+        "max_rate_cumecs": 828.0
+      }
+    },
+    {
+      "inflow_scale": 1.5,
+      "peak_level_baseline_m": 731.8952578944987,
+      "peak_level_optimised_m": 728.424180041202,
+      "min_freeboard_baseline_m": 0.5347421055012092,
+      "min_freeboard_optimised_m": 4.005819958797929,
+      "baseline_reaches_frl": false,
+      "optimised_reaches_frl": false,
+      "peak_downstream_baseline_cumecs": 539.5922925830241,
+      "peak_downstream_optimised_cumecs": 828.0,
+      "policy": {
+        "target_level_m": 727.9584615384615,
+        "start_hour": 118,
+        "max_rate_cumecs": 828.0
+      }
+    },
+    {
+      "inflow_scale": 1.75,
+      "peak_level_baseline_m": 734.2297337378881,
+      "peak_level_optimised_m": 728.3855572345605,
+      "min_freeboard_baseline_m": -1.7997337378881184,
+      "min_freeboard_optimised_m": 4.0444427654394985,
+      "baseline_reaches_frl": true,
+      "optimised_reaches_frl": false,
+      "peak_downstream_baseline_cumecs": 539.5922925830241,
+      "peak_downstream_optimised_cumecs": 828.0,
+      "policy": {
+        "target_level_m": 727.0092307692307,
+        "start_hour": 78,
+        "max_rate_cumecs": 828.0
+      }
+    },
+    {
+      "inflow_scale": 2.0,
+      "peak_level_baseline_m": 736.5856282028133,
+      "peak_level_optimised_m": 728.8463596977483,
+      "min_freeboard_baseline_m": -4.155628202813318,
+      "min_freeboard_optimised_m": 3.583640302251638,
+      "baseline_reaches_frl": true,
+      "optimised_reaches_frl": false,
+      "peak_downstream_baseline_cumecs": 539.5922925830241,
+      "peak_downstream_optimised_cumecs": 828.0,
+      "policy": {
+        "target_level_m": 726.06,
+        "start_hour": 0,
+        "max_rate_cumecs": 828.0
+      }
+    },
+    {
+      "inflow_scale": 2.5,
+      "peak_level_baseline_m": 741.2218400334775,
+      "peak_level_optimised_m": 732.1410193142814,
+      "min_freeboard_baseline_m": -8.79184003347757,
+      "min_freeboard_optimised_m": 0.2889806857185704,
+      "baseline_reaches_frl": true,
+      "optimised_reaches_frl": false,
+      "peak_downstream_baseline_cumecs": 539.5922925830241,
+      "peak_downstream_optimised_cumecs": 828.0,
+      "policy": {
+        "target_level_m": 726.06,
+        "start_hour": 39,
+        "max_rate_cumecs": 828.0
+      }
+    },
+    {
+      "inflow_scale": 3.0,
+      "peak_level_baseline_m": 745.701625053556,
+      "peak_level_optimised_m": 735.7024950137227,
+      "min_freeboard_baseline_m": -13.271625053556022,
+      "min_freeboard_optimised_m": -3.2724950137227324,
+      "baseline_reaches_frl": true,
+      "optimised_reaches_frl": true,
+      "peak_downstream_baseline_cumecs": 539.5922925830241,
+      "peak_downstream_optimised_cumecs": 828.0,
+      "policy": {
+        "target_level_m": 726.06,
+        "start_hour": 39,
+        "max_rate_cumecs": 828.0
+      }
+    }
+  ],
+  "first_multiple_reaching_frl": {
+    "baseline": 1.75,
+    "optimised": 3.0
+  },
+  "caveat": "A sensitivity, not a return period. Each row is the recorded inflow multiplied by a constant and run through the same replay and the same exhaustive policy search as the flagship counterfactual. The ladder is coarse (0.25 steps to 2, then 0.5), so 'first multiple' is an upper bound on the threshold, not the threshold. Nothing here says how likely any multiple is. Levels carry the replay error of the twin, about 0.3 m MAE on the recorded storm. A level above the crest is the mass balance continuing past it: the twin has no overtopping physics, so read anything above MWL as 'the dam would have been overtopped', not as a depth. The optimiser may release up to 1,500 cumecs; a schedule that holds the reservoir under FRL at large multiples does so by releasing more, and what that does below the dam is in the downstream columns - one dam's routed contribution on an uncalibrated reach."
+}

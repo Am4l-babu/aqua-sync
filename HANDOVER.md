@@ -473,8 +473,9 @@ it or give it a builder; nobody has said which.
 ### Deliberately not being built
 
 2D inundation (LISFLOOD-FP / HEC-RAS), Sentinel-1 SAR extent validation,
-Malayalam alerting, a continuous soil-moisture runoff model, paid deployment
-infrastructure. **And, permanently: operating a real dam gate.** Kerala's
+delivery of the Malayalam line over a real channel (the wording itself exists
+as a template on every frame since 11 September), a continuous soil-moisture
+runoff model, paid deployment infrastructure. **And, permanently: operating a real dam gate.** Kerala's
 gates are KSEB's and the district administration's; the only gate anything
 here actuates is the model sluice on the bench. See [ROADMAP.md](ROADMAP.md)
 §Never in scope.

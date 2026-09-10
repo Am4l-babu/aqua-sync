@@ -250,17 +250,22 @@ Logic lives in the twin so the core stays web-free; the hindsight search is
 `lru_cache`d per scenario; the page says the backend is down rather than
 inventing numbers; 422 on out-of-range, 404 on unknown scenario.
 
-**Not visually verified.** No headless browser on the machine that built it.
-Serves, parses, returns correct data — nobody has seen it rendered. Opening
-it is the first desk task in the action plan.
+**Visually verified 8 September** — driven through Chrome over the DevTools
+protocol: the briefing loads, the sliders take an order, and committing
+renders the three-way outcome table. The earlier note here that there was no
+headless browser on this machine was wrong; there is Chrome, and the method
+is written down in [HANDOVER.md](HANDOVER.md).
 
-### 🔄 7 · FastAPI backend ✅ + live what-if 🔄
+### ✅ 7 · FastAPI backend + live what-if — wired 8 Sep, extended 11 Sep 2026
 
-The backend exists — eight REST routes and the telemetry WebSocket, serving
-the dashboard same-origin, with the heavy calls on `asyncio.to_thread`. The
-3D twin's what-if slider works client-side and `POST /api/whatif` works
-server-side; **they are not connected**. Wiring them is the only
-`🔄 Ongoing` engineering item in [PROGRESS.md](PROGRESS.md).
+The backend serves eleven REST routes and the telemetry WebSocket, same-origin
+with the dashboard, heavy calls on `asyncio.to_thread` and cached per
+scenario. The what-if slider has been wired to `POST /api/whatif` since 8
+September (browser-verified; the peak-versus-horizon wording defect found on
+the way is fixed). On 11 September the counterfactual grew `?inflow_scale=`
+for the storm stress test, and `runoff` (curve-number what-if) and
+`stress_sweep` (the file `scripts/stress_sweep.py` writes) joined it; every
+frame and what-if answer now also carries `advice_ml`.
 
 ### ✅ 8 · Rainfall–runoff validation — done, and it found a defect, 30 Aug 2026
 
@@ -362,7 +367,7 @@ unaccounted for.
 | LoRa fail-safe mesh | 🔄 Plan, V2 pulled forward | LoRa row; two SX1278 modules ordered 9 Sep |
 | Barometric squall pre-detection (BMP280 dP/dt) | 📋 Plan, hardware — part bought and bench-tested, not read by the assembled node | [hardware/bom/README.md](hardware/bom/README.md) wiring table, `firmware/bench/04_bmp280/` |
 | Rain gauge on the upstream node | 📋 Plan, hardware — not in the V1 tier | BOM tiers |
-| Synthetic 500-year storms, Monte Carlo probability of failure | 🟡 Built as a sensitivity, not a probability: the storm stress test in the drawer, plus `scripts/stress_sweep.py` → `data/processed/stress_sweep_periyar_oct_2021.json` — the day's schedule reaches FRL at ×1.25 of the recorded storm, AquaSync's not by ×3 (it releases more; see the downstream columns). Generative half deferred | Deferred table |
+| Synthetic 500-year storms, Monte Carlo probability of failure | 🟡 Built as a sensitivity, not a probability: the storm stress test in the drawer, plus `scripts/stress_sweep.py` → `data/processed/stress_sweep_<scenario>.json` for all three scenarios — the day's schedule reaches FRL at ×1.25 (Oct 2021, Nov–Dec 2021) or ×1.75 (Aug 2022) of the recorded storm; AquaSync's not by ×3 on the 2021 episodes and at ×3 on Aug 2022 (it releases more; see the downstream columns). Drawn as a peak-versus-multiple chart in the drawer. Generative half deferred | Deferred table |
 | Land-use "policy mode" (curve-number slider) | ✅ Built 11 Sep, volume only: the Catchment policy card runs this episode's rain through the SCS-CN chain at a chosen CN against handbook 72 (`/api/scenarios/{key}/runoff?cn=`). The peak is shown greyed and labelled not validated, because the chain's NSE on shape is 0.07 | [validation.md §4](docs/validation.md) |
 | Malayalam last-mile alerting | ✅ Built 11 Sep as template wording: every telemetry frame and what-if answer carries `advice_ml` on the same KSDMA bands as the English advice, shown under the recommendation. **Draft text — a native speaker must read it before any public use** | `_advice_ml` in `api/main.py`, six tests |
 | Economic loss calculator, citizen photo gauge, adaptive siltation curve, demand forecasting in the objective | ⏸ Deferred, with reasons | Deferred table |

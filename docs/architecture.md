@@ -56,9 +56,10 @@ reservoir replay-validated on two episodes (0.30 m and 0.32 m MAE), runoff
 validated on four monsoons (shape yes, amplitude no), routing anchored to
 CWC's 8 h travel time and not gauge-calibrated, tide sanity-checked only.
 Layer 3: built, deterministic, and tested against real forecast ensembles
-on two storms. Layer 4: the 3D twin and Crisis Commander are built; the
-what-if slider is not yet wired to the API; Malayalam alerts are not
-started. The numbers behind each of those words are in
+on two storms. Layer 4: the 3D twin, the simulation drawer and Crisis Commander are
+built; the what-if slider has been wired to the API since 8 September;
+Malayalam alerts exist as template wording on every frame (11 September),
+not yet read by a native speaker and not yet delivered over any channel. The numbers behind each of those words are in
 [validation.md](validation.md); the status table is
 [PROGRESS.md](../PROGRESS.md).
 
@@ -318,7 +319,7 @@ backend/aquasync/
     scenarios.py  Oct 2021, Nov–Dec 2021, Aug 2022 episodes
   io/           data adapters, with validation
   api/          FastAPI: eleven REST routes + telemetry WebSocket
-backend/tests/  97 physics and behaviour tests
+backend/tests/  139 physics and behaviour tests
 dashboard/      Three.js 3D twin + Crisis Commander, no build step
 firmware/       ESP32 nodes (PlatformIO)
 hardware/       BOM (four tiers, shoppable HTML), wiring, CAD
