@@ -25,6 +25,7 @@ Output (committed, so the dashboard works from a clean clone with no cache):
 
 from __future__ import annotations
 
+import heapq
 import json
 import math
 from pathlib import Path
@@ -97,6 +98,45 @@ def load_mosaic(x0: int, x1: int, y0: int, y1: int) -> np.ndarray:
     return np.vstack(rows)
 
 
+def _reach_level(
+    elev: np.ndarray, core: np.ndarray, passable: np.ndarray, start: float
+) -> np.ndarray:
+    """Lowest water level that reaches each cell from the core, or inf.
+
+    A priority flood. Pop the cell reachable at the lowest level so far, and
+    offer that level - raised to the neighbour's own ground where the ground
+    is higher - onwards. Because cells leave the queue in level order, the
+    first level recorded for a cell is the lowest one that can ever reach it,
+    which is the minimax path height between it and the reservoir.
+
+    Cells outside `passable` are solid: the flood neither enters nor crosses
+    them. That is what stops the fill escaping through the under-resolved dam.
+    """
+    reach = np.full(elev.shape, np.inf)
+    rows, cols = elev.shape
+
+    queue: list[tuple[float, int, int]] = []
+    for y, x in np.argwhere(core):
+        reach[y, x] = start
+        queue.append((start, int(y), int(x)))
+    heapq.heapify(queue)
+
+    while queue:
+        level, y, x = heapq.heappop(queue)
+        if level > reach[y, x]:
+            continue                      # already reached lower by another path
+        for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            ny, nx = y + dy, x + dx
+            if not (0 <= ny < rows and 0 <= nx < cols) or not passable[ny, nx]:
+                continue
+            onward = max(level, float(elev[ny, nx]))
+            if onward < reach[ny, nx]:
+                reach[ny, nx] = onward
+                heapq.heappush(queue, (onward, ny, nx))
+
+    return reach
+
+
 def reservoir_masks(elev: np.ndarray) -> tuple[np.ndarray, np.ndarray, float]:
     """Find the reservoir, and the ground it is allowed to advance onto.
 
@@ -114,8 +154,11 @@ def reservoir_masks(elev: np.ndarray) -> tuple[np.ndarray, np.ndarray, float]:
 
     Returns (core, allowed, sheet_level):
       core     always water - the captured sheet, whose bed is unknown
-      allowed  real land next to it, where the shoreline may advance if the
-               level rises. Bounded below so the gorge can never be included.
+      allowed  core, plus ground the water could actually reach if the level
+               rose - judged by flooding outward from the sheet, not by
+               distance from it. Ground behind a ridge is excluded however
+               close it lies, which is what stops the twin painting water on
+               hillsides it has no path to.
     """
     from scipy import ndimage
 
@@ -127,15 +170,52 @@ def reservoir_masks(elev: np.ndarray) -> tuple[np.ndarray, np.ndarray, float]:
     core = labels == (int(np.argmax(sizes)) + 1)
     sheet = float(np.median(elev[core]))
 
-    # Shoreline may climb onto adjoining land, but never drop into the gorge:
-    # the floor keeps the tailwater (610-670 m here) permanently excluded.
+    # Shoreline may climb onto adjoining land, but only where water could
+    # actually get there.
     #
-    # Both bounds are deliberately tight. A wide reach lets the fringe jump a
-    # saddle onto ground that is low enough to qualify but not actually
-    # continuous with the reservoir, which renders as a slab of water hanging
-    # in a side valley - water where no water can be.
-    near = ndimage.binary_dilation(core, iterations=8)
-    allowed = near & (elev >= sheet - 6.0)
+    # This used to be a plain dilation of the core, floored at sheet - 6 m to
+    # keep the tailwater gorge out. The floor did its job; the dilation did
+    # not. Reaching a fixed eight cells in every direction steps over narrow
+    # ridges into side valleys whose floors happen to sit in the same
+    # elevation band, and the shader then paints them the moment the level
+    # passes their ground height. On the committed DEM that produced 53
+    # separate slabs of water, 132 cells in all, hanging on hillsides with no
+    # path to the reservoir - the exact failure the old comment here warned
+    # about and the tight bounds failed to prevent.
+    #
+    # Connectivity is the property actually wanted, so compute it: flood out
+    # from the core and record, for every cell, the lowest level at which
+    # water could reach it without ever crossing ground higher than that
+    # level. A cell 20 m from the shore but behind a ridge is correctly
+    # unreachable; a cell 2 km up a shallow arm is correctly reachable.
+    #
+    # The flood cannot use elevation alone to stop at the dam. At this posting
+    # the arch is thinner than one sample, so the dam column averages to about
+    # 705 m - below the water it holds back - and a fill keyed only on height
+    # walks straight through it into the tailwater. Treating everything under
+    # sheet - 6 m as solid keeps that shortcut shut, which is the same floor
+    # the old code used, promoted from a filter into a barrier.
+    floor = sheet - 6.0
+    passable = elev >= floor
+    reach = _reach_level(elev, core, passable, sheet)
+
+    # Reachable at the highest level the reservoir can legally hold.
+    allowed = reach <= MWL
+
+    # Drop anything sitting behind a sill. For these the level that wets the
+    # cell is set by the lip it has to come over, not by the ground underfoot,
+    # and the shader tests ground height - so it would show water there early,
+    # by as much as the sill stands above the floor of the pocket. Excluding
+    # them keeps the one test the shader does make exactly true, and errs
+    # towards drawing less water rather than more.
+    allowed &= reach <= elev + 0.01
+
+    # The captured sheet belongs in here whatever its own bed does. Parts of it
+    # lie below the sheet level and would fail the sill test on their own, and
+    # `allowed` has always been a superset of `core` - the shader draws the
+    # sheet from the red channel regardless, so this changes no pixel, only
+    # keeps the mask and the area reported from it coherent.
+    allowed |= core
     return core, allowed, sheet
 
 
