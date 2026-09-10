@@ -156,6 +156,12 @@ export class TwinScene {
     this.mask = mask;
     this.n = n;
 
+    // Publish the vertical stretch so the caption can state it. Read from the
+    // constant the geometry actually uses rather than written out again next
+    // to the caption text, because the number a viewer is shown and the number
+    // the terrain is built with must not be able to drift apart.
+    meta.vertical_exaggeration = VERT_EXAG;
+
     // Real ground cover, if it has been baked. Awaited rather than left to
     // arrive whenever, so the provenance caption can state what is actually
     // on screen instead of what was hoped for - a missing or broken asset
