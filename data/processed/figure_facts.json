@@ -49,6 +49,7 @@
     "min_freeboard_optimised_m": 3.97052157003111,
     "freeboard_gained_m": 3.084262921332879,
     "hours_simulated": 481,
+    "inflow_scale": 1.0,
     "observed_peak_level": 730.99,
     "replay_level_mae_m": 0.3032169370145853,
     "replay_level_max_err_m": 0.5712659840000924,

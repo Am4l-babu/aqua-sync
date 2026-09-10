@@ -147,6 +147,7 @@ def run_counterfactual(
     weights: ObjectiveWeights | None = None,
     method: str = "policy",
     seed: int = 7,
+    inflow_scale: float = 1.0,
 ) -> dict:
     """Replay a scenario, then re-run it under an optimised release policy.
 
@@ -154,11 +155,23 @@ def run_counterfactual(
     most persuasive sensitivity study in the project - that lives in
     scripts/lead_time_study.py rather than here, because it needs to be
     reproducible from the command line.
+
+    ``inflow_scale`` multiplies the recorded inflow before either schedule
+    sees it: a stress test that asks what the day's releases, and the
+    optimiser's, would have done had the same storm been that much bigger.
+    It is a scaled copy of one recorded hydrograph - not a forecast, not a
+    return period, and not a claim about any storm that has happened. At
+    1.0 (the default) nothing changes and the replay error against the
+    bulletin still means what it says; at any other value the bulletin
+    level is no longer the thing being reproduced, and the summary says so.
     """
+    if not inflow_scale > 0:
+        raise ValueError(f"inflow_scale must be positive, got {inflow_scale}")
+
     scenario = SCENARIOS[scenario_key]
     series = load_scenario_series(scenario, cache_dir=cache_dir, hourly=True)
 
-    inflow = series["inflow_cumecs"].to_numpy(dtype=float)
+    inflow = series["inflow_cumecs"].to_numpy(dtype=float) * float(inflow_scale)
     observed_level = series["water_level_m"].to_numpy(dtype=float)
     observed_release = (
         series["powerhouse_cumecs"].fillna(0).to_numpy(dtype=float)
@@ -195,6 +208,7 @@ def run_counterfactual(
     summary["narrative"] = scenario.narrative
     summary["citation"] = scenario.citation
     summary["hours_simulated"] = int(len(inflow))
+    summary["inflow_scale"] = float(inflow_scale)
     summary["observed_peak_level"] = float(np.nanmax(observed_level))
     # Model validation: how closely the twin reproduces the observed level
     # when fed the observed releases. This is the number that earns the

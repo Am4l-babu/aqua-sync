@@ -21,6 +21,7 @@
  */
 
 import { TwinScene } from './scene.js';
+import { createSimView } from './sim.js';
 
 // -- reservoir constants ----------------------------------------------------
 // Mirrored from twin/constants.py as a starting point, then replaced by
@@ -56,6 +57,7 @@ const rigHistory = [];
 let twin = null;
 let replayTimer = null;
 let manualOverride = false;
+let simView = null;
 
 // --------------------------------------------------------------------------
 // hypsometry
@@ -89,8 +91,10 @@ function hoursToFrl(level, netCumecs) {
 // --------------------------------------------------------------------------
 
 async function init() {
-  const stage = document.getElementById('stage');
-  twin = new TwinScene(stage);
+  // The canvas lives in #view, not #stage: the simulation drawer takes real
+  // height under it, and the renderer sizes itself to what is left.
+  const view = document.getElementById('view');
+  twin = new TwinScene(view);
 
   try {
     const meta = await twin.load('assets');
@@ -104,6 +108,8 @@ async function init() {
 
   await adoptServerConstants();
   bindControls();
+  bindViews();
+  bindSimView();
   connect();
   scheduleRigPoll(0);
   animate();
@@ -113,6 +119,120 @@ async function init() {
   // seconds on a cold server. Neither may hold up the scene or the telemetry.
   loadTide();
   loadCounterfactual();
+  loadCatchment();
+  openSimFromUrl();
+}
+
+/** Site / gate / basin buttons over the 3D view. */
+function bindViews() {
+  const seg = document.getElementById('view-seg');
+  if (!seg) return;
+  const mark = () => {
+    for (const b of seg.querySelectorAll('button')) {
+      b.classList.toggle('on', b.dataset.view === twin.view);
+    }
+  };
+  seg.addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-view]');
+    if (!b) return;
+    twin.setView(b.dataset.view);
+    mark();
+  });
+  mark();
+}
+
+/**
+ * The simulation drawer drives the twin from the counterfactual series.
+ *
+ * While it does, every frame from the socket is ignored and the badge says
+ * SIMULATED: an hour of October 2021 played back through the optimiser's
+ * schedule must not be mistaken for a measurement, or for the replay stream.
+ */
+function bindSimView() {
+  simView = createSimView({
+    fetchScenarios,
+    fetchCounterfactual,
+    fetchSweep,
+    res: () => ({ frl: RES.frl, rule: RES.rule }),
+    onLayout: () => requestAnimationFrame(() => twin.resize()),
+    onDrive: (s) => {
+      target.level = s.level;
+      target.inflow = s.inflow;
+      target.turbine = Math.min(s.release, RES.turbineRated);
+      target.spill = Math.max(0, s.release - RES.turbineRated);
+      target.gate = Math.min(100, (target.spill / 400) * 100);
+      history.push(target.level);
+      if (history.length > 90) history.shift();
+      // No Malayalam line while scrubbing: a public-facing alert generated
+      // from a replayed hour would be the wrong thing to have on screen.
+      updatePanel({ timestamp: s.timestamp, scenario: s.scenario, advice: s.advice, advice_ml: '' });
+      showSource('SIMULATED');
+      document.getElementById('source').textContent =
+        `source: simulation — ${s.traceLabel}, hour h+${s.hour} of ${s.scenario} (hindsight, not live)`;
+    },
+    onRelease: () => {
+      // Hand the panel back to whatever was feeding it. The next frame
+      // restates its own provenance; until then, say what is known.
+      history.length = 0;
+      setLink('warn', replayTimer ? 'REPLAY' : 'CONNECTED');
+      document.getElementById('source').textContent =
+        replayTimer ? 'source: replay (recorded episode, not live)' : 'source: telemetry';
+    },
+  });
+  simView.populateScenarios();
+
+  const opener = document.getElementById('sim-open');
+  if (opener) opener.addEventListener('click', () => simView.open());
+}
+
+/**
+ * `?sim=1` opens the drawer on load, with `scenario=`, `trace=day|opt` and
+ * `hour=` optional - so a tester can link straight to hour 207 of the storm
+ * under the AquaSync schedule and see what the twin shows.
+ */
+function openSimFromUrl() {
+  const q = new URLSearchParams(location.search);
+  if (!q.has('sim')) return;
+  const hour = Number(q.get('hour'));
+  simView.populateScenarios().then(() => simView.open({
+    scenario: q.get('scenario') || undefined,
+    trace: q.get('trace') || undefined,
+    hour: Number.isFinite(hour) && q.has('hour') ? hour : undefined,
+  }));
+}
+
+/** The scenario list, from the API, or a rejection when it is not there. */
+async function fetchScenarios() {
+  const r = await fetch('/api/scenarios', { signal: AbortSignal.timeout(4000) });
+  if (!r.ok) throw new Error(String(r.status));
+  return r.json();
+}
+
+/** The storm-multiple sweep on disk for a scenario, or a rejection. */
+async function fetchSweep(key) {
+  const r = await fetch(`/api/scenarios/${key}/stress_sweep`, { signal: AbortSignal.timeout(4000) });
+  if (!r.ok) throw new Error(String(r.status));
+  return r.json();
+}
+
+const cfCache = new Map();
+
+/**
+ * The counterfactual for a scenario, fetched once per page and shared by the
+ * side card and the drawer. The server caches the search too, so a repeat
+ * is instant there; this just saves the round trip and the JSON.
+ */
+function fetchCounterfactual(key, scale = 1) {
+  const id = `${key}@${scale}`;
+  if (!cfCache.has(id)) {
+    const q = scale === 1 ? '' : `?inflow_scale=${scale}`;
+    const p = fetch(`/api/scenarios/${key}/counterfactual${q}`,
+      { signal: AbortSignal.timeout(90000) })
+      .then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.json(); })
+      .catch((err) => { cfCache.delete(id); throw err; });
+    cfCache.set(id, p);
+  }
+  return cfCache.get(id);
 }
 
 /** Replace the mirrored constants with the API's, when it is reachable. */
@@ -214,7 +334,12 @@ function connect() {
   // Connecting proves the backend is reachable, nothing more. The badge
   // stays neutral until a frame arrives and states its own provenance -
   // this used to light up LIVE here while a 2021 replay streamed beneath it.
-  ws.onopen = () => { clearTimeout(giveUp); setLink('warn', 'CONNECTED'); };
+  ws.onopen = () => {
+    clearTimeout(giveUp);
+    // The drawer may already be driving the scene; its SIMULATED badge
+    // outranks a transport event.
+    if (!(simView && simView.isDriving())) setLink('warn', 'CONNECTED');
+  };
   ws.onmessage = (e) => { try { apply(JSON.parse(e.data)); } catch { /* ignore */ } };
   ws.onerror = () => { clearTimeout(giveUp); startReplay('websocket error'); };
   ws.onclose = () => { if (!replayTimer) startReplay('backend closed'); };
@@ -266,12 +391,45 @@ function startReplay(reason) {
       advice: d.spill === 0 && d.level > RES.rule
         ? `Level ${d.level.toFixed(2)} m is above the ${RES.rule} m rule level with gates shut. Begin drawdown.`
         : `Holding. Release ${(d.spill + Math.min(d.inflow, RES.turbineRated)).toFixed(0)} cumecs.`,
+      advice_ml: adviceMl(d.level, d.spill),
     });
     i += 1;
   }, 1400);
 }
 
+/**
+ * Malayalam last-mile line for the offline fallback, on the same bands the
+ * server uses in `_advice_ml`. Template wording drafted for the expo; a
+ * native speaker should read it before it reaches a public channel.
+ */
+function adviceMl(level, spill) {
+  const freeboard = RES.frl - level;
+  if (level >= RES.frl) {
+    return 'അപകട മുന്നറിയിപ്പ്: ഇടുക്കി അണക്കെട്ടിലെ ജലനിരപ്പ് പൂർണ്ണ സംഭരണ നിലയ്ക്ക് (FRL) മുകളിലാണ്. '
+      + 'പെരിയാർ തീരത്തുള്ളവർ ഉടൻ സുരക്ഷിത സ്ഥലങ്ങളിലേക്ക് മാറുക.';
+  }
+  if (level >= RES.red && spill === 0) {
+    return `റെഡ് അലർട്ട്: ജലനിരപ്പ് ${level.toFixed(2)} മീറ്റർ, ഷട്ടറുകൾ അടഞ്ഞിരിക്കുന്നു. `
+      + 'ഷട്ടറുകൾ തുറക്കാൻ ശുപാർശ. പെരിയാർ തീരത്തുള്ളവർ ജാഗ്രത പാലിക്കുക.';
+  }
+  if (level > RES.rule && spill === 0) {
+    return `ഓറഞ്ച് അലർട്ട്: ജലനിരപ്പ് ${level.toFixed(2)} മീറ്റർ, റൂൾ ലെവലിന് മുകളിൽ. `
+      + 'നിയന്ത്രിത ജലനിർഗമനം ആരംഭിക്കാൻ ശുപാർശ. പുഴയോരത്ത് ജാഗ്രത.';
+  }
+  if (level > RES.rule) {
+    return `ജാഗ്രത: ഷട്ടറുകൾ തുറന്നിരിക്കുന്നു, ${spill.toFixed(0)} ക്യുമെക്സ് പുറത്തുവിടുന്നു. `
+      + 'പുഴയിൽ ഇറങ്ങരുത്; താഴ്ന്ന പ്രദേശങ്ങളിൽ ജലനിരപ്പ് ഉയരാം.';
+  }
+  return `സാധാരണ നില: ജലനിരപ്പ് നിയന്ത്രണ പരിധിക്കുള്ളിൽ. ${freeboard.toFixed(1)} മീറ്റർ `
+    + 'സംഭരണശേഷി ബാക്കിയുണ്ട്.';
+}
+
 function apply(t) {
+  // While the simulation drawer is scrubbing the episode it owns the panel
+  // and the scene outright; a stream frame landing mid-scrub would put a
+  // 2021 level under a SIMULATED badge.
+  if (simView && simView.isDriving()) return;
+
   // A dragged what-if slider is the operator asking a question. Do not
   // overwrite their answer with the next frame of the stream; the status bar
   // says so until they reset it.
@@ -330,6 +488,10 @@ function updatePanel(t) {
         : `${(hrs / 24).toFixed(1)} d at current net inflow`;
 
   if (t.advice) document.getElementById('advice').textContent = t.advice;
+  // The last-mile line. The server sends it with every frame; the offline
+  // replay and the simulation drawer supply their own or leave it blank.
+  const ml = document.getElementById('advice-ml');
+  if (ml && 'advice_ml' in t) ml.textContent = t.advice_ml || '';
   if (t.timestamp) document.getElementById('clock').textContent = t.timestamp;
   if (t.scenario) document.getElementById('scenario').textContent = `scenario: ${t.scenario}`;
   if (t.source && !manualOverride) {
@@ -418,11 +580,31 @@ function renderWhatIf(r) {
   document.getElementById('whatif-status').textContent =
     'Constant inflow and release, 72 h. Advisory — a named operator approves every release.';
   out.hidden = false;
+
+  // The API returns the whole 72 h trajectory; draw it, against FRL and the
+  // rule level, so the peak and the 72 h level in the list can be seen as
+  // two points on one curve rather than two numbers that disagree.
+  const chart = document.getElementById('whatif-chart');
+  if (chart && Array.isArray(r.levels) && r.levels.length > 1) {
+    chart.innerHTML = lineChart(
+      [{ values: r.levels, colour: '#4aa3df', width: 1.6 }],
+      {
+        height: 46,
+        rules: [
+          { at: RES.frl, colour: 'rgba(226,86,79,.55)' },
+          { at: RES.rule, colour: 'rgba(224,165,58,.45)' },
+        ],
+      },
+    );
+    chart.hidden = false;
+  }
 }
 
 /** Reset the card to its pre-interaction state. */
 function clearWhatIf() {
   document.getElementById('whatif-out').hidden = true;
+  const chart = document.getElementById('whatif-chart');
+  if (chart) { chart.hidden = true; chart.innerHTML = ''; }
   document.getElementById('wi-advice').textContent = '';
   document.getElementById('whatif-status').textContent =
     'Move the slider to test a constant release.';
@@ -682,6 +864,63 @@ function chartUnavailable(id, reason) {
 }
 
 // --------------------------------------------------------------------------
+// catchment policy (curve-number what-if)
+// --------------------------------------------------------------------------
+
+/**
+ * The land-use "policy mode" the brief asked for, in the shape the validated
+ * chain can carry: this storm's rain through the SCS-CN chain at a chosen
+ * curve number, reported as runoff *volume* against the handbook CN 72.
+ * The chain is right on volume (-7 to +38% by season) and wrong on shape
+ * (NSE 0.07), so the peak is shown greyed and labelled unvalidated, and the
+ * card's caveat is the API's own, verbatim.
+ */
+function loadCatchment(key = 'periyar_oct_2021') {
+  const slider = document.getElementById('cn');
+  if (!slider) return;
+  const label = document.getElementById('cn-val');
+  const state = document.getElementById('cn-state');
+  const out = document.getElementById('cn-out');
+  const status = document.getElementById('cn-status');
+  let timer = 0;
+
+  async function ask(cn) {
+    try {
+      const r = await fetch(`/api/scenarios/${key}/runoff?cn=${cn}`, { signal: AbortSignal.timeout(8000) });
+      if (!r.ok) throw new Error(String(r.status));
+      const d = await r.json();
+      const pct = d.runoff_volume_change_pct;
+      document.getElementById('cn-rain').textContent = `${d.rain_total_mm.toFixed(0)} mm`;
+      document.getElementById('cn-vol').textContent = `${d.runoff_volume_mm3.toFixed(0)} Mm³`;
+      document.getElementById('cn-vol0').textContent = `${d.runoff_volume_handbook_mm3.toFixed(0)} Mm³`;
+      document.getElementById('cn-delta').textContent =
+        Number.isFinite(pct) ? `${pct >= 0 ? '+' : '−'}${Math.abs(pct).toFixed(0)} %` : '—';
+      document.getElementById('cn-frac').textContent =
+        Number.isFinite(d.runoff_fraction) ? `${(d.runoff_fraction * 100).toFixed(0)} %` : '—';
+      document.getElementById('cn-peak').textContent =
+        `${d.peak_inflow_cumecs_shape_unvalidated.toFixed(0)} cumecs`;
+      out.hidden = false;
+      status.textContent = d.caveat;
+      state.textContent = 'MODEL';
+      state.className = 'chip chip-model';
+    } catch {
+      out.hidden = true;
+      state.textContent = 'OFFLINE';
+      state.className = 'chip chip-off';
+      status.textContent = 'Needs the API — /api/scenarios/…/runoff is not reachable.';
+    }
+  }
+
+  slider.addEventListener('input', () => {
+    label.textContent = slider.value;
+    clearTimeout(timer);
+    timer = setTimeout(() => ask(Number(slider.value)), 200);
+  });
+  label.textContent = slider.value;
+  ask(Number(slider.value));
+}
+
+// --------------------------------------------------------------------------
 // tide
 // --------------------------------------------------------------------------
 
@@ -764,10 +1003,7 @@ async function loadCounterfactual(key = 'periyar_oct_2021') {
   const out = document.getElementById('sim-out');
 
   try {
-    const r = await fetch(`/api/scenarios/${key}/counterfactual`,
-      { signal: AbortSignal.timeout(90000) });
-    if (!r.ok) throw new Error(String(r.status));
-    const d = await r.json();
+    const d = await fetchCounterfactual(key);
     const s = d.summary;
 
     document.getElementById('sim-chart').innerHTML = lineChart(
@@ -780,10 +1016,13 @@ async function loadCounterfactual(key = 'periyar_oct_2021') {
 
     const gain = s.freeboard_gained_m;
     const dRev = s.revenue_delta_inr;
+    const mag = Math.round(Math.abs(gain));
     headline.textContent =
-      `About ${Math.round(gain)} m more cushion than the day` +
+      (gain >= 0.5 ? `About ${mag} m more cushion than the day`
+        : gain <= -0.5 ? `About ${mag} m less cushion than the day`
+          : 'About the same cushion as the day') +
       (dRev >= 0 ? ', with more revenue, not less.' : ', at a cost in revenue.');
-    headline.className = `headline ${gain > 0 ? 'good' : ''}`;
+    headline.className = `headline ${gain >= 0.5 ? 'good' : ''}`;
 
     const m = (v) => (Number.isFinite(v) ? `${v.toFixed(2)} m` : '—');
     document.getElementById('sim-peak-obs').textContent = m(s.peak_level_baseline);

@@ -25,7 +25,7 @@ from functools import lru_cache
 from pathlib import Path
 
 import numpy as np
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -41,6 +41,7 @@ from ..twin import (
 from ..twin.crisis import Decision
 from ..twin.crisis import briefing as crisis_briefing
 from ..twin.crisis import score as crisis_score
+from ..twin.runoff import DEFAULT_CN_IDUKKI, RainfallRunoffModel, UnitHydrograph
 from ..twin.scenarios import SCENARIOS, load_scenario_series, run_counterfactual
 from .rig import RigBridge
 from .rig import from_env as rig_from_env
@@ -64,6 +65,10 @@ class Telemetry(BaseModel):
     timestamp: str
     scenario: str
     advice: str
+    advice_ml: str = ""
+    """The same advisory in Malayalam, for the last mile. Template wording
+    keyed on the KSDMA alert band - a draft to be checked by a native speaker,
+    not a translation service."""
     source: str = "REPLAY"
     """Where these numbers came from, in the dashboard's own vocabulary.
 
@@ -158,6 +163,41 @@ def _advice(level: float, spill: float) -> str:
     return f"Within rule curve. {freeboard:.2f} m of flood cushion available."
 
 
+def _advice_ml(level: float, spill: float) -> str:
+    """The advisory in Malayalam, on the same bands as `_advice`.
+
+    Last-mile wording for the people downstream, not the control room: it
+    says what the band means and what to do, not what the operator should
+    release. Template text, drafted for the expo; a native speaker should
+    read it before it goes near a public channel.
+    """
+    freeboard = IDUKKI.frl - level
+    if level >= IDUKKI.frl:
+        return (
+            "അപകട മുന്നറിയിപ്പ്: ഇടുക്കി അണക്കെട്ടിലെ ജലനിരപ്പ് പൂർണ്ണ സംഭരണ നിലയ്ക്ക് (FRL) "
+            "മുകളിലാണ്. പെരിയാർ തീരത്തുള്ളവർ ഉടൻ സുരക്ഷിത സ്ഥലങ്ങളിലേക്ക് മാറുക."
+        )
+    if level >= IDUKKI.red_level and spill == 0:
+        return (
+            f"റെഡ് അലർട്ട്: ജലനിരപ്പ് {level:.2f} മീറ്റർ, ഷട്ടറുകൾ അടഞ്ഞിരിക്കുന്നു. "
+            "ഷട്ടറുകൾ തുറക്കാൻ ശുപാർശ. പെരിയാർ തീരത്തുള്ളവർ ജാഗ്രത പാലിക്കുക."
+        )
+    if level > IDUKKI.rule_level and spill == 0:
+        return (
+            f"ഓറഞ്ച് അലർട്ട്: ജലനിരപ്പ് {level:.2f} മീറ്റർ, റൂൾ ലെവലിന് മുകളിൽ. "
+            "നിയന്ത്രിത ജലനിർഗമനം ആരംഭിക്കാൻ ശുപാർശ. പുഴയോരത്ത് ജാഗ്രത."
+        )
+    if level > IDUKKI.rule_level:
+        return (
+            f"ജാഗ്രത: ഷട്ടറുകൾ തുറന്നിരിക്കുന്നു, {spill:.0f} ക്യുമെക്സ് പുറത്തുവിടുന്നു. "
+            "പുഴയിൽ ഇറങ്ങരുത്; താഴ്ന്ന പ്രദേശങ്ങളിൽ ജലനിരപ്പ് ഉയരാം."
+        )
+    return (
+        f"സാധാരണ നില: ജലനിരപ്പ് നിയന്ത്രണ പരിധിക്കുള്ളിൽ. {freeboard:.1f} മീറ്റർ "
+        "സംഭരണശേഷി ബാക്കിയുണ്ട്."
+    )
+
+
 async def _replay_loop() -> None:
     """Stream the flagship scenario when no live rig is connected.
 
@@ -185,6 +225,7 @@ async def _replay_loop() -> None:
                     timestamp=str(row["date"]),
                     scenario="periyar_oct_2021",
                     advice=_advice(level, spill),
+                    advice_ml=_advice_ml(level, spill),
                     # October 2021, recorded. Never labelled live.
                     source="REPLAY",
                 ).model_dump()
@@ -264,8 +305,8 @@ async def scenarios() -> list[dict]:
     ]
 
 
-@lru_cache(maxsize=8)
-def _counterfactual_payload(key: str, cache_dir: str) -> dict:
+@lru_cache(maxsize=16)
+def _counterfactual_payload(key: str, cache_dir: str, inflow_scale: float = 1.0) -> dict:
     """The counterfactual, shaped for a client, computed once per scenario.
 
     The exhaustive policy search behind this takes 11-17 s on this machine and
@@ -273,27 +314,66 @@ def _counterfactual_payload(key: str, cache_dir: str) -> dict:
     cached data returns the same answer every time. Uncached, every page load
     and every reload during a demo pays that cost again - which is the same
     mistake `twin/crisis.py` made before it grew its own cache.
+
+    ``inflow_scale`` is the storm stress test: the recorded inflow multiplied
+    before either schedule sees it. At 1.0 this is the flagship replay. At
+    anything else the bulletin level is no longer what is being reproduced,
+    so it is not sent and the replay-error figures are dropped rather than
+    left to be read as if they still applied.
     """
-    out = run_counterfactual(key, cache_dir)
+    out = run_counterfactual(key, cache_dir, inflow_scale=inflow_scale)
     ev = out["evaluations"]
+    series = out["series"]
+    summary = dict(out["summary"])
+    scaled = abs(inflow_scale - 1.0) > 1e-9
+
+    # The recorded bulletin level rides alongside the twin's replay of the
+    # same releases, so a viewer can see the 0.30 m replay error rather than
+    # be told about it. `observed_level` is the twin's number, not KSEB's;
+    # the name stays for the clients already reading it.
+    bulletin = series["water_level_m"].to_numpy(dtype=float)
+    stamps = (
+        series["date"].astype(str).tolist() if "date" in series.columns else []
+    )
+    if scaled:
+        for k in ("replay_level_mae_m", "replay_level_max_err_m", "replay_final_err_m"):
+            summary.pop(k, None)
+        summary["stress_note"] = (
+            f"Stress test: the recorded inflow multiplied by {inflow_scale:g} before "
+            "either schedule saw it. A scaled copy of one storm - not a forecast, "
+            "not a return period. The recorded level is not shown because it is "
+            "no longer the thing being reproduced."
+        )
     return {
-        "summary": out["summary"],
+        "summary": summary,
         "series": {
             "observed_level": ev["observed"].levels.tolist(),
             "optimised_level": ev["optimised"].levels.tolist(),
             "observed_release": ev["observed"].release.tolist(),
             "optimised_release": ev["optimised"].release.tolist(),
+            "bulletin_level": (
+                [] if scaled else [None if np.isnan(v) else float(v) for v in bulletin]
+            ),
+            "inflow": (
+                series["inflow_cumecs"].fillna(0.0).astype(float) * float(inflow_scale)
+            ).tolist(),
+            "timestamps": stamps,
         },
         "policy": ev["optimised"].metadata.get("policy"),
     }
 
 
 @app.get("/api/scenarios/{key}/counterfactual")
-async def counterfactual(key: str) -> dict:
+async def counterfactual(
+    key: str,
+    inflow_scale: float = Query(1.0, ge=0.5, le=3.0),
+) -> dict:
     if key not in SCENARIOS:
         raise HTTPException(404, f"unknown scenario: {key}")
     try:
-        return await asyncio.to_thread(_counterfactual_payload, key, str(DATA_RAW))
+        return await asyncio.to_thread(
+            _counterfactual_payload, key, str(DATA_RAW), float(inflow_scale),
+        )
     except FileNotFoundError as exc:
         raise HTTPException(503, f"data not cached - run scripts/fetch_data.py ({exc})") from exc
 
@@ -327,6 +407,7 @@ async def whatif(req: WhatIfRequest) -> dict:
         "revenue_inr": float(power.revenue_inr(turbine, levels, hours).sum()),
         "spill_cumecs": spill,
         "advice": _advice(float(levels[-1]), spill),
+        "advice_ml": _advice_ml(float(levels[-1]), spill),
     }
 
 
@@ -361,6 +442,98 @@ async def crisis_play(key: str, decision: CrisisDecision) -> dict:
         )
     except FileNotFoundError as exc:
         raise HTTPException(503, f"data not cached - run scripts/fetch_data.py ({exc})") from exc
+
+
+@lru_cache(maxsize=8)
+def _scenario_rain_mm_per_hour(key: str, cache_dir: str) -> tuple[float, ...]:
+    series = load_scenario_series(SCENARIOS[key], cache_dir=cache_dir, hourly=True)
+    return tuple(float(v) for v in series["rainfall_mm"].fillna(0.0).to_numpy())
+
+
+def _catchment_geometry() -> tuple[float, float, float]:
+    """Area, main channel length, slope for Idukki - the DEM-derived values
+    `scripts/catchment_geometry.py` wrote, with the same fallbacks the runoff
+    validation uses when that file is absent."""
+    area = IDUKKI.catchment_area_km2
+    channel_km, slope = 66.3, 0.0087
+    geom = ROOT / "data" / "processed" / "catchment_geometry_idukki.json"
+    if geom.exists():
+        g = json.loads(geom.read_text(encoding="utf-8"))
+        channel_km = float(g.get("main_channel_km", channel_km))
+        slope = float(g.get("channel_slope", slope))
+    return area, channel_km, slope
+
+
+def runoff_whatif(rain_mm_per_hour, curve_number: float) -> dict:
+    """What a different curve number does to this storm's runoff *volume*.
+
+    The land-use "policy mode" the brief asked for, in the only shape the
+    validated chain can carry. The runoff validation found the SCS-CN chain
+    right on volume (-1% pooled over four seasons, -7 to +38% by season) and
+    wrong on shape (NSE 0.07, no recession limb), so the answer here is a
+    volume and a fraction, and the hydrograph peak is reported as
+    shape-unvalidated. The mapping from land use to curve number is the
+    handbook's, and the handbook is what CN 72 came from.
+    """
+    rain = np.asarray(rain_mm_per_hour, dtype=float)
+    area, channel_km, slope = _catchment_geometry()
+    uh = UnitHydrograph.from_catchment(area, channel_km, slope)
+
+    def run(cn: float) -> tuple[float, float, float]:
+        model = RainfallRunoffModel(area, cn, uh)
+        q = model.inflow_series(rain, dt_hours=1.0)
+        excess_mm = float(model.storm_excess(rain, dt_hours=1.0).sum())
+        return float(q.sum() * 3600.0 / 1e6), float(q.max()), excess_mm
+
+    vol, peak, excess = run(curve_number)
+    vol0, peak0, excess0 = run(DEFAULT_CN_IDUKKI)
+    total_mm = float(rain.sum())
+    return {
+        "curve_number": float(curve_number),
+        "handbook_curve_number": DEFAULT_CN_IDUKKI,
+        "rain_total_mm": total_mm,
+        "runoff_volume_mm3": vol,
+        "runoff_volume_handbook_mm3": vol0,
+        "runoff_volume_change_pct": (vol / vol0 - 1.0) * 100.0 if vol0 > 0 else None,
+        "runoff_fraction": excess / total_mm if total_mm > 0 else None,
+        "runoff_fraction_handbook": excess0 / total_mm if total_mm > 0 else None,
+        "peak_inflow_cumecs_shape_unvalidated": peak,
+        "peak_inflow_handbook_cumecs_shape_unvalidated": peak0,
+        "catchment": {"area_km2": area, "main_channel_km": channel_km, "slope": slope},
+        "caveat": (
+            "Volume only. The SCS-CN chain reproduces seasonal runoff volume to "
+            "within -7 to +38% and does not reproduce hydrograph shape (NSE 0.07), "
+            "so the peak is shown for orientation and is not validated. The "
+            "curve number is a handbook land-use lookup, not a measurement of "
+            "this catchment; CN 72 is the value the validation kept."
+        ),
+    }
+
+
+@app.get("/api/scenarios/{key}/runoff")
+async def runoff(key: str, cn: float = Query(DEFAULT_CN_IDUKKI, ge=40.0, le=98.0)) -> dict:
+    """Catchment policy what-if: this scenario's rain through the runoff
+    chain at a chosen curve number, against the handbook value."""
+    if key not in SCENARIOS:
+        raise HTTPException(404, f"unknown scenario: {key}")
+    try:
+        rain = await asyncio.to_thread(_scenario_rain_mm_per_hour, key, str(DATA_RAW))
+    except FileNotFoundError as exc:
+        raise HTTPException(503, f"data not cached - run scripts/fetch_data.py ({exc})") from exc
+    return {"scenario": key, **runoff_whatif(rain, cn)}
+
+
+@app.get("/api/scenarios/{key}/stress_sweep")
+async def stress_sweep(key: str) -> dict:
+    """The storm-multiple sweep `scripts/stress_sweep.py` wrote for this
+    scenario, if it has been run. Served from disk: seven optimiser runs are
+    a couple of minutes, which no page load should pay."""
+    if key not in SCENARIOS:
+        raise HTTPException(404, f"unknown scenario: {key}")
+    path = ROOT / "data" / "processed" / f"stress_sweep_{key}.json"
+    if not path.exists():
+        raise HTTPException(404, f"no sweep on disk - run scripts/stress_sweep.py --scenario {key}")
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
 @app.get("/api/rig")

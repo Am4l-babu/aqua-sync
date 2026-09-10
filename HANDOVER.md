@@ -83,7 +83,7 @@ root**: `uvicorn aquasync.api.main:app --port 8000 --app-dir backend`.
 
 ### Interface — `dashboard/`
 
-- `index.html` + `js/twin.js` — Three.js 3D twin, no build step, WebSocket
+- `index.html` + `js/twin.js` + `js/scene.js` + `js/sim.js` — Three.js 3D twin, no build step, WebSocket. `sim.js` is the simulation drawer: the counterfactual on a real axis, scrubbable hour by hour, driving the 3D water; `?sim=1&scenario=…&trace=opt&hour=N` opens it on load
   telemetry with time-based easing; falls back to a bundled October 2021
   replay when the API is down. Terrain is **measured**: `build_terrain.py`
   bakes 18 km of the real Periyar valley out of the DEM tiles the catchment
@@ -473,8 +473,9 @@ it or give it a builder; nobody has said which.
 ### Deliberately not being built
 
 2D inundation (LISFLOOD-FP / HEC-RAS), Sentinel-1 SAR extent validation,
-Malayalam alerting, a continuous soil-moisture runoff model, paid deployment
-infrastructure. **And, permanently: operating a real dam gate.** Kerala's
+delivery of the Malayalam line over a real channel (the wording itself exists
+as a template on every frame since 11 September), a continuous soil-moisture
+runoff model, paid deployment infrastructure. **And, permanently: operating a real dam gate.** Kerala's
 gates are KSEB's and the district administration's; the only gate anything
 here actuates is the model sluice on the bench. See [ROADMAP.md](ROADMAP.md)
 §Never in scope.

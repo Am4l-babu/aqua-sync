@@ -167,7 +167,12 @@ driven through a real browser (9 Sep):
 3. **Twin simulation panel.** *"About 3 m more cushion than the day, with
    more revenue, not less."* Volunteer the weak metric before anyone asks
    for it: peak reduction is −277% on this episode and means nothing,
-   because neither schedule reached bankfull.
+   because neither schedule reached bankfull. Then press **Simulation** over
+   the 3D view (or open `?sim=1&trace=opt`): the same episode hour by hour,
+   recorded level against the twin's replay so the 0.30 m error is visible,
+   with the scrubber moving the water on the dam. Switch the storm to
+   **× 1.5**: the day's schedule reaches FRL, AquaSync's does not — say
+   "a scaled copy of one storm, not a forecast" in the same breath.
 4. **Tide panel.** *"Twice a day the sea lets you move the same water
    cheaply."* One chart carries the whole thesis on release timing.
 5. Hand over the what-if slider, then Crisis Commander: *"You have the duty

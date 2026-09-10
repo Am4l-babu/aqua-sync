@@ -65,7 +65,10 @@
     <section class="card" id="advice-card">
       <h2>Recommendation</h2>
       <p id="advice">Waiting for telemetry…</p>
-      <p class="note">Advisory only. A named operator approves every release.</p>
+      <p id="advice-ml" class="advice-ml" lang="ml"></p>
+      <p class="note">Advisory only. A named operator approves every release.
+        The Malayalam line is the last-mile wording for the same band — draft
+        text, to be read by a native speaker before any public use.</p>
     </section>
 
     <section class="card">
@@ -76,6 +79,7 @@
       </label>
       <button id="whatif-reset" class="btn">Return to recommended</button>
 
+      <div class="chart" id="whatif-chart" hidden></div>
       <dl class="kv" id="whatif-out" hidden>
         <dt>Peak level, 72 h</dt><dd id="wi-peak">—</dd>
         <dt>Cushion at peak</dt><dd id="wi-cushion">—</dd>
@@ -85,6 +89,26 @@
       </dl>
       <p class="note" id="wi-advice"></p>
       <p class="note" id="whatif-status">Move the slider to test a constant release.</p>
+    </section>
+
+    <section class="card" id="cn-card">
+      <h2>Catchment policy <span id="cn-state" class="chip chip-off">…</span></h2>
+      <label class="slider">
+        <span>Curve number <b id="cn-val">72</b> <span class="unit">(handbook 72)</span></span>
+        <input type="range" id="cn" min="55" max="92" value="72" step="1">
+      </label>
+      <dl class="kv" id="cn-out" hidden>
+        <dt>Rain, episode</dt><dd id="cn-rain">—</dd>
+        <dt>Runoff at this CN</dt><dd id="cn-vol">—</dd>
+        <dt>Runoff at CN 72</dt><dd id="cn-vol0">—</dd>
+        <dt>Change</dt><dd id="cn-delta">—</dd>
+        <dt>Runoff fraction</dt><dd id="cn-frac">—</dd>
+        <dt>Peak, not validated</dt><dd id="cn-peak" class="dim">—</dd>
+      </dl>
+      <p class="note" id="cn-status">
+        Lower the curve number for a better-forested catchment, raise it for
+        more paved ground, and see what this episode's rain would have run off.
+      </p>
     </section>
 
     <section class="card" id="sim-card">
@@ -104,6 +128,7 @@
         <dt>Revenue vs the day</dt><dd id="sim-rev">—</dd>
       </dl>
       <p class="note mono-note" id="sim-policy"></p>
+      <button id="sim-open" class="btn">Open the simulation view</button>
       <p class="note" id="sim-note">
         Replays the recorded episode, then re-runs it under the optimiser's
         release policy. Hindsight, not forecast — it sees the inflow that
@@ -160,8 +185,84 @@
   </aside>
 
   <main id="stage">
-    <div id="stage-alert" class="stage-alert" hidden></div>
-    <p id="scene-note" class="scene-note">Loading terrain…</p>
+    <div id="view">
+      <div id="stage-alert" class="stage-alert" hidden></div>
+      <div class="stage-tools">
+        <div class="seg" id="view-seg" role="group" aria-label="Viewpoint">
+          <button type="button" data-view="site" class="on">Site</button>
+          <button type="button" data-view="gate">Gate</button>
+          <button type="button" data-view="basin">Basin</button>
+        </div>
+        <button type="button" id="sim-toggle" class="tool-btn">Simulation</button>
+      </div>
+      <p id="scene-note" class="scene-note">Loading terrain…</p>
+    </div>
+
+    <section id="sim-drawer" class="sim-drawer" hidden aria-label="Twin simulation">
+      <header class="sim-head">
+        <div class="sim-title">
+          <h2>Twin simulation <span id="simv-state" class="chip chip-off">…</span></h2>
+          <select id="simv-scenario" aria-label="Scenario"></select>
+          <select id="simv-storm" aria-label="Storm size" title="Stress test: the recorded inflow scaled before either schedule sees it">
+            <option value="1" selected>Storm as recorded</option>
+            <option value="1.25">Storm × 1.25</option>
+            <option value="1.5">Storm × 1.5</option>
+            <option value="2">Storm × 2</option>
+          </select>
+          <button type="button" id="simv-run" class="tool-btn">Run</button>
+        </div>
+        <div class="sim-transport">
+          <button type="button" id="simv-play" class="tool-btn" title="Space">Play</button>
+          <select id="simv-speed" aria-label="Playback speed">
+            <option value="6">6 h per s</option>
+            <option value="24" selected>24 h per s</option>
+            <option value="96">96 h per s</option>
+          </select>
+          <div class="seg" id="simv-trace" role="group" aria-label="Which schedule drives the twin">
+            <span class="seg-label">Twin follows</span>
+            <button type="button" data-trace="day" class="on">the day</button>
+            <button type="button" data-trace="opt">AquaSync</button>
+          </div>
+          <button type="button" id="simv-close" class="tool-btn">Close</button>
+        </div>
+      </header>
+
+      <p class="headline" id="simv-headline">Pick a scenario and run it.</p>
+
+      <div class="sim-body">
+        <div class="sim-chart-wrap">
+          <div id="simv-chart" class="sim-chart"></div>
+          <input type="range" id="simv-scrub" min="0" max="0" value="0" step="1" aria-label="Hour">
+          <p class="sim-cursor" id="simv-cursor">—</p>
+          <div class="legend">
+            <span class="legend-item"><i class="sw sw-rec"></i>recorded (KSEB bulletin)</span>
+            <span class="legend-item"><i class="sw sw-obs"></i>the day, twin replay</span>
+            <span class="legend-item"><i class="sw sw-opt"></i>AquaSync</span>
+            <span class="legend-item"><i class="sw sw-in"></i>inflow</span>
+            <span class="legend-item"><i class="sw sw-frl"></i>FRL</span>
+            <span class="legend-item"><i class="sw sw-rule"></i>rule level</span>
+          </div>
+        </div>
+        <dl class="kv sim-results" id="simv-out">
+          <dt>Peak, the day</dt><dd id="simv-peak-obs">—</dd>
+          <dt>Peak, AquaSync</dt><dd id="simv-peak-opt">—</dd>
+          <dt>Cushion, the day</dt><dd id="simv-fb-obs">—</dd>
+          <dt>Cushion, AquaSync</dt><dd id="simv-fb-opt">—</dd>
+          <dt>Revenue vs the day</dt><dd id="simv-rev">—</dd>
+          <dt>Peak downstream, the day</dt><dd id="simv-ds-obs">—</dd>
+          <dt>Peak downstream, AquaSync</dt><dd id="simv-ds-opt">—</dd>
+          <dt>Replay error, MAE</dt><dd id="simv-mae">—</dd>
+          <dt>Replay error, max</dt><dd id="simv-maxerr">—</dd>
+          <dt>Hours simulated</dt><dd id="simv-hours">—</dd>
+          <dt>FRL reached at storm ×, the day</dt><dd id="simv-sw-day">—</dd>
+          <dt>FRL reached at storm ×, AquaSync</dt><dd id="simv-sw-opt">—</dd>
+        </dl>
+        <div class="sweep-chart" id="simv-sw-chart" title="Peak level against storm multiple: the day (amber), AquaSync (green), FRL (red)"></div>
+      </div>
+      <p class="note mono-note" id="simv-policy"></p>
+      <p class="note" id="simv-sw-note"></p>
+      <p class="note" id="simv-note"></p>
+    </section>
   </main>
 
   <footer id="statusbar">
