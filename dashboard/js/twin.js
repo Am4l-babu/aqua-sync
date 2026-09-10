@@ -148,9 +148,18 @@ function captionProvenance(meta) {
       `over the water. Contains modified Copernicus Sentinel data. `
     : '';
 
+  // The terrain is stretched vertically to keep 1 km of relief legible across
+  // 18 km of ground. Saying so is not optional: every ridge and the depth of
+  // the gorge read twice as steep as they are, and a viewer told the terrain
+  // is "measured" would otherwise reasonably take the relief at face value.
+  const exag = meta.vertical_exaggeration;
+  const stretch = exag && exag !== 1
+    ? ` Heights are exaggerated ${exag}× against distance, so slopes read steeper than they are.`
+    : '';
+
   el.innerHTML =
     `<strong>Terrain: measured.</strong> ${km} km of the Periyar valley from the ` +
-    `${meta.source}, ${meta.metres_per_sample.toFixed(0)} m posting. ` +
+    `${meta.source}, ${meta.metres_per_sample.toFixed(0)} m posting.${stretch} ` +
     ground +
     `<strong>Structures: schematic.</strong> No bathymetry exists for the reservoir, ` +
     `so the bed is not drawn and water is shaded by distance from the bank, not depth.`;
