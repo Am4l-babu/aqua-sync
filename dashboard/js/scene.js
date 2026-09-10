@@ -156,6 +156,12 @@ export class TwinScene {
     this.mask = mask;
     this.n = n;
 
+    // Publish the vertical stretch so the caption can state it. Read from the
+    // constant the geometry actually uses rather than written out again next
+    // to the caption text, because the number a viewer is shown and the number
+    // the terrain is built with must not be able to drift apart.
+    meta.vertical_exaggeration = VERT_EXAG;
+
     // Real ground cover, if it has been baked. Awaited rather than left to
     // arrive whenever, so the provenance caption can state what is actually
     // on screen instead of what was hoped for - a missing or broken asset
@@ -566,10 +572,25 @@ export class TwinScene {
    */
   _buildSpillway(crestY, concrete) {
     const g = new THREE.Group();
-    g.position.set(-16, 0, 1.5);
+    // Butt the spillway block against the arch's left abutment rather than
+    // leaving it standing off in open water. The arch runs x in about
+    // [-9.2, +9.2] scene units; a 15-wide deck centred at -13 overlaps that
+    // end by a few units, so the two structures read as joined. Kept in the
+    // dam plane (z = 0), not pushed downstream, for the same reason.
+    g.position.set(-13, 0, 0);
     this.dam.add(g);
 
     const sillY = this.elevToY(this.meta.reservoir.frl_m - 9.2);
+
+    // A pier of concrete from the crest down to the sill, so the deck and its
+    // gates sit on something instead of floating above the water.
+    const abut = new THREE.Mesh(
+      new THREE.BoxGeometry(15, Math.max(2, crestY - sillY), 7.4), concrete,
+    );
+    abut.position.set(0, (crestY + sillY) / 2, 0);
+    abut.castShadow = abut.receiveShadow = true;
+    g.add(abut);
+
     const deck = new THREE.Mesh(new THREE.BoxGeometry(15, 1.1, 7), concrete);
     deck.position.set(0, crestY, 0);
     deck.castShadow = deck.receiveShadow = true;

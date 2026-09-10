@@ -4,7 +4,7 @@
   --card: #16283a;
   --line: #23394d;
   --ink: #e8f0f7;
-  --muted: #8ba6bd;
+  --muted: #9db6ca;
   --blue: #4aa3df;
   --green: #35c07a;
   --amber: #e0a53a;
@@ -22,6 +22,7 @@
 body {
   margin: 0;
   font-family: var(--font);
+  font-size: 14px;
   background: var(--bg);
   color: var(--ink);
   overflow: hidden;
@@ -29,8 +30,8 @@ body {
 
 #app {
   display: grid;
-  grid-template-columns: 320px 1fr;
-  grid-template-rows: 58px 1fr 30px;
+  grid-template-columns: 364px 1fr;
+  grid-template-rows: 62px 1fr 34px;
   grid-template-areas: "top top" "panel stage" "status status";
   height: 100vh;
 }
@@ -42,7 +43,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 18px;
+  padding: 0 20px;
   background: var(--panel);
   border-bottom: 1px solid var(--line);
 }
@@ -50,19 +51,19 @@ body {
 .brand { display: flex; align-items: center; gap: 12px; }
 
 .brand .mark {
-  width: 26px; height: 26px; border-radius: 7px;
+  width: 28px; height: 28px; border-radius: 7px;
   background: linear-gradient(140deg, var(--blue), #2b6ea8);
   box-shadow: inset 0 -6px 10px rgba(0, 0, 0, .3);
 }
 
-.brand h1 { margin: 0; font-size: 15px; letter-spacing: .2px; }
-.brand p { margin: 1px 0 0; font-size: 11px; color: var(--muted); }
+.brand h1 { margin: 0; font-size: 17px; letter-spacing: .2px; }
+.brand p { margin: 1px 0 0; font-size: 12.5px; color: var(--muted); }
 
 .pill {
   font-family: var(--mono);
-  font-size: 10.5px;
+  font-size: 12px;
   letter-spacing: .8px;
-  padding: 5px 11px;
+  padding: 6px 12px;
   border-radius: 999px;
   border: 1px solid transparent;
 }
@@ -77,36 +78,36 @@ body {
   background: var(--panel);
   border-right: 1px solid var(--line);
   overflow-y: auto;
-  padding: 14px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 13px;
 }
 
 .card {
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: 10px;
-  padding: 13px 14px;
+  padding: 15px 16px;
 }
 
 .card h2 {
-  margin: 0 0 10px;
-  font-size: 10.5px;
+  margin: 0 0 11px;
+  font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 1.1px;
   color: var(--muted);
   font-weight: 600;
 }
 
-.readout { display: flex; align-items: baseline; gap: 6px; }
-.big { font-size: 32px; font-weight: 650; font-variant-numeric: tabular-nums; }
-.unit { font-size: 11px; color: var(--muted); }
+.readout { display: flex; align-items: baseline; gap: 7px; }
+.big { font-size: 34px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.unit { font-size: 13px; color: var(--muted); }
 
 /* level bands */
-.bands { margin: 12px 0 6px; }
+.bands { margin: 13px 0 6px; }
 .band-track {
-  height: 7px; border-radius: 4px;
+  height: 8px; border-radius: 4px;
   background: #0c1a26; overflow: hidden;
   border: 1px solid var(--line);
 }
@@ -116,18 +117,18 @@ body {
 .band-fill.crit { background: var(--red); }
 .band-labels {
   display: flex; justify-content: space-between;
-  font-size: 9.5px; color: var(--muted); margin-top: 5px;
+  font-size: 11px; color: var(--muted); margin-top: 6px;
   font-family: var(--mono);
 }
 
-.kv { display: grid; grid-template-columns: 1fr auto; gap: 6px 10px; margin: 10px 0 0; }
-.kv dt { font-size: 11.5px; color: var(--muted); }
+.kv { display: grid; grid-template-columns: 1fr auto; gap: 8px 12px; margin: 11px 0 0; }
+.kv dt { font-size: 13px; color: var(--muted); line-height: 1.35; }
 .kv dd {
-  margin: 0; font-size: 11.5px; text-align: right;
+  margin: 0; font-size: 13px; text-align: right;
   font-family: var(--mono); font-variant-numeric: tabular-nums;
 }
 
-.spark { height: 32px; margin-top: 12px; }
+.spark { height: 36px; margin-top: 13px; }
 .spark svg { width: 100%; height: 100%; }
 
 /* -- charts -------------------------------------------------------------- */
@@ -137,8 +138,8 @@ body {
    strokes carry vector-effect="non-scaling-stroke" to stop the horizontal
    stretch thickening them. */
 .chart {
-  height: 46px;
-  margin-top: 10px;
+  height: 52px;
+  margin-top: 11px;
   background: #0c1a26;
   border: 1px solid var(--line);
   border-radius: 3px;
@@ -148,9 +149,9 @@ body {
 
 .chart-empty {
   margin: 0;
-  padding: 14px 10px;
-  font-size: 10.5px;
-  line-height: 1.4;
+  padding: 16px 10px;
+  font-size: 12px;
+  line-height: 1.45;
   color: var(--muted);
   text-align: center;
 }
@@ -158,13 +159,13 @@ body {
 .legend {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 12px;
-  margin-top: 7px;
-  font-size: 10px;
+  gap: 5px 14px;
+  margin-top: 8px;
+  font-size: 11.5px;
   color: var(--muted);
 }
-.legend-item { display: inline-flex; align-items: center; gap: 5px; }
-.sw { width: 11px; height: 2px; border-radius: 1px; display: inline-block; }
+.legend-item { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 13px; height: 3px; border-radius: 1px; display: inline-block; }
 .sw-obs { background: var(--amber); }
 .sw-opt { background: var(--green); }
 .sw-frl { background: rgba(226, 86, 79, .75); }
@@ -172,8 +173,8 @@ body {
 /* The one number a skimmer must not miss, per card. Stated to the precision
    the error bar allows - whole metres, not two decimals. */
 .headline {
-  margin: 8px 0 0;
-  font-size: 12.5px;
+  margin: 9px 0 0;
+  font-size: 14.5px;
   line-height: 1.45;
   color: var(--ink);
 }
@@ -182,21 +183,21 @@ body {
 /* The policy the optimiser actually found. Mono so its numbers line up with
    every other number in the panel. Empty until there is one, and the
    `.note:empty` rule below keeps it from leaving a gap. */
-.mono-note { font-family: var(--mono); font-size: 9.5px; line-height: 1.5; }
+.mono-note { font-family: var(--mono); font-size: 11.5px; line-height: 1.55; }
 .note:empty { display: none; }
 
 /* Secondary copy inside any card. This was previously scoped to #advice-card
    only, so the what-if status line rendered at full body size. */
-.note { margin: 8px 0 0; font-size: 10.5px; line-height: 1.5; color: var(--muted); }
+.note { margin: 9px 0 0; font-size: 12.5px; line-height: 1.55; color: var(--muted); }
 
 /* -- scale rig ----------------------------------------------------------- */
 
 .chip {
   float: right;
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 10.5px;
   letter-spacing: .7px;
-  padding: 2px 7px;
+  padding: 3px 8px;
   border-radius: 999px;
   border: 1px solid transparent;
 }
@@ -213,13 +214,13 @@ body {
 /* Two bars rather than two numbers: a separation between them is the whole
    fault-injection beat, and the eye catches a gap faster than it reads a
    difference between 70 and 21. */
-.gatebar { margin-top: 12px; display: grid; gap: 5px; }
-.gatebar-row { display: grid; grid-template-columns: 26px 1fr; align-items: center; gap: 8px; }
+.gatebar { margin-top: 13px; display: grid; gap: 6px; }
+.gatebar-row { display: grid; grid-template-columns: 30px 1fr; align-items: center; gap: 9px; }
 .gatebar-label {
-  font-family: var(--mono); font-size: 9px; color: var(--muted); letter-spacing: .5px;
+  font-family: var(--mono); font-size: 10.5px; color: var(--muted); letter-spacing: .5px;
 }
 .gatebar-track {
-  height: 7px; border-radius: 999px; background: #0c1a26;
+  height: 8px; border-radius: 999px; background: #0c1a26;
   border: 1px solid var(--line); overflow: hidden;
 }
 .gatebar-fill { height: 100%; border-radius: 999px; transition: width .35s ease; }
@@ -231,35 +232,35 @@ body {
    gets its own line rather than a colour change, because "the gate did not do
    what it was told" is a sentence, not a shade of red. */
 .warn-line {
-  margin: 10px 0 0;
-  padding: 7px 9px;
-  font-size: 10.5px;
-  line-height: 1.45;
+  margin: 11px 0 0;
+  padding: 9px 11px;
+  font-size: 12.5px;
+  line-height: 1.5;
   color: var(--red);
   background: rgba(226, 86, 79, .09);
   border-left: 2px solid var(--red);
   border-radius: 2px;
 }
 
-#advice-card p { margin: 0; font-size: 12px; line-height: 1.5; }
+#advice-card p { margin: 0; font-size: 14px; line-height: 1.55; }
 #advice-card .note {
-  margin-top: 8px; font-size: 10px; color: var(--muted);
-  padding-top: 8px; border-top: 1px solid var(--line);
+  margin-top: 9px; font-size: 12px; color: var(--muted);
+  padding-top: 9px; border-top: 1px solid var(--line);
 }
 #advice-card.alert {
   border-color: rgba(224, 165, 58, .55);
   background: linear-gradient(var(--card), rgba(224, 165, 58, .07));
 }
 
-.slider { display: block; font-size: 11.5px; color: var(--muted); }
+.slider { display: block; font-size: 13px; color: var(--muted); }
 .slider b { color: var(--ink); font-family: var(--mono); }
-.slider input { width: 100%; margin-top: 9px; accent-color: var(--blue); }
+.slider input { width: 100%; margin-top: 10px; accent-color: var(--blue); }
 
 .btn {
-  margin-top: 10px; width: 100%;
+  margin-top: 11px; width: 100%;
   background: #1d334a;
   color: var(--ink); border: 1px solid var(--line);
-  border-radius: 7px; padding: 7px; font-size: 11.5px;
+  border-radius: 7px; padding: 9px; font-size: 13px;
   cursor: pointer; font-family: var(--font);
 }
 .btn:hover { background: #24405c; }
@@ -273,14 +274,14 @@ body {
    the view says which is which rather than letting the render imply it. */
 .scene-note {
   position: absolute;
-  left: 14px; bottom: 12px; right: 14px;
+  left: 16px; bottom: 14px; right: 16px;
   margin: 0;
-  max-width: 62ch;
-  padding: 7px 10px;
-  font-size: 11.5px;
-  line-height: 1.45;
+  max-width: 68ch;
+  padding: 9px 13px;
+  font-size: 13px;
+  line-height: 1.5;
   color: var(--muted);
-  background: rgba(11, 22, 32, .72);
+  background: rgba(11, 22, 32, .82);
   border-left: 2px solid var(--line);
   border-radius: 2px;
   pointer-events: none;
@@ -291,10 +292,10 @@ body {
    the visitor has to scroll. This is the beat the demo is built around. */
 .stage-alert {
   position: absolute;
-  top: 14px; left: 50%; transform: translateX(-50%);
-  max-width: 70%;
-  padding: 9px 16px;
-  font-size: 12.5px;
+  top: 16px; left: 50%; transform: translateX(-50%);
+  max-width: 74%;
+  padding: 11px 20px;
+  font-size: 15px;
   font-weight: 600;
   line-height: 1.45;
   color: #ffe9e7;
@@ -310,26 +311,26 @@ body {
 
 #statusbar {
   grid-area: status;
-  display: flex; align-items: center; gap: 20px;
-  padding: 0 18px;
+  display: flex; align-items: center; gap: 22px;
+  padding: 0 20px;
   background: var(--panel);
   border-top: 1px solid var(--line);
   font-family: var(--mono);
-  font-size: 10.5px;
+  font-size: 12.5px;
   color: var(--muted);
 }
 
-@media (max-width: 860px) {
+@media (max-width: 920px) {
   #app { grid-template-columns: 1fr; grid-template-areas: "top" "stage" "panel" "status"; }
   #panel { border-right: none; border-top: 1px solid var(--line); }
 }
 
 /* Route into Crisis Commander from the live twin. */
-.topbar-right { display: flex; align-items: center; gap: 14px; }
+.topbar-right { display: flex; align-items: center; gap: 16px; }
 .crisis-link {
   color: var(--amber);
   text-decoration: none;
-  font-size: 13px;
+  font-size: 14.5px;
   font-weight: 600;
   white-space: nowrap;
 }
