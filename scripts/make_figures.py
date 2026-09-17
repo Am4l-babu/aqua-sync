@@ -278,7 +278,9 @@ def fig_counterfactual() -> dict:
     ax1.fill_between(t, opt.levels, obs.levels, color=GREEN, alpha=0.12)
     ax1.text(t.iloc[3], IDUKKI.frl + 0.08, f"FRL {IDUKKI.frl}", color=RED, fontsize=8.5, fontweight="bold")
     ax1.text(t.iloc[3], IDUKKI.rule_level - 0.35, f"Rule {IDUKKI.rule_level}", color=GREEN, fontsize=8.5, fontweight="bold")
-    ax1.annotate(f"about {s['freeboard_gained_m']:.1f} m more\nflood cushion",
+    # "about 3 m", never 3.1 - the same rounding rule as the lead-time panel
+    # above: the 0.30 m replay error does not support a decimal place.
+    ax1.annotate(f"about {s['freeboard_gained_m']:.0f} m more\nflood cushion",
                  xy=(t.iloc[int(len(t) * 0.72)], (obs.levels[int(len(t)*0.72)] + opt.levels[int(len(t)*0.72)]) / 2),
                  xytext=(-30, -6), textcoords="offset points", fontsize=9, color=GREEN,
                  fontweight="bold", ha="right")

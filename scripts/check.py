@@ -41,6 +41,7 @@ BUILDERS = [
     ROOT / "scripts" / "build_abstract.py",
     ROOT / "scripts" / "build_icfoss_analysis.py",
     ROOT / "scripts" / "build_research_report.py",
+    ROOT / "scripts" / "build_showcase.py",
 ]
 ARTEFACTS = [
     ROOT / "docs" / "assets",
