@@ -1511,15 +1511,24 @@ def page_interface(c, d, n):
                 "The dashboard runs from a laptop with the network cable pulled. The ground is a satellite "
                 "photograph laid on real terrain; the water rises and falls with the replay.")
     shot = ASSETS / "dashboard_twin.png"
-    ih = CW * 720 / 1280
+    with Image.open(shot) as im:
+        shot_w, shot_h = im.size
+    ih = CW * shot_h / shot_w
     top = y
     image(c, shot, M, top - ih, CW, ih, r=8)
-    sx = CW / 1280.0
+    sx = CW / shot_w
 
     def at(px, py):
         return M + px * sx, top - py * sx
 
-    marks = [(258, 84, "1"), (520, 74, "2"), (292, 530, "3"), (258, 484, "4"), (650, 706, "5")]
+    # Pixel positions on the 1280 x 720 screenshot, measured from the live
+    # page's element boxes by scripts/drive_dashboard.py (captured at
+    # 1600 x 900, scaled by 0.8) - not placed by eye. Recapture the
+    # screenshot after a layout change and these must be re-measured.
+    # Each marker sits just outside its element: the badge is about 23 px
+    # across at this scale and must not cover the words it points at.
+    marks = [(284, 58, "1"), (258, 128, "2"), (572, 62, "3"), (708, 640, "4"),
+             (258, 488, "5"), (596, 707, "6"), (956, 25, "7")]
     for px, py, k in marks:
         X, Y = at(px, py)
         c.saveState()
@@ -1528,20 +1537,28 @@ def page_interface(c, d, n):
         c.restoreState()
         badge(c, X, Y, k, CORAL, r=7)
     y = top - ih - 14
-    keys = [("1", "Reservoir level against dead, rule and full levels"), ("2", "Site, gate and basin views"),
-            ("3", "A caption saying what is measured and what is drawn"), ("4", "Advice in English and Malayalam"),
-            ("5", "Source: replay, recorded episode, not live")]
+    keys = [("1", "Tabs: what is happening, what to try, tide and rig"),
+            ("2", "Reservoir level against dead, rule and full levels"),
+            ("3", "Viewpoints, and the button that opens the simulation"),
+            ("4", "One line on what is measured and what is drawn"),
+            ("5", "Advice in English and Malayalam"),
+            ("6", "Source: replay, recorded episode, not live"),
+            ("7", "A guide to the page and every badge on it")]
     kw = CW / 2
     for i, (k, s) in enumerate(keys):
         kx = M + (i % 2) * kw
         ky = y - (i // 2) * 15
         badge(c, kx + 6, ky - 3, k, CORAL, r=5.5)
         txt(c, s, kx + 16, ky - 5.5, "Sans", 7.2, INK)
-    y -= 56
+    # One row of keys per pair, 15 pt apart, plus the gap before the next block.
+    y -= 26 + 15 * ((len(keys) + 1) // 2)
 
+    sim_shot = ASSETS / "dashboard_simulation.png"
+    with Image.open(sim_shot) as im:
+        sim_w, sim_h = im.size
     sw = CW * 0.56
-    sh = sw * 720 / 1280
-    image(c, ASSETS / "dashboard_simulation.png", M, y - sh, sw, sh, r=8)
+    sh = sw * sim_h / sim_w
+    image(c, sim_shot, M, y - sh, sw, sh, r=8)
     para(c, "The simulation drawer scrubs the episode hour by hour: recorded level, the twin's replay and the "
             "optimiser's schedule on real axes, driving the 3D water.", M, y - sh - 8, sw,
          st(7.2, "Sans-Italic", MUTED, leading=10))

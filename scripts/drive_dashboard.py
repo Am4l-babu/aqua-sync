@@ -75,6 +75,8 @@ def main() -> None:
     ap.add_argument("--wait-sim", action="store_true",
                     help="wait for the simulation drawer to finish loading first")
     ap.add_argument("--size", default="1600x900")
+    ap.add_argument("--no-terrain", action="store_true",
+                    help="do not wait for the 3D terrain (pages without it, e.g. crisis.html)")
     args = ap.parse_args()
 
     try:
@@ -104,6 +106,10 @@ def main() -> None:
 
         ws = websocket.create_connection(page["webSocketDebuggerUrl"], suppress_origin=True)
         seq = 0
+        # Uncaught exceptions and console errors from the page, collected
+        # while waiting for replies, and printed at the end. A handler that
+        # throws leaves no mark on a screenshot.
+        page_errors: list[str] = []
 
         def call(method: str, **params):
             nonlocal seq
@@ -113,6 +119,15 @@ def main() -> None:
                 msg = json.loads(ws.recv())
                 if msg.get("id") == seq:
                     return msg.get("result", {})
+                if msg.get("method") == "Runtime.exceptionThrown":
+                    d = msg["params"]["exceptionDetails"]
+                    text = d.get("exception", {}).get("description") or d.get("text", "")
+                    page_errors.append(f"exception: {text.splitlines()[0] if text else '?'}")
+                elif (msg.get("method") == "Runtime.consoleAPICalled"
+                        and msg["params"].get("type") == "error"):
+                    logged = msg["params"].get("args", [])
+                    page_errors.append("console.error: " + " ".join(
+                        str(a.get("value", a.get("description", ""))) for a in logged)[:200])
 
         def js(expr: str):
             r = call("Runtime.evaluate", expression=expr, returnByValue=True, awaitPromise=True)
@@ -124,13 +139,14 @@ def main() -> None:
              deviceScaleFactor=1, mobile=False)
         call("Page.navigate", url=args.url)
 
-        for _ in range(300):
+        for _ in range(0 if args.no_terrain else 300):
             note = js("document.getElementById('scene-note')?.textContent || ''")
             if note.startswith("Terrain"):
                 break
             time.sleep(0.2)
         else:
-            print("WARN: terrain caption never appeared; capturing anyway")
+            if not args.no_terrain:
+                print("WARN: terrain caption never appeared; capturing anyway")
         time.sleep(1.5)
 
         steps = ([WAIT_SIM] if args.wait_sim else []) + list(args.steps)
@@ -142,6 +158,12 @@ def main() -> None:
         Path(args.out).parent.mkdir(parents=True, exist_ok=True)
         Path(args.out).write_bytes(base64.b64decode(shot["data"]))
         print(f"saved {args.out}")
+        if page_errors:
+            print(f"PAGE ERRORS ({len(page_errors)}):")
+            for e in dict.fromkeys(page_errors):
+                print(f"  {e}")
+        else:
+            print("page errors: none")
     finally:
         proc.kill()
         shutil.rmtree(profile, ignore_errors=True)

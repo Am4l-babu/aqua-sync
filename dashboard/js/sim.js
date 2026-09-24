@@ -43,6 +43,7 @@ export function createSimView(deps) {
     play: $('simv-play'), speed: $('simv-speed'), trace: $('simv-trace'),
     close: $('simv-close'), headline: $('simv-headline'), chart: $('simv-chart'),
     scrub: $('simv-scrub'), cursor: $('simv-cursor'), out: $('simv-out'),
+    hourlab: $('simv-hourlab'), jumps: $('simv-jumps'),
     policy: $('simv-policy'), note: $('simv-note'), toggle: $('sim-toggle'),
   };
 
@@ -52,49 +53,102 @@ export function createSimView(deps) {
   };
 
   // ----------------------------------------------------------- scenarios
+  /**
+   * "Periyar cascade, October 2021 (2021-10-08 to 2021-10-28)" did not fit
+   * the select at a laptop's width and was cut to "Periyar cascade, Octobe".
+   * The month goes first, because the month is what tells the three storms
+   * apart; the full title stays as the option's tooltip.
+   */
+  const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  function shortLabel(s) {
+    const [y, m] = String(s.start || '').split('-').map(Number);
+    const when = y && m ? `${MONTHS[m - 1]} ${y}` : '';
+    const name = String(s.title || s.key).replace(/,\s*[^,]*\d{4}\s*$/, '');
+    return when ? `${when} — ${name}` : name;
+  }
+
   async function populateScenarios() {
     try {
       const list = await deps.fetchScenarios();
+      const keep = el.scenario.value;
       el.scenario.innerHTML = list.map((s) =>
-        `<option value="${s.key}">${s.title} (${s.start} to ${s.end})</option>`).join('');
+        `<option value="${s.key}" title="${s.title} (${s.start} to ${s.end})">${shortLabel(s)}</option>`).join('');
+      if (keep && list.some((s) => s.key === keep)) el.scenario.value = keep;
       return list;
     } catch {
-      el.scenario.innerHTML = '<option value="">API not reachable</option>';
+      el.scenario.innerHTML = '<option value="">Server not reachable</option>';
       return [];
     }
   }
 
   // ------------------------------------------------------------- loading
+  /**
+   * A 15 s wait with nothing moving reads as a hang. The chart area shows a
+   * bar and a running count of seconds until the answer arrives, and says
+   * how long the first run usually takes.
+   */
+  function showLoading() {
+    const t0 = performance.now();
+    el.chart.innerHTML =
+      '<div class="sim-loading"><div class="bar"><i></i></div>' +
+      '<p>Searching every release policy for the best one… <b id="simv-elapsed">0 s</b>' +
+      '<br><span>About 15 seconds the first time; instant after that.</span></p></div>';
+    const tick = () => {
+      const e = document.getElementById('simv-elapsed');
+      if (!e) return false;
+      e.textContent = `${Math.round((performance.now() - t0) / 1000)} s`;
+      return true;
+    };
+    clearInterval(st.loadTimer);
+    st.loadTimer = setInterval(() => { if (!tick()) clearInterval(st.loadTimer); }, 500);
+  }
+
   async function run(key = el.scenario.value) {
     if (!key) {
       // No scenario list means no API. Say so in the chip too, not just in
       // the disabled select.
       setState('OFFLINE', 'chip-off');
-      el.headline.textContent = 'Needs the API. Serve this page from uvicorn to run the optimiser.';
+      el.headline.textContent = 'Needs the server. Start it with uvicorn to run the optimiser.';
+      el.run.hidden = false;
       return;
     }
     const scale = Number(el.storm.value) || 1;
+    // Each run takes a ticket. Switching storms while the optimiser is still
+    // busy used to let the older answer land last and overwrite the newer one.
+    const ticket = (st.ticket = (st.ticket || 0) + 1);
     st.key = key;
     st.scale = scale;
     stop();
+    el.run.hidden = true;
     setState('RUNNING', 'chip-stale');
-    el.headline.textContent =
-      'Running the optimiser: an exhaustive policy search, about 15 s the first time, instant after.';
-    el.chart.innerHTML = '';
+    el.headline.textContent = 'Running the optimiser…';
+    el.headline.className = 'headline';
+    showLoading();
     el.out.hidden = true;
     el.policy.textContent = '';
     el.note.textContent = '';
+    el.jumps.innerHTML = '';
+    let data;
     try {
-      st.data = await deps.fetchCounterfactual(key, scale);
+      data = await deps.fetchCounterfactual(key, scale);
     } catch (err) {
+      if (ticket !== st.ticket) return;
+      clearInterval(st.loadTimer);
       st.data = null;
       setState('OFFLINE', 'chip-off');
-      el.headline.textContent = 'Needs the API. Serve this page from uvicorn to run the optimiser.';
-      el.chart.innerHTML = '<p class="chart-empty">The optimiser runs on the backend and is not available offline.</p>';
+      el.headline.textContent = scale === 1
+        ? 'Needs the server. Start it with uvicorn to run the optimiser.'
+        : 'Storm sizes other than "as recorded" need the server; only the recorded storm is saved for offline use.';
+      el.chart.innerHTML = '<p class="chart-empty">The optimiser runs on the server, and it is not reachable.</p>';
+      el.run.hidden = false;
       return;
     }
+    if (ticket !== st.ticket) return;
+    clearInterval(st.loadTimer);
+    st.data = data;
     renderResults();
     drawChart();
+    renderJumps();
     loadSweep(key);
     // A scaled storm is a stress test, and the chip must not call it
     // hindsight: hindsight is of something that happened. A bundled result
@@ -106,10 +160,38 @@ export function createSimView(deps) {
       el.note.textContent = `${st.data.bundle_note || 'Bundled result; the API is not reachable.'} ` +
         el.note.textContent;
     }
-    if (st.demo) play();
     const n = st.data.series.observed_level.length;
     el.scrub.max = String(n - 1);
     setIndex(Math.min(st.idx, n - 1), true);
+    // After the scrubber knows the episode length, not before it.
+    if (st.demo) play();
+  }
+
+  /**
+   * Buttons for the hours worth seeing, computed from the series itself:
+   * when the storm hit hardest, when the day's level peaked, and when the
+   * optimiser starts releasing. A visitor dropped at hour 0 of a 480-hour
+   * episode has no reason to know any of them exist.
+   */
+  function renderJumps() {
+    const S = st.data.series;
+    const argmax = (arr) => {
+      let best = -1, bi = -1;
+      (arr ?? []).forEach((v, i) => { if (Number.isFinite(v) && v > best) { best = v; bi = i; } });
+      return bi;
+    };
+    const jumps = [];
+    const inPeak = argmax(S.inflow);
+    if (inPeak >= 0) jumps.push([inPeak, 'Storm peak', 'The hour of highest inflow']);
+    const dayPeak = argmax(S.observed_level);
+    if (dayPeak >= 0) jumps.push([dayPeak, "The day's highest level", 'Where the operators came closest to FRL']);
+    const p = st.data.policy;
+    if (p && Number.isFinite(p.start_hour)) {
+      jumps.push([p.start_hour, 'AquaSync starts releasing', 'The hour the optimiser begins drawing down']);
+    }
+    jumps.sort((a, b) => a[0] - b[0]);
+    el.jumps.innerHTML = '<span class="jumps-label">Jump to</span>' + jumps.map(([h, label, tip]) =>
+      `<button type="button" data-hour="${h}" title="${tip} (h+${h})">${label}</button>`).join('');
   }
 
   function setState(text, cls) {
@@ -169,13 +251,19 @@ export function createSimView(deps) {
       ? `Policy found: draw down to ${p.target_level_m.toFixed(2)} m from h+${p.start_hour}, ` +
         `at up to ${p.max_rate_cumecs.toFixed(0)} cumecs.`
       : '';
+    // Two caveats, each where it can be read. The one that qualifies the
+    // whole result stays on screen; the one that qualifies the downstream
+    // rows sits beside those rows, inside the folded detail.
     el.note.textContent = stressed
-      ? `${s.stress_note} ${s.headline_note} Downstream peaks are one dam's routed ` +
-        `contribution on an uncalibrated reach; read them against each other, not against bankfull.`
+      ? `${s.stress_note} ${s.headline_note}`
       : `Hindsight, not forecast: the optimiser sees the inflow that actually arrived. ` +
         `${s.headline_note} Cushion is stated in whole metres because the replay error is ` +
-        `${s.replay_level_mae_m.toFixed(2)} m MAE. Downstream peaks are one dam's routed ` +
-        `contribution on an uncalibrated reach; read them against each other, not against bankfull.`;
+        `${s.replay_level_mae_m.toFixed(2)} m MAE.`;
+    const dsNote = $('simv-ds-note');
+    if (dsNote) {
+      dsNote.textContent = `Downstream peaks are one dam's routed contribution on an ` +
+        `uncalibrated reach; read them against each other, never against bankfull.`;
+    }
   }
 
   /**
@@ -299,8 +387,8 @@ export function createSimView(deps) {
       g += `<line x1="${ml}" x2="${W - mr}" y1="${yR(v).toFixed(1)}" y2="${yR(v).toFixed(1)}" class="grid"/>` +
         `<text x="${ml - 6}" y="${(yR(v) + 3.5).toFixed(1)}" class="tick" text-anchor="end">${v.toFixed(0)}</text>`;
     }
-    g += `<text x="${ml - 6}" y="${mt + 10}" class="axis" text-anchor="end">m</text>`;
-    g += `<text x="${ml - 6}" y="${relTop + 10}" class="axis" text-anchor="end">m³/s</text>`;
+    g += `<text x="${ml + 4}" y="${mt + 10}" class="axis">level, m MSL</text>`;
+    g += `<text x="${ml + 4}" y="${relTop + 10}" class="axis">flow, cumecs</text>`;
 
     // Days along the bottom, labelled from the API's own timestamps.
     const stamps = S.timestamps ?? [];
@@ -322,6 +410,29 @@ export function createSimView(deps) {
     g += line(S.observed_release, yR, AMBER, 1.3);
     g += line(S.optimised_release, yR, GREEN, 1.3);
 
+    // Name each level trace at its own right-hand end, so the chart can be
+    // read without carrying the legend in your head.
+    const lastOf = (arr) => {
+      for (let i = (arr ?? []).length - 1; i >= 0; i--) if (Number.isFinite(arr[i])) return arr[i];
+      return null;
+    };
+    const marks = [];
+    for (const [arr, colour, label] of [[S.observed_level, AMBER, 'the day'],
+      [S.optimised_level, GREEN, 'AquaSync'], [S.bulletin_level, GREY, 'recorded']]) {
+      const v = lastOf(arr);
+      if (v != null) marks.push({ y: yL(v) - 5, colour, label });
+    }
+    // Where two traces end together the labels would sit on top of each
+    // other, so they are pushed apart in the order they end.
+    marks.sort((a, b) => a.y - b.y);
+    for (let i = 1; i < marks.length; i++) {
+      if (marks[i].y - marks[i - 1].y < 12) marks[i].y = marks[i - 1].y + 12;
+    }
+    for (const m of marks) {
+      g += `<text x="${(W - mr - 4).toFixed(1)}" y="${m.y.toFixed(1)}" text-anchor="end" ` +
+        `class="trace-label" fill="${m.colour}">${m.label}</text>`;
+    }
+
     // The cursor: one line and a dot per trace, moved by attribute so a
     // scrub does not redraw 480 points of six series.
     g += `<g id="simv-cur">` +
@@ -332,7 +443,7 @@ export function createSimView(deps) {
       `</g>`;
 
     el.chart.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${g}</svg>`;
-    st.cursorNodes = { x, yL, group: el.chart.querySelector('#simv-cur') };
+    st.cursorNodes = { x, yL, group: el.chart.querySelector('#simv-cur'), ml, plotW, n };
     placeCursor();
   }
 
@@ -388,11 +499,20 @@ export function createSimView(deps) {
 
     const S = st.data.series;
     const f = (v, dp = 2) => (Number.isFinite(v) ? v.toFixed(dp) : '—');
-    el.cursor.textContent =
-      `h+${i} · ${(S.timestamps ?? [])[i] ?? ''} · recorded ${f(S.bulletin_level?.[i])} m · ` +
-      `the day ${f(S.observed_level[i])} m · AquaSync ${f(S.optimised_level[i])} m · ` +
-      `inflow ${f(S.inflow?.[i], 0)} · release the day ${f(S.observed_release[i], 0)} / ` +
-      `AquaSync ${f(S.optimised_release[i], 0)} cumecs`;
+    // Ten facts on one line read as a wall and lost their right-hand end to
+    // an ellipsis. Each value now carries its own label and wraps.
+    const stamp = String((S.timestamps ?? [])[i] ?? '').replace('T', ' ');
+    if (el.hourlab) {
+      el.hourlab.innerHTML = `hour <b>h+${i}</b> of ${n - 1}` + (stamp ? ` · ${stamp}` : '');
+    }
+    el.cursor.innerHTML = [
+      ['recorded', `${f(S.bulletin_level?.[i])} m`, 'cur-rec'],
+      ['the day', `${f(S.observed_level[i])} m`, 'cur-day'],
+      ['AquaSync', `${f(S.optimised_level[i])} m`, 'cur-opt'],
+      ['inflow', `${f(S.inflow?.[i], 0)} cumecs`, 'cur-in'],
+      ['releasing, the day', `${f(S.observed_release[i], 0)} cumecs`, 'cur-day'],
+      ['releasing, AquaSync', `${f(S.optimised_release[i], 0)} cumecs`, 'cur-opt'],
+    ].map(([k, v, c]) => `<span class="cur-item"><i>${k}</i> <b class="${c}">${v}</b></span>`).join('');
 
     if (st.open) {
       st.driving = true;
@@ -423,14 +543,14 @@ export function createSimView(deps) {
     st.playing = true;
     st.frac = st.idx;
     st.last = performance.now();
-    el.play.textContent = 'Pause';
+    el.play.textContent = '❚❚ Pause';
     st.raf = requestAnimationFrame(tick);
   }
 
   function stop() {
     st.playing = false;
     cancelAnimationFrame(st.raf);
-    el.play.textContent = 'Play';
+    el.play.textContent = '▶ Play';
   }
 
   // ------------------------------------------------------------- opening
@@ -449,6 +569,7 @@ export function createSimView(deps) {
     st.open = true;
     drawer.hidden = false;
     el.toggle.classList.add('on');
+    el.toggle.textContent = '✕ Close simulation';
     drawer.parentElement.classList.add('sim-open');
     deps.onLayout();
     const wanted = Number(el.storm.value) || 1;
@@ -461,6 +582,7 @@ export function createSimView(deps) {
     st.open = false;
     drawer.hidden = true;
     el.toggle.classList.remove('on');
+    el.toggle.textContent = '▶ Open simulation';
     drawer.parentElement.classList.remove('sim-open');
     if (st.driving) { st.driving = false; deps.onRelease(); }
     deps.onLayout();
@@ -502,6 +624,30 @@ export function createSimView(deps) {
     });
   }
   el.play.addEventListener('click', () => (st.playing ? stop() : play()));
+  el.jumps.addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-hour]');
+    if (b) { stop(); setIndex(Number(b.dataset.hour)); }
+  });
+
+  // Click or drag on the chart to go to that hour. People reach for the
+  // chart before they find the slider under it.
+  const seekTo = (e) => {
+    const c = st.cursorNodes;
+    if (!c || !st.data) return;
+    const r = el.chart.getBoundingClientRect();
+    const f = (e.clientX - r.left - c.ml) / c.plotW;
+    if (f < -0.02 || f > 1.02) return;
+    stop();
+    setIndex(Math.max(0, Math.min(1, f)) * (c.n - 1));
+  };
+  el.chart.addEventListener('pointerdown', (e) => {
+    if (!st.cursorNodes) return;
+    try { el.chart.setPointerCapture(e.pointerId); } catch { /* synthetic pointer */ }
+    seekTo(e);
+  });
+  el.chart.addEventListener('pointermove', (e) => {
+    if (el.chart.hasPointerCapture(e.pointerId)) seekTo(e);
+  });
   el.scrub.addEventListener('input', () => { stop(); setIndex(Number(el.scrub.value)); });
   el.trace.addEventListener('click', (e) => {
     const b = e.target.closest('button[data-trace]');
@@ -512,6 +658,9 @@ export function createSimView(deps) {
     // A focused button fires its own click on Space, so handling Space
     // here as well toggled play twice - once by us, once by the button.
     if (!st.open || e.target.matches('input, select, textarea, button')) return;
+    // The help dialog owns Esc while it is open; closing the drawer behind
+    // it as well would be two things for one key.
+    if (document.querySelector('dialog[open]')) return;
     if (e.code === 'Space') { e.preventDefault(); st.playing ? stop() : play(); }
     else if (e.code === 'ArrowRight') { stop(); setIndex(st.idx + (e.shiftKey ? 24 : 1)); }
     else if (e.code === 'ArrowLeft') { stop(); setIndex(st.idx - (e.shiftKey ? 24 : 1)); }

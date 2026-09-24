@@ -328,8 +328,9 @@ body {
 /* Fixed share of the stage, scrolling inside itself when the results and
    the caveats need more than that - clipping a caveat is not an option. */
 .sim-drawer {
-  height: 50vh;
-  min-height: 340px;
+  height: auto;
+  max-height: 62vh;
+  min-height: 300px;
   display: flex; flex-direction: column;
   padding: 12px 18px 12px;
   background: var(--panel);
@@ -340,24 +341,55 @@ body {
   display: flex; align-items: center; justify-content: space-between;
   gap: 14px; flex-wrap: wrap;
 }
-.sim-title { display: flex; align-items: center; gap: 12px; }
+/* One row of controls where there is room for one: the second row cost
+   more height than the caveats underneath could spare. */
+@media (min-width: 1200px) { .sim-head { flex-wrap: nowrap; } }
+.sim-title { display: flex; align-items: center; gap: 12px; min-width: 0; }
+/* The scenario name is the longest thing in the row, so it is the thing that
+   gives way - losing the Close button off the edge is not an option. */
+#simv-scenario { min-width: 120px; max-width: 320px; }
+@media (max-width: 1340px) {
+  #simv-scenario { min-width: 88px; }
+  #simv-storm { max-width: 116px; }
+}
+/* The "3D shows" label stays at every width: without it the toggle's
+   purpose is a guess. It is short enough to keep. */
 .sim-title h2 {
   margin: 0; font-size: 12px; text-transform: uppercase;
   letter-spacing: 1.1px; color: var(--muted); font-weight: 600;
 }
-.sim-title .chip { float: none; margin-left: 8px; }
+.sim-title .chip { float: none; }
+/* Below this width the heading's own words cost more than they say - the
+   drawer is plainly the simulation - so they leave the row and stay in the
+   accessibility tree. The provenance chip beside it never leaves. */
+@media (max-width: 1400px) {
+  .sim-title h2.sim-h {
+    position: absolute; width: 1px; height: 1px;
+    overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+  }
+}
 .sim-drawer select {
   font-family: var(--font); font-size: 13px;
   color: var(--ink); background: var(--card);
   border: 1px solid var(--line); border-radius: 7px; padding: 6px 8px;
 }
 .sim-transport { display: flex; align-items: center; gap: 10px; }
+/* Control labels that wrap mid-word read as broken, and these are the
+   controls a visitor reaches for first. */
+.sim-head .tool-btn, .sim-head .seg button, .seg-label { white-space: nowrap; }
+/* Buttons keep their size; the scenario select is the one that gives way.
+   Without this the row squeezed Run underneath Play. */
+.sim-head .tool-btn, .sim-head .seg { flex: 0 0 auto; }
+.sim-transport .seg { flex-wrap: nowrap; }
 .sim-drawer .headline { margin: 8px 0 0; }
 .kbd-hint { margin: 6px 0 0; font-size: 11px; color: var(--muted); font-family: var(--mono); }
 .kbd-hint code { font-family: inherit; color: var(--ink); }
 
+.sim-lede { margin: 6px 0 0; font-size: 12.5px; color: var(--muted); max-width: 92ch; }
+.sim-lede b { color: var(--ink); font-weight: 600; }
+
 .sim-body {
-  display: grid; grid-template-columns: 1fr 300px; gap: 18px;
+  display: grid; grid-template-columns: 1fr 330px; gap: 18px;
   flex: none; margin-top: 8px;
 }
 .sim-chart-wrap { display: flex; flex-direction: column; min-width: 0; }
@@ -366,19 +398,72 @@ body {
   background: #0c1a26; border: 1px solid var(--line); border-radius: 4px;
 }
 .sim-results dd { white-space: nowrap; }
+
+/* The answer, then its caveats, then - folded away - every row behind it.
+   The caveats are what this project insists on, so they are the part that
+   stays on screen; the checking detail is the part that folds. */
+.sim-side { display: flex; flex-direction: column; min-width: 0; }
+.sim-answer {
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: 8px; padding: 10px 12px 8px;
+}
+.ans-head {
+  margin: 0 0 6px; font-size: 10.5px; letter-spacing: .8px;
+  text-transform: uppercase; color: var(--muted);
+}
+.ans-row {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 10px; padding: 3px 0;
+}
+.ans-row span { font-size: 13px; color: var(--muted); }
+.ans-row b { font-family: var(--mono); font-size: 21px; font-weight: 600; }
+.ans-day { color: #e0a53a; }
+.ans-opt { color: #35c07a; }
+.ans-rev { border-top: 1px solid var(--line); margin-top: 4px; padding-top: 6px; }
+.ans-rev b { font-size: 15px; color: var(--ink); }
+
+.sim-details { margin-top: 8px; }
+/* The policy sentence and the caveat run the full width, where a long line
+   costs two rows rather than six in a narrow column. */
+.sim-foot {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: 6px 22px; margin-top: 8px; padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+.sim-foot .note { margin: 0; }
+@media (max-width: 1180px) { .sim-foot { grid-template-columns: 1fr; } }
+.sim-details summary {
+  cursor: pointer; font-size: 12px; color: var(--muted);
+  padding: 4px 0; list-style-position: inside;
+}
+.sim-details summary:hover { color: var(--ink); }
+.sim-details[open] summary { color: var(--ink); }
 .sim-chart svg { display: block; }
 .sim-chart .grid { stroke: rgba(35, 57, 77, .9); stroke-width: 1; }
 .sim-chart .tick { fill: var(--muted); font-family: var(--mono); font-size: 10.5px; }
 .sim-chart .axis { fill: var(--muted); font-family: var(--mono); font-size: 10px; }
-#simv-scrub { width: 100%; margin: 8px 0 0; accent-color: var(--blue); }
-.sim-cursor {
-  margin: 4px 0 0; font-family: var(--mono); font-size: 11.5px;
-  color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+.sim-chart .trace-label { font-family: var(--font); font-size: 11px; font-weight: 600; }
+/* Fat enough to grab at a stand, with the hour in words underneath. */
+#simv-scrub { width: 100%; margin: 10px 0 0; accent-color: var(--blue); height: 22px; }
+.scrub-label {
+  margin: 2px 0 0; font-family: var(--mono); font-size: 12px; color: var(--ink);
 }
+.scrub-label b { color: var(--blue); font-weight: 600; }
+/* One line of ten facts read as a wall and clipped at the edge. Chips wrap,
+   and each carries its own label. */
+.sim-cursor {
+  margin: 5px 0 0; display: flex; flex-wrap: wrap; gap: 4px 14px;
+  font-family: var(--mono); font-size: 11.5px; color: var(--ink);
+}
+.cur-item i { font-style: normal; color: var(--muted); }
+.cur-rec { color: rgba(200, 214, 226, .85); }
+.cur-day { color: #e0a53a; }
+.cur-opt { color: #35c07a; }
+.cur-in { color: var(--blue); }
 .sim-results { margin: 0; align-content: start; }
-/* The storm-multiple sweep, under the results column. */
+/* The storm-multiple sweep, inside the folded detail. */
 .sweep-chart {
-  grid-column: 2; height: 74px; margin-top: 6px;
+  height: 74px; margin-top: 6px;
   background: #0c1a26; border: 1px solid var(--line); border-radius: 4px;
 }
 .sweep-chart:empty { display: none; }
@@ -389,9 +474,31 @@ body {
 .sw-rule { background: rgba(224, 165, 58, .45); }
 .sim-drawer .note { margin-top: 6px; }
 
+/* A laptop at 768 px has no room for a 200 px chart and the caveats both.
+   The chart gives way, because a clipped caveat is the one thing this view
+   must not do. */
+@media (max-height: 940px) {
+  .sim-lede { display: none; }
+  .sim-chart { height: 176px; }
+}
+@media (max-height: 820px) {
+  .sim-drawer { padding-top: 8px; max-height: 66vh; }
+  .sim-chart { height: 150px; }
+}
+/* At 720 px there is not room for the 3D view, the chart, the answer and the
+   caveats all at full size. The legend goes first: since 11 September the
+   chart names its own traces at their right-hand ends. */
+@media (max-height: 740px) {
+  .sim-drawer { max-height: 70vh; }
+  .sim-chart { height: 140px; }
+  .sim-chart-wrap .legend { display: none; }
+}
+
+/* Narrow screens stack rather than drop the answer: a column that is hidden
+   cannot be read at all, which is worse than one that is scrolled to. */
 @media (max-width: 1180px) {
   .sim-body { grid-template-columns: 1fr; }
-  .sim-results { display: none; }
+  .sim-details { display: none; }
 }
 
 /* Provenance caption. The terrain is measured and the structures are not, and
@@ -408,19 +515,36 @@ body {
   background: rgba(11, 22, 32, .82);
   border-left: 2px solid var(--line);
   border-radius: 2px;
-  pointer-events: none;
+  width: max-content;
 }
 .scene-note strong { color: var(--ink); font-weight: 600; }
+/* One line carrying every claim, the paragraph a click away. The full text
+   used to cover a third of the view, the dam included. */
+.note-details summary {
+  cursor: pointer; list-style: none; font-size: 12.5px;
+}
+.note-details summary::-webkit-details-marker { display: none; }
+.note-details summary .more {
+  margin-left: 8px; color: var(--blue); text-decoration: underline dotted;
+  text-underline-offset: 3px; white-space: nowrap;
+}
+.note-details[open] summary .more { display: none; }
+.note-details p { margin: 6px 0 0; max-width: 68ch; }
 
 /* With the drawer open the view is half its height and the dam sits where
    the caption used to be, so the caption moves to the top right corner and
    tightens. It never disappears: the provenance is not optional. */
 #stage.sim-open .scene-note {
   top: 14px; bottom: auto; left: auto; right: 16px;
-  max-width: 48ch;
-  font-size: 11.5px;
-  line-height: 1.4;
-  padding: 7px 10px;
+  max-width: 62ch;
+  font-size: 10.8px;
+  line-height: 1.35;
+  padding: 6px 9px;
+  /* With the drawer open the stage is short, and the caption was being cut
+     off by it. It says which parts of the view are measured, so it scrolls
+     rather than loses its last sentence. */
+  max-height: calc(100% - 28px);
+  overflow-y: auto;
 }
 
 /* A rig fault has to be visible from across a room, not folded into a panel
@@ -470,3 +594,210 @@ body {
   white-space: nowrap;
 }
 .crisis-link:hover { text-decoration: underline; }
+
+/* ======================================================================
+   Friendliness pass, 24 September 2026.
+   A first-time visitor should know where to start, what the words mean,
+   and where the parts they can play with are. Nothing here changes a
+   number; it changes whether anyone can find and read it.
+   ====================================================================== */
+
+/* -- keyboard focus that can be seen ------------------------------------ */
+:where(button, a, select, input, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* -- glossary terms: dotted underline, definition on hover --------------- */
+abbr[title] {
+  text-decoration: underline dotted rgba(157, 182, 202, .6);
+  text-underline-offset: 3px;
+  cursor: help;
+}
+.band-labels [title] { cursor: help; }
+.unit-hint {
+  float: right; font-size: 11px; letter-spacing: 0; text-transform: none;
+  font-weight: 400;
+}
+
+/* -- top bar help button ------------------------------------------------ */
+.help-btn {
+  font-family: var(--font); font-size: 13.5px; font-weight: 600;
+  color: var(--ink); background: #1d334a;
+  border: 1px solid var(--line); border-radius: 999px;
+  padding: 6px 14px; cursor: pointer; white-space: nowrap;
+}
+.help-btn:hover { background: #24405c; }
+
+/* -- panel tabs ---------------------------------------------------------- */
+.panel-tabs {
+  position: sticky; top: -16px; z-index: 3;
+  margin: -16px -16px 0; padding: 12px 16px 10px;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+.panel-tabs [role="tab"] {
+  position: relative;
+  font-family: var(--font); font-size: 13.5px; font-weight: 600;
+  color: var(--muted); background: transparent;
+  border: 1px solid var(--line); border-radius: 8px;
+  padding: 8px 6px; cursor: pointer; white-space: nowrap;
+}
+.panel-tabs [role="tab"]:hover { color: var(--ink); background: #172b3e; }
+.panel-tabs [role="tab"][aria-selected="true"] {
+  color: var(--ink); background: rgba(74, 163, 223, .18);
+  border-color: rgba(74, 163, 223, .6);
+}
+.tab-dot {
+  position: absolute; top: 5px; right: 6px;
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--red); box-shadow: 0 0 0 2px var(--panel);
+}
+.tab-pane { display: flex; flex-direction: column; gap: 13px; }
+
+/* One line under a card's heading saying what the card is for. */
+.card-lede { margin: -3px 0 10px; font-size: 13px; line-height: 1.5; color: var(--muted); }
+
+/* The step to the next tab, at the foot of "Now". */
+.next-step {
+  display: flex; justify-content: space-between; align-items: center; gap: 10px;
+  width: 100%; padding: 12px 14px;
+  font-family: var(--font); font-size: 13.5px; text-align: left;
+  color: var(--ink); background: rgba(74, 163, 223, .1);
+  border: 1px dashed rgba(74, 163, 223, .55); border-radius: 10px; cursor: pointer;
+}
+.next-step span { color: var(--blue); font-weight: 600; white-space: nowrap; }
+.next-step:hover { background: rgba(74, 163, 223, .18); }
+
+/* -- buttons ------------------------------------------------------------- */
+.btn-primary { background: #2b6ea8; border-color: #3b86c6; font-weight: 600; }
+.btn-primary:hover { background: #3380c2; }
+.btn-quiet { background: transparent; }
+.tool-btn.tool-primary {
+  color: #fff; background: #2b6ea8; border-color: #3b86c6; font-weight: 600;
+}
+.tool-btn.tool-primary:hover { background: #3380c2; color: #fff; }
+.tool-btn.tool-primary.on { background: #1d334a; border-color: var(--line); color: var(--ink); }
+
+/* -- what-if presets ----------------------------------------------------- */
+.presets { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.presets button {
+  font-family: var(--font); font-size: 12px; color: var(--muted);
+  background: #0f2233; border: 1px solid var(--line); border-radius: 999px;
+  padding: 5px 10px; cursor: pointer;
+}
+.presets button:hover { color: var(--ink); }
+.presets button.on {
+  color: var(--ink); border-color: rgba(74, 163, 223, .6); background: rgba(74, 163, 223, .18);
+}
+
+.scale-ends {
+  display: flex; justify-content: space-between; margin-top: 2px;
+  font-size: 11px; color: var(--muted);
+}
+
+/* -- 3D view hint -------------------------------------------------------- */
+.orbit-hint {
+  position: absolute; right: 16px; bottom: 14px;
+  margin: 0; padding: 6px 12px; font-size: 12.5px; color: var(--ink);
+  background: rgba(11, 22, 32, .78); border: 1px solid var(--line); border-radius: 999px;
+  pointer-events: none; transition: opacity .5s ease; white-space: nowrap;
+}
+.orbit-hint.fade { opacity: 0; }
+#stage.sim-open .orbit-hint { display: none; }
+
+/* -- simulation: loading, jumps, seeking --------------------------------- */
+.sim-loading {
+  height: 100%; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 12px; padding: 14px;
+  text-align: center;
+}
+.sim-loading p { margin: 0; font-size: 13px; line-height: 1.5; color: var(--ink); }
+.sim-loading p span { color: var(--muted); font-size: 12px; }
+.sim-loading .bar {
+  width: min(360px, 70%); height: 6px; border-radius: 999px;
+  background: #13283b; overflow: hidden;
+}
+.sim-loading .bar i {
+  display: block; width: 35%; height: 100%; border-radius: 999px; background: var(--blue);
+  animation: sim-slide 1.3s ease-in-out infinite;
+}
+@keyframes sim-slide {
+  0% { transform: translateX(-110%); }
+  100% { transform: translateX(310%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sim-loading .bar i { animation: none; width: 100%; opacity: .5; }
+}
+
+.sim-chart { cursor: crosshair; touch-action: none; }
+.scrub-row {
+  display: flex; flex-wrap: wrap; align-items: center;
+  justify-content: space-between; gap: 4px 12px;
+}
+.jumps { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.jumps-label { font-size: 11.5px; color: var(--muted); }
+.jumps button {
+  font-family: var(--font); font-size: 12px; color: var(--ink);
+  background: #0f2233; border: 1px solid var(--line); border-radius: 999px;
+  padding: 3px 10px; cursor: pointer; white-space: nowrap;
+}
+.jumps button:hover { border-color: rgba(74, 163, 223, .6); }
+.sim-chart-wrap .kbd-hint { margin-top: 6px; }
+
+/* -- the guide ----------------------------------------------------------- */
+dialog.help {
+  width: min(640px, calc(100vw - 32px));
+  max-height: calc(100vh - 48px); overflow-y: auto;
+  padding: 26px 28px 22px;
+  color: var(--ink); background: var(--panel);
+  border: 1px solid var(--line); border-radius: 14px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, .55);
+}
+dialog.help::backdrop { background: rgba(4, 10, 16, .66); }
+.help h2 { margin: 0 0 6px; font-size: 21px; }
+.help-lede { margin: 0 0 14px; font-size: 14px; line-height: 1.55; color: var(--muted); }
+.help-steps { margin: 0 0 18px; padding-left: 20px; display: grid; gap: 8px; }
+.help-steps li { font-size: 14px; line-height: 1.5; }
+.help-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.help-actions .btn { width: auto; margin-top: 0; padding: 10px 14px; font-size: 13.5px; }
+.help-close-form { position: absolute; top: 10px; right: 12px; margin: 0; }
+.help-x {
+  width: 32px; height: 32px; font-size: 22px; line-height: 1;
+  color: var(--muted); background: transparent; border: 0; cursor: pointer;
+}
+.help-x:hover { color: var(--ink); }
+.help-more { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 12px; }
+.help-more summary { cursor: pointer; font-size: 13.5px; color: var(--blue); }
+.gloss {
+  display: grid; grid-template-columns: max-content 1fr; gap: 8px 14px;
+  margin: 12px 0 0; align-items: baseline;
+}
+.gloss dt { font-size: 13px; font-weight: 600; }
+.gloss dt .chip { float: none; }
+.gloss dd { margin: 0; font-size: 13px; line-height: 1.5; color: var(--muted); }
+.help-small { margin: 14px 0 0; font-size: 12.5px; line-height: 1.55; color: var(--muted); }
+.help-small code { font-family: var(--mono); color: var(--ink); }
+
+/* -- narrow screens ------------------------------------------------------ */
+@media (max-width: 920px) {
+  /* The page scrolls here instead of pinning everything to one screen.
+     Pinned, the 3D view took the whole height and squeezed the panel -
+     tabs and all - to a sliver nobody could reach. */
+  body { overflow: auto; }
+  #app { height: auto; min-height: 100vh; grid-template-rows: 62px auto auto 34px; }
+  #view { height: 58vh; min-height: 300px; }
+  #panel { overflow: visible; }
+  .panel-tabs { top: 0; }
+  .sim-drawer { max-height: none; }
+  #statusbar { position: sticky; bottom: 0; z-index: 4; overflow: hidden; white-space: nowrap; }
+  .help-btn { padding: 6px 10px; }
+  .crisis-link { font-size: 13px; }
+  .orbit-hint { display: none; }
+}
+@media (max-width: 560px) {
+  .brand p { display: none; }
+  .crisis-link { display: none; }
+}
