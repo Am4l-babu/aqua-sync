@@ -241,6 +241,19 @@ GET  /api/scenarios/{key}/counterfactual WS   /ws/telemetry
 POST /api/whatif
 ```
 
+<table>
+<tr>
+<td width="50%" valign="top">
+<img src="docs/assets/dashboard_twin.png" alt="The 3D twin: the Idukki arch dam in the real Periyar valley, Sentinel-2 ground drawn as photographed" width="100%"/>
+<sub><b>The twin.</b> Measured DEM under the Sentinel-2 photograph, drawn as photographed; the dam and spillway are schematic and the caption says so.</sub>
+</td>
+<td width="50%" valign="top">
+<img src="docs/assets/dashboard_simulation.png" alt="The simulation drawer: recorded level, the twin's replay and the AquaSync schedule on real axes, scrubbed to hour 300" width="100%"/>
+<sub><b>The simulation view</b> at hour 300 under the AquaSync schedule: recorded level (grey), the twin's replay (amber) and the optimiser (green), with the water on the dam following the scrubber. Both captured by <code>scripts/drive_dashboard.py</code>.</sub>
+</td>
+</tr>
+</table>
+
 The dashboard also opens straight from the filesystem and falls back to a
 bundled October 2021 replay when the API is down. The expo venue network is
 not a dependency the demo can afford.

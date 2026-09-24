@@ -361,7 +361,7 @@ unaccounted for.
 | Cascade of dams as a graph with lags | ✅ Built for the two dams that matter | Cascade and joint-objective rows; a warning, not a win |
 | Tamper-evident release ledger (hash chain) | ✅ Built | SHA-256 record chain in the firmware, verified by `aquasync.api.rig` |
 | Shadow-mode SCADA path, advisory only | ✅ By design | "Never in scope" — no command path exists |
-| Offline-first dashboard on a laptop hotspot | ✅ Built and rehearsed | Offline beat, verified 9 Sep |
+| Offline-first dashboard on a laptop hotspot | ✅ Built and rehearsed; from 11 Sep the simulation drawer survives it too, reading the bundle `scripts/bake_dashboard_data.py` writes to `dashboard/assets/sim_*.json` and saying BUNDLED on its chip | Offline beat, verified 9 Sep and 11 Sep |
 | Crisis Commander serious game | ✅ Built | `dashboard/crisis.html` |
 | EKF / sensor fusion on the node, physical fault-injection switches, predictive gate-jam detection (INA219 current spike) | 📋 Plan, hardware | Hardware rows in `PROGRESS.md`; the dashboard side is verified |
 | LoRa fail-safe mesh | 🔄 Plan, V2 pulled forward | LoRa row; two SX1278 modules ordered 9 Sep |

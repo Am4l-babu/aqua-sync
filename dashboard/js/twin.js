@@ -91,10 +91,18 @@ function hoursToFrl(level, netCumecs) {
 // --------------------------------------------------------------------------
 
 async function init() {
+  // The page's own furniture first, so the tabs, the help and the tooltips
+  // work while the terrain is still loading.
+  bindTabs();
+  bindHelp();
+  bindGlossary();
+  maybeWelcome();
+
   // The canvas lives in #view, not #stage: the simulation drawer takes real
   // height under it, and the renderer sizes itself to what is left.
   const view = document.getElementById('view');
   twin = new TwinScene(view);
+  bindOrbitHint(view);
 
   try {
     const meta = await twin.load('assets');
@@ -121,6 +129,182 @@ async function init() {
   loadCounterfactual();
   loadCatchment();
   openSimFromUrl();
+}
+
+// --------------------------------------------------------------------------
+// panel tabs
+// --------------------------------------------------------------------------
+
+/**
+ * Three tabs instead of one long scroll. Eight cards in a column put the
+ * parts a visitor can actually play with - the simulation, the what-if, the
+ * catchment slider - below the fold, where nobody found them.
+ *
+ * Nothing is removed: the rig still raises its fault over the 3D view where
+ * it cannot be missed, and its tab grows a red dot. The last tab a visitor
+ * chose is remembered for the next visit.
+ */
+const TABS = ['now', 'try', 'ctx'];
+
+function showTab(name, { focus = false } = {}) {
+  if (!TABS.includes(name)) return;
+  for (const t of TABS) {
+    const on = t === name;
+    const tab = document.getElementById(`tab-${t}`);
+    const pane = document.getElementById(`pane-${t}`);
+    if (!tab || !pane) continue;
+    tab.setAttribute('aria-selected', String(on));
+    tab.tabIndex = on ? 0 : -1;
+    pane.hidden = !on;
+    if (on && focus) tab.focus();
+  }
+  const panel = document.getElementById('panel');
+  if (panel) panel.scrollTop = 0;
+  try { localStorage.setItem('aquasync.tab', name); } catch { /* private mode */ }
+}
+
+function bindTabs() {
+  const bar = document.querySelector('.panel-tabs');
+  if (!bar) return;
+  bar.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-tab]');
+    if (b) showTab(b.dataset.tab);
+  });
+  // Arrow keys move between tabs, as a tab list should.
+  bar.addEventListener('keydown', (e) => {
+    const cur = TABS.findIndex((t) =>
+      document.getElementById(`tab-${t}`)?.getAttribute('aria-selected') === 'true');
+    if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+      e.preventDefault();
+      const step = e.key === 'ArrowRight' ? 1 : -1;
+      showTab(TABS[(cur + step + TABS.length) % TABS.length], { focus: true });
+    }
+  });
+  // "Try it →" and similar links anywhere in the page.
+  document.addEventListener('click', (e) => {
+    const g = e.target.closest('[data-goto]');
+    if (g) showTab(g.dataset.goto);
+  });
+
+  const q = new URLSearchParams(location.search);
+  let start = q.get('tab');
+  if (!TABS.includes(start)) {
+    try { start = localStorage.getItem('aquasync.tab'); } catch { start = null; }
+  }
+  showTab(TABS.includes(start) ? start : 'now');
+}
+
+// --------------------------------------------------------------------------
+// help, first visit, glossary
+// --------------------------------------------------------------------------
+
+/**
+ * The guide can be answered before the terrain has loaded and before the
+ * drawer exists. A "watch the storm" click then waits for it rather than
+ * doing nothing.
+ */
+let pendingSimOpen = false;
+function openSimSoon() {
+  if (simView) simView.open();
+  else pendingSimOpen = true;
+}
+
+function openHelp() {
+  const d = document.getElementById('help');
+  if (d && !d.open) d.showModal();
+}
+
+function bindHelp() {
+  const d = document.getElementById('help');
+  if (!d) return;
+  document.getElementById('help-open')?.addEventListener('click', openHelp);
+  d.addEventListener('click', (e) => {
+    // A click on the backdrop lands on the dialog element itself.
+    if (e.target === d) { d.close(); return; }
+    const b = e.target.closest('[data-help]');
+    if (!b) return;
+    d.close();
+    if (b.dataset.help === 'sim') { showTab('try'); openSimSoon(); }
+    else if (b.dataset.help === 'try') showTab('try');
+  });
+  d.addEventListener('close', () => {
+    try { localStorage.setItem('aquasync.welcomed', '1'); } catch { /* private mode */ }
+  });
+}
+
+/**
+ * Open the guide on a first visit, and only then. Never over a link that
+ * already says what to show (`?sim=`, `?tab=`), never on an unattended demo
+ * screen (`?demo=`), and never when asked not to (`?welcome=0`, which the
+ * screenshot script uses).
+ */
+function maybeWelcome() {
+  const q = new URLSearchParams(location.search);
+  if (q.has('sim') || q.has('demo') || q.has('tab') || q.get('welcome') === '0') return;
+  let seen = null;
+  try { seen = localStorage.getItem('aquasync.welcomed'); } catch { /* private mode */ }
+  if (!seen) openHelp();
+}
+
+/**
+ * Every status chip and badge explains itself on hover. The words on them -
+ * REPLAY, HINDSIGHT, BUNDLED - are this project's honesty about where a
+ * number came from, and they are worth nothing to a visitor who cannot read
+ * them. One table, applied by watching the chips rather than at each of the
+ * dozen places that set their text.
+ */
+const CHIP_MEANING = [
+  [/^LIVE/, 'Measured now, by the scale rig. The only green badge on the page.'],
+  [/^REPLAY/, 'A recorded episode being played back - October 2021, not live.'],
+  [/^SIMULATED/, 'The simulation view is driving the 3D model and the readouts.'],
+  [/^CONNECTED/, 'The server is reachable; waiting for it to say what it is sending.'],
+  [/^CONNECTING/, 'Looking for the server.'],
+  [/^STALE/, 'Was live, and has gone quiet.'],
+  [/BUNDLED/, 'A saved result, shown because the server is not reachable. Same code, computed earlier.'],
+  [/^HINDSIGHT/, 'The optimiser was shown the rain that actually came. A best case, not a forecast.'],
+  [/^STRESS TEST/, 'The recorded storm scaled up. Not a forecast and not a return period.'],
+  [/^PREDICTED/, 'A model output, such as the tide - not a measurement.'],
+  [/^MODEL/, 'A model output - not a measurement.'],
+  [/^RUNNING/, 'The optimiser is searching. About 15 seconds the first time, instant after.'],
+  [/^OFFLINE/, 'Needs the server, which is not running or not reachable.'],
+];
+
+function explainChip(el) {
+  const text = (el.textContent || '').trim().toUpperCase();
+  const hit = CHIP_MEANING.find(([re]) => re.test(text));
+  el.title = hit ? hit[1] : '';
+}
+
+function bindGlossary() {
+  const chips = document.querySelectorAll('.chip, .pill');
+  chips.forEach(explainChip);
+  const obs = new MutationObserver((muts) => {
+    for (const m of muts) {
+      const el = m.target.nodeType === 1 ? m.target : m.target.parentElement;
+      const chip = el?.closest?.('.chip, .pill');
+      if (chip) explainChip(chip);
+    }
+  });
+  chips.forEach((c) => obs.observe(c, { childList: true, characterData: true, subtree: true }));
+}
+
+/** "Drag to turn" until the visitor has turned it once. */
+function bindOrbitHint(view) {
+  const hint = document.getElementById('orbit-hint');
+  if (!hint) return;
+  let used = false;
+  try { used = localStorage.getItem('aquasync.orbited') === '1'; } catch { /* private mode */ }
+  if (used) { hint.hidden = true; return; }
+  const onDown = (e) => { if (e.target.tagName === 'CANVAS') done(); };
+  function done() {
+    hint.classList.add('fade');
+    setTimeout(() => { hint.hidden = true; }, 600);
+    try { localStorage.setItem('aquasync.orbited', '1'); } catch { /* private mode */ }
+    view.removeEventListener('pointerdown', onDown);
+    view.removeEventListener('wheel', done);
+  }
+  view.addEventListener('pointerdown', onDown);
+  view.addEventListener('wheel', done, { passive: true });
 }
 
 /** Site / gate / basin buttons over the 3D view. */
@@ -183,6 +367,7 @@ function bindSimView() {
 
   const opener = document.getElementById('sim-open');
   if (opener) opener.addEventListener('click', () => simView.open());
+  if (pendingSimOpen) { pendingSimOpen = false; simView.open(); }
 }
 
 /**
@@ -198,21 +383,51 @@ function openSimFromUrl() {
     scenario: q.get('scenario') || undefined,
     trace: q.get('trace') || undefined,
     hour: Number.isFinite(hour) && q.has('hour') ? hour : undefined,
+    storm: q.get('storm') || undefined,
+    demo: q.has('demo'),
   }));
 }
 
-/** The scenario list, from the API, or a rejection when it is not there. */
-async function fetchScenarios() {
-  const r = await fetch('/api/scenarios', { signal: AbortSignal.timeout(4000) });
-  if (!r.ok) throw new Error(String(r.status));
-  return r.json();
+/**
+ * The offline bundle for a scenario, baked by scripts/bake_dashboard_data.py
+ * from the same code the API runs. Used only when the API is unreachable,
+ * and everything read from it is labelled bundled - beat 7 of the demo is
+ * "pull the network cable", and the drawer must survive that too.
+ */
+const bundleCache = new Map();
+function fetchBundle(key) {
+  if (!bundleCache.has(key)) {
+    bundleCache.set(key, fetch(`assets/sim_${key}.json`, { signal: AbortSignal.timeout(4000) })
+      .then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.json(); })
+      .catch((err) => { bundleCache.delete(key); throw err; }));
+  }
+  return bundleCache.get(key);
 }
 
-/** The storm-multiple sweep on disk for a scenario, or a rejection. */
+/** The scenario list, from the API, else the bundled index, else a rejection. */
+async function fetchScenarios() {
+  try {
+    const r = await fetch('/api/scenarios', { signal: AbortSignal.timeout(4000) });
+    if (!r.ok) throw new Error(String(r.status));
+    return await r.json();
+  } catch {
+    const r = await fetch('assets/sim_index.json', { signal: AbortSignal.timeout(4000) });
+    if (!r.ok) throw new Error(String(r.status));
+    return r.json();
+  }
+}
+
+/** The storm-multiple sweep for a scenario: API, else the bundle, else a rejection. */
 async function fetchSweep(key) {
-  const r = await fetch(`/api/scenarios/${key}/stress_sweep`, { signal: AbortSignal.timeout(4000) });
-  if (!r.ok) throw new Error(String(r.status));
-  return r.json();
+  try {
+    const r = await fetch(`/api/scenarios/${key}/stress_sweep`, { signal: AbortSignal.timeout(4000) });
+    if (!r.ok) throw new Error(String(r.status));
+    return await r.json();
+  } catch (err) {
+    const b = await fetchBundle(key);
+    if (!b.sweep) throw err;
+    return { ...b.sweep, bundled: true };
+  }
 }
 
 const cfCache = new Map();
@@ -229,7 +444,18 @@ function fetchCounterfactual(key, scale = 1) {
     const p = fetch(`/api/scenarios/${key}/counterfactual${q}`,
       { signal: AbortSignal.timeout(90000) })
       .then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.json(); })
-      .catch((err) => { cfCache.delete(id); throw err; });
+      .catch(async (err) => {
+        // Only the recorded storm is bundled: a scaled one is another
+        // optimiser run, and the bundle exists for the flagship beat.
+        if (scale !== 1) { cfCache.delete(id); throw err; }
+        try {
+          const b = await fetchBundle(key);
+          return { ...b.counterfactual, bundled: true, bundle_note: b.note };
+        } catch {
+          cfCache.delete(id);
+          throw err;
+        }
+      });
     cfCache.set(id, p);
   }
   return cfCache.get(id);
@@ -277,12 +503,24 @@ function captionProvenance(meta) {
     ? ` Heights are exaggerated ${exag}× against distance, so slopes read steeper than they are.`
     : '';
 
+  // One line that is always on screen, carrying every claim: what is
+  // measured, what is not, and the stretch. The paragraph behind it opens on
+  // a click. The full text used to sit over a third of the view, dam
+  // included, and a caption nobody reads protects nobody.
+  const short =
+    `<strong>Terrain: measured</strong> · ` +
+    (img ? `<strong>Ground: measured</strong> (Sentinel-2) · ` : '') +
+    `<strong>Structures: schematic</strong>` +
+    (exag && exag !== 1 ? ` · heights ×${exag}` : '');
+
   el.innerHTML =
-    `<strong>Terrain: measured.</strong> ${km} km of the Periyar valley from the ` +
+    `<details class="note-details"><summary>${short} <span class="more">what does that mean?</span></summary>` +
+    `<p><strong>Terrain: measured.</strong> ${km} km of the Periyar valley from the ` +
     `${meta.source}, ${meta.metres_per_sample.toFixed(0)} m posting.${stretch} ` +
     ground +
     `<strong>Structures: schematic.</strong> No bathymetry exists for the reservoir, ` +
-    `so the bed is not drawn and water is shaded by distance from the bank, not depth.`;
+    `so the bed is not drawn and water is shaded by distance from the bank, not depth.</p>` +
+    `</details>`;
 }
 
 function captionUnavailable() {
@@ -451,6 +689,24 @@ function apply(t) {
 // panel
 // --------------------------------------------------------------------------
 
+/**
+ * Time to FRL in words a visitor can act on.
+ *
+ * The number assumes today's inflow and release hold unchanged, which they
+ * never do for long, so decimals of a day were precision the input does not
+ * have - and "2158.7 d" on a quiet day read as a fault. Hours when it is
+ * close, whole days when it is not, and "over a month" past that.
+ */
+function timeToFrlText(hrs) {
+  if (hrs === null || !Number.isFinite(hrs)) return 'not rising';
+  if (hrs <= 0) return 'at or above FRL';
+  if (hrs < 1) return 'under an hour';
+  if (hrs < 48) return `about ${Math.round(hrs)} h`;
+  const days = Math.round(hrs / 24);
+  if (days <= 30) return `about ${days} days`;
+  return 'over a month';
+}
+
 function fmt(v, unit, dp = 0) {
   return Number.isFinite(v) ? `${v.toFixed(dp)} ${unit}` : '—';
 }
@@ -482,10 +738,7 @@ function updatePanel(t) {
 
   const net = target.inflow - target.turbine - target.spill;
   const hrs = hoursToFrl(target.level, net);
-  document.getElementById('ttf').textContent =
-    hrs === null ? 'stable or falling'
-      : hrs < 48 ? `${hrs.toFixed(1)} h at current net inflow`
-        : `${(hrs / 24).toFixed(1)} d at current net inflow`;
+  document.getElementById('ttf').textContent = timeToFrlText(hrs);
 
   if (t.advice) document.getElementById('advice').textContent = t.advice;
   // The last-mile line. The server sends it with every frame; the offline
@@ -573,7 +826,9 @@ function renderWhatIf(r) {
   breach.classList.toggle('crit', !!r.breaches_frl);
 
   document.getElementById('wi-ttf').textContent =
-    Number.isFinite(ttf) && ttf > 0 ? `${ttf.toFixed(0)} h` : '—';
+    // null from the API means not rising; 0 means already there. Both
+    // used to show as a dash.
+    r.hours_to_frl == null ? 'not rising' : timeToFrlText(ttf);
 
   document.getElementById('wi-advice').textContent =
     r.advice ? `At 72 h: ${r.advice}` : '';
@@ -607,7 +862,7 @@ function clearWhatIf() {
   if (chart) { chart.hidden = true; chart.innerHTML = ''; }
   document.getElementById('wi-advice').textContent = '';
   document.getElementById('whatif-status').textContent =
-    'Move the slider to test a constant release.';
+    'Drag the slider or pick a preset.';
 }
 
 function bindControls() {
@@ -646,6 +901,24 @@ function bindControls() {
     }, 250);
   });
 
+  // Presets: four releases a visitor can reason about without knowing what
+  // a cumec is. Each one does exactly what dragging there and letting go does.
+  const presets = document.getElementById('whatif-presets');
+  const markPreset = () => {
+    presets?.querySelectorAll('button').forEach((b) => {
+      b.classList.toggle('on', manualOverride && Number(b.dataset.q) === Number(slider.value));
+    });
+  };
+  presets?.addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-q]');
+    if (!b) return;
+    slider.value = b.dataset.q;
+    slider.dispatchEvent(new Event('input'));
+    slider.dispatchEvent(new Event('change'));
+    markPreset();
+  });
+  slider.addEventListener('input', markPreset);
+
   document.getElementById('whatif-reset').addEventListener('click', () => {
     clearTimeout(timer);
     slider.value = 0;
@@ -654,7 +927,11 @@ function bindControls() {
     // The dispatch above re-arms the override, so clear it afterwards: the
     // next telemetry frame should take the panel back.
     manualOverride = false;
-    source.textContent = 'source: telemetry';
+    // Say what is actually feeding the panel. This used to say "telemetry"
+    // even while the bundled 2021 replay was running.
+    source.textContent = replayTimer
+      ? 'source: replay (recorded episode, not live)' : 'source: telemetry';
+    markPreset();
     clearWhatIf();
   });
 }
@@ -720,6 +997,9 @@ function setStageAlert(faults) {
   if (!el) return;
   el.textContent = faults.length ? `RIG FAULT — ${faults[0]}` : '';
   el.hidden = faults.length === 0;
+  // The rig card lives on its own tab now; the tab says so when it matters.
+  const dot = document.getElementById('tab-ctx-dot');
+  if (dot) dot.hidden = faults.length === 0;
 }
 
 const RIG_POLL_MS = 1000;
@@ -1042,7 +1322,7 @@ async function loadCounterfactual(key = 'periyar_oct_2021') {
       `Hindsight, not forecast: the optimiser sees the inflow that actually ` +
       `arrived. ${s.headline_note}`;
 
-    state.textContent = 'HINDSIGHT';
+    state.textContent = d.bundled ? 'HINDSIGHT · BUNDLED' : 'HINDSIGHT';
     state.className = 'chip chip-model';
   } catch {
     state.textContent = 'OFFLINE';

@@ -27,161 +27,188 @@
       </div>
     </div>
     <div class="topbar-right">
-      <a class="crisis-link" href="crisis.html">Crisis Commander →</a>
+      <button type="button" id="help-open" class="help-btn" aria-haspopup="dialog">? How to use</button>
+      <a class="crisis-link" href="crisis.html" title="A game: you have the duty desk on 8 October 2021">Crisis Commander →</a>
       <div id="link-state" class="pill pill-warn">CONNECTING</div>
     </div>
   </header>
 
   <aside id="panel">
-    <section class="card">
-      <h2>Reservoir</h2>
-      <div class="readout">
-        <span id="level" class="big">—</span><span class="unit">m MSL</span>
-      </div>
-      <div class="bands" id="bands">
-        <div class="band-track"><div class="band-fill" id="band-fill"></div></div>
-        <div class="band-labels">
-          <span>dead</span><span id="lbl-rule">rule</span><span id="lbl-frl">FRL</span>
+    <nav class="panel-tabs" role="tablist" aria-label="Panel sections">
+      <button type="button" role="tab" id="tab-now" data-tab="now" aria-controls="pane-now" aria-selected="true">Now</button>
+      <button type="button" role="tab" id="tab-try" data-tab="try" aria-controls="pane-try" aria-selected="false" tabindex="-1">Try it</button>
+      <button type="button" role="tab" id="tab-ctx" data-tab="ctx" aria-controls="pane-ctx" aria-selected="false" tabindex="-1">Tide &amp; rig<i class="tab-dot" id="tab-ctx-dot" hidden title="The rig reports a fault"></i></button>
+    </nav>
+
+    <!-- ===================================================== NOW -->
+    <div class="tab-pane" id="pane-now" role="tabpanel" aria-labelledby="tab-now">
+      <section class="card">
+        <h2>Reservoir</h2>
+        <div class="readout">
+          <span id="level" class="big">—</span><span class="unit"><abbr title="Metres above mean sea level — the height of the water surface">m MSL</abbr></span>
         </div>
-      </div>
-      <dl class="kv">
-        <dt>Freeboard to FRL</dt><dd id="freeboard">—</dd>
-        <dt>Live storage</dt><dd id="storage">—</dd>
-        <dt>Time to FRL</dt><dd id="ttf">—</dd>
-      </dl>
-    </section>
-
-    <section class="card">
-      <h2>Flows</h2>
-      <dl class="kv">
-        <dt>Inflow</dt><dd id="inflow">—</dd>
-        <dt>Turbine</dt><dd id="turbine">—</dd>
-        <dt>Spillway</dt><dd id="spill">—</dd>
-        <dt>Gate opening</dt><dd id="gate">—</dd>
-      </dl>
-      <div class="spark" id="spark"></div>
-    </section>
-
-    <section class="card" id="advice-card">
-      <h2>Recommendation</h2>
-      <p id="advice">Waiting for telemetry…</p>
-      <p id="advice-ml" class="advice-ml" lang="ml"></p>
-      <p class="note">Advisory only. A named operator approves every release.
-        The Malayalam line is the last-mile wording for the same band — draft
-        text, to be read by a native speaker before any public use.</p>
-    </section>
-
-    <section class="card">
-      <h2>What-if</h2>
-      <label class="slider">
-        <span>Release <b id="whatif-val">0</b> cumecs</span>
-        <input type="range" id="whatif" min="0" max="900" value="0" step="10">
-      </label>
-      <button id="whatif-reset" class="btn">Return to recommended</button>
-
-      <div class="chart" id="whatif-chart" hidden></div>
-      <dl class="kv" id="whatif-out" hidden>
-        <dt>Peak level, 72 h</dt><dd id="wi-peak">—</dd>
-        <dt>Cushion at peak</dt><dd id="wi-cushion">—</dd>
-        <dt>Level at 72 h</dt><dd id="wi-final">—</dd>
-        <dt>Reaches FRL</dt><dd id="wi-breach">—</dd>
-        <dt>Time to FRL</dt><dd id="wi-ttf">—</dd>
-      </dl>
-      <p class="note" id="wi-advice"></p>
-      <p class="note" id="whatif-status">Move the slider to test a constant release.</p>
-    </section>
-
-    <section class="card" id="cn-card">
-      <h2>Catchment policy <span id="cn-state" class="chip chip-off">…</span></h2>
-      <label class="slider">
-        <span>Curve number <b id="cn-val">72</b> <span class="unit">(handbook 72)</span></span>
-        <input type="range" id="cn" min="55" max="92" value="72" step="1">
-      </label>
-      <dl class="kv" id="cn-out" hidden>
-        <dt>Rain, episode</dt><dd id="cn-rain">—</dd>
-        <dt>Runoff at this CN</dt><dd id="cn-vol">—</dd>
-        <dt>Runoff at CN 72</dt><dd id="cn-vol0">—</dd>
-        <dt>Change</dt><dd id="cn-delta">—</dd>
-        <dt>Runoff fraction</dt><dd id="cn-frac">—</dd>
-        <dt>Peak, not validated</dt><dd id="cn-peak" class="dim">—</dd>
-      </dl>
-      <p class="note" id="cn-status">
-        Lower the curve number for a better-forested catchment, raise it for
-        more paved ground, and see what this episode's rain would have run off.
-      </p>
-    </section>
-
-    <section class="card" id="sim-card">
-      <h2>Twin simulation <span id="sim-state" class="chip chip-off">…</span></h2>
-      <p class="headline" id="sim-headline">Running the optimiser…</p>
-      <div class="chart" id="sim-chart"></div>
-      <div class="legend">
-        <span class="legend-item"><i class="sw sw-obs"></i>what happened</span>
-        <span class="legend-item"><i class="sw sw-opt"></i>AquaSync</span>
-        <span class="legend-item"><i class="sw sw-frl"></i>FRL</span>
-      </div>
-      <dl class="kv" id="sim-out" hidden>
-        <dt>Peak, the day</dt><dd id="sim-peak-obs">—</dd>
-        <dt>Peak, AquaSync</dt><dd id="sim-peak-opt">—</dd>
-        <dt>Cushion, the day</dt><dd id="sim-fb-obs">—</dd>
-        <dt>Cushion, AquaSync</dt><dd id="sim-fb-opt">—</dd>
-        <dt>Revenue vs the day</dt><dd id="sim-rev">—</dd>
-      </dl>
-      <p class="note mono-note" id="sim-policy"></p>
-      <button id="sim-open" class="btn">Open the simulation view</button>
-      <p class="note" id="sim-note">
-        Replays the recorded episode, then re-runs it under the optimiser's
-        release policy. Hindsight, not forecast — it sees the inflow that
-        actually arrived.
-      </p>
-    </section>
-
-    <section class="card" id="tide-card">
-      <h2>Tide at the river mouth <span id="tide-state" class="chip chip-off">…</span></h2>
-      <div class="chart" id="tide-chart"></div>
-      <dl class="kv" id="tide-out" hidden>
-        <dt>Spring range</dt><dd id="tide-range">—</dd>
-        <dt>Next low-tide window</dt><dd id="tide-next">—</dd>
-        <dt>Windows in 72 h</dt><dd id="tide-count">—</dd>
-      </dl>
-      <p class="note" id="tide-note">
-        Harmonic prediction for the Kochi port station, five constituents —
-        a model, not a measurement, and metres about mean sea level, never
-        the reservoir's m MSL. At high tide the sea holds the mouth up and the
-        same release sits higher upstream; the shaded bands are when a given
-        volume moves downstream most cheaply.
-      </p>
-    </section>
-
-    <section class="card" id="rig-card">
-      <h2>Scale rig <span id="rig-state" class="chip chip-off">OFFLINE</span></h2>
-      <dl class="kv">
-        <dt>Tank level</dt><dd id="rig-level">—</dd>
-        <dt>Flow</dt><dd id="rig-flow">—</dd>
-        <dt>Sensors</dt><dd id="rig-sensors">—</dd>
-        <dt>Gate commanded</dt><dd id="rig-gate-cmd">—</dd>
-        <dt>Gate verified</dt><dd id="rig-gate-ver">—</dd>
-        <dt>Record chain</dt><dd id="rig-chain">—</dd>
-      </dl>
-
-      <div class="gatebar" id="rig-gatebar" hidden>
-        <div class="gatebar-row">
-          <span class="gatebar-label">cmd</span>
-          <div class="gatebar-track"><div class="gatebar-fill cmd" id="rig-bar-cmd"></div></div>
+        <div class="bands" id="bands">
+          <div class="band-track"><div class="band-fill" id="band-fill"></div></div>
+          <div class="band-labels">
+            <abbr title="Dead storage level: below this the turbines cannot draw water">dead</abbr><span id="lbl-rule" title="Rule level: where the operating rules want the reservoir at this time of year">rule</span><span id="lbl-frl" title="Full reservoir level: the highest the dam is designed to hold in normal operation">FRL</span>
+          </div>
         </div>
-        <div class="gatebar-row">
-          <span class="gatebar-label">ver</span>
-          <div class="gatebar-track"><div class="gatebar-fill ver" id="rig-bar-ver"></div></div>
-        </div>
-      </div>
-      <div class="spark" id="rig-spark"></div>
+        <dl class="kv">
+          <dt><abbr title="How far the water is below full reservoir level — the room left for the next storm">Cushion below FRL</abbr></dt><dd id="freeboard">—</dd>
+          <dt><abbr title="Water stored above dead level, in millions of cubic metres">Live storage</abbr></dt><dd id="storage">—</dd>
+          <dt><abbr title="If inflow and release stayed exactly as they are now">Time to FRL</abbr></dt><dd id="ttf">—</dd>
+        </dl>
+      </section>
 
-      <p class="warn-line" id="rig-warn" hidden></p>
-      <p class="note" id="rig-note">
-        Bench rig, in its own units — a 400 mm tank, not the reservoir.
-        These readings are never converted to m MSL.
-      </p>
-    </section>
+      <section class="card">
+        <h2>Flows <span class="unit-hint"><abbr title="Cubic metres per second. 100 cumecs fills an Olympic pool every 25 seconds">cumecs</abbr></span></h2>
+        <dl class="kv">
+          <dt>Inflow</dt><dd id="inflow">—</dd>
+          <dt><abbr title="Water sent through the power station — this earns revenue">Turbine</abbr></dt><dd id="turbine">—</dd>
+          <dt><abbr title="Water released over the gates — this earns nothing">Spillway</abbr></dt><dd id="spill">—</dd>
+          <dt>Gate opening</dt><dd id="gate">—</dd>
+        </dl>
+        <div class="spark" id="spark" title="Reservoir level over the last 90 readings"></div>
+      </section>
+
+      <section class="card" id="advice-card">
+        <h2>Recommendation</h2>
+        <p id="advice">Waiting for telemetry…</p>
+        <p id="advice-ml" class="advice-ml" lang="ml"></p>
+        <p class="note">Advisory only. A named operator approves every release.
+          The Malayalam line is the last-mile wording for the same band — draft
+          text, to be read by a native speaker before any public use.</p>
+      </section>
+
+      <button type="button" class="next-step" data-goto="try">What would AquaSync have done? <span>Try it →</span></button>
+    </div>
+
+    <!-- ===================================================== TRY IT -->
+    <div class="tab-pane" id="pane-try" role="tabpanel" aria-labelledby="tab-try" hidden>
+      <section class="card" id="sim-card">
+        <h2>Twin simulation <span id="sim-state" class="chip chip-off">…</span></h2>
+        <p class="card-lede">The October 2021 storm, twice: once as the operators ran it, once as the optimiser would have.</p>
+        <p class="headline" id="sim-headline">Running the optimiser…</p>
+        <div class="chart" id="sim-chart"></div>
+        <div class="legend">
+          <span class="legend-item"><i class="sw sw-obs"></i>what happened</span>
+          <span class="legend-item"><i class="sw sw-opt"></i>AquaSync</span>
+          <span class="legend-item"><i class="sw sw-frl"></i>FRL</span>
+        </div>
+        <dl class="kv" id="sim-out" hidden>
+          <dt>Peak, the day</dt><dd id="sim-peak-obs">—</dd>
+          <dt>Peak, AquaSync</dt><dd id="sim-peak-opt">—</dd>
+          <dt>Cushion, the day</dt><dd id="sim-fb-obs">—</dd>
+          <dt>Cushion, AquaSync</dt><dd id="sim-fb-opt">—</dd>
+          <dt>Revenue vs the day</dt><dd id="sim-rev">—</dd>
+        </dl>
+        <p class="note mono-note" id="sim-policy"></p>
+        <button type="button" id="sim-open" class="btn btn-primary">▶ Watch it hour by hour</button>
+        <p class="note" id="sim-note">
+          Replays the recorded episode, then re-runs it under the optimiser's
+          release policy. Hindsight, not forecast — it sees the inflow that
+          actually arrived.
+        </p>
+      </section>
+
+      <section class="card" id="whatif-card">
+        <h2>What-if</h2>
+        <p class="card-lede">Pick one release and hold it for the next 72 hours, starting from the level and inflow shown under Now. Let go of the slider to run it.</p>
+        <label class="slider">
+          <span>Release <b id="whatif-val">0</b> cumecs</span>
+          <input type="range" id="whatif" min="0" max="900" value="0" step="1">
+        </label>
+        <div class="presets" id="whatif-presets" role="group" aria-label="Release presets">
+          <button type="button" data-q="0">Hold everything</button>
+          <button type="button" data-q="138" title="The turbines' rated flow: all of it earns revenue">Turbines only</button>
+          <button type="button" data-q="400">Open the gates</button>
+          <button type="button" data-q="800">Heavy release</button>
+        </div>
+        <button type="button" id="whatif-reset" class="btn">Return to recommended</button>
+
+        <div class="chart" id="whatif-chart" hidden></div>
+        <dl class="kv" id="whatif-out" hidden>
+          <dt>Peak level, 72 h</dt><dd id="wi-peak">—</dd>
+          <dt>Cushion at peak</dt><dd id="wi-cushion">—</dd>
+          <dt>Level at 72 h</dt><dd id="wi-final">—</dd>
+          <dt>Reaches FRL</dt><dd id="wi-breach">—</dd>
+          <dt>Time to FRL</dt><dd id="wi-ttf">—</dd>
+        </dl>
+        <p class="note" id="wi-advice"></p>
+        <p class="note" id="whatif-status">Drag the slider or pick a preset.</p>
+      </section>
+
+      <section class="card" id="cn-card">
+        <h2>Catchment policy <span id="cn-state" class="chip chip-off">…</span></h2>
+        <p class="card-lede">What if the hills held more water? Slide left for more forest, right for more paved ground, and see how much of this storm's rain would have run off into the reservoir.</p>
+        <label class="slider">
+          <span><abbr title="A handbook number for how much rain the ground lets run off: low for forest, high for pavement">Curve number</abbr> <b id="cn-val">72</b> <span class="unit">(handbook 72)</span></span>
+          <input type="range" id="cn" min="55" max="92" value="72" step="1">
+        </label>
+        <div class="scale-ends" aria-hidden="true"><span>← more forest</span><span>more paved →</span></div>
+        <dl class="kv" id="cn-out" hidden>
+          <dt>Rain, episode</dt><dd id="cn-rain">—</dd>
+          <dt>Runoff at this CN</dt><dd id="cn-vol">—</dd>
+          <dt>Runoff at CN 72</dt><dd id="cn-vol0">—</dd>
+          <dt>Change</dt><dd id="cn-delta">—</dd>
+          <dt>Runoff fraction</dt><dd id="cn-frac">—</dd>
+          <dt>Peak, not validated</dt><dd id="cn-peak" class="dim">—</dd>
+        </dl>
+        <p class="note" id="cn-status"></p>
+      </section>
+    </div>
+
+    <!-- ===================================================== TIDE & RIG -->
+    <div class="tab-pane" id="pane-ctx" role="tabpanel" aria-labelledby="tab-ctx" hidden>
+      <section class="card" id="tide-card">
+        <h2>Tide at the river mouth <span id="tide-state" class="chip chip-off">…</span></h2>
+        <p class="card-lede">Twice a day the sea drops at Kochi, and the same release moves downstream more easily. The shaded bands are those windows.</p>
+        <div class="chart" id="tide-chart"></div>
+        <dl class="kv" id="tide-out" hidden>
+          <dt><abbr title="The difference between high and low water at the biggest tides of the month">Spring range</abbr></dt><dd id="tide-range">—</dd>
+          <dt>Next low-tide window</dt><dd id="tide-next">—</dd>
+          <dt>Windows in 72 h</dt><dd id="tide-count">—</dd>
+        </dl>
+        <p class="note" id="tide-note">
+          Harmonic prediction for the Kochi port station, five constituents —
+          a model, not a measurement, and metres about mean sea level, never
+          the reservoir's m MSL. At high tide the sea holds the mouth up and the
+          same release sits higher upstream; the shaded bands are when a given
+          volume moves downstream most cheaply.
+        </p>
+      </section>
+
+      <section class="card" id="rig-card">
+        <h2>Scale rig <span id="rig-state" class="chip chip-off">OFFLINE</span></h2>
+        <p class="card-lede">The bench model: a small tank with a real sensor and a motorised gate. It is the only gate this project ever moves.</p>
+        <dl class="kv">
+          <dt>Tank level</dt><dd id="rig-level">—</dd>
+          <dt>Flow</dt><dd id="rig-flow">—</dd>
+          <dt>Sensors</dt><dd id="rig-sensors">—</dd>
+          <dt><abbr title="Where the gate was told to go">Gate commanded</abbr></dt><dd id="rig-gate-cmd">—</dd>
+          <dt><abbr title="Where the gate's own sensor says it actually is">Gate verified</abbr></dt><dd id="rig-gate-ver">—</dd>
+          <dt><abbr title="Each reading is hash-chained to the one before, so an edited record breaks the chain">Record chain</abbr></dt><dd id="rig-chain">—</dd>
+        </dl>
+
+        <div class="gatebar" id="rig-gatebar" hidden>
+          <div class="gatebar-row">
+            <span class="gatebar-label">cmd</span>
+            <div class="gatebar-track"><div class="gatebar-fill cmd" id="rig-bar-cmd"></div></div>
+          </div>
+          <div class="gatebar-row">
+            <span class="gatebar-label">ver</span>
+            <div class="gatebar-track"><div class="gatebar-fill ver" id="rig-bar-ver"></div></div>
+          </div>
+        </div>
+        <div class="spark" id="rig-spark"></div>
+
+        <p class="warn-line" id="rig-warn" hidden></p>
+        <p class="note" id="rig-note">
+          Bench rig, in its own units — a 400 mm tank, not the reservoir.
+          These readings are never converted to m MSL.
+        </p>
+      </section>
+    </div>
   </aside>
 
   <main id="stage">
@@ -189,50 +216,58 @@
       <div id="stage-alert" class="stage-alert" hidden></div>
       <div class="stage-tools">
         <div class="seg" id="view-seg" role="group" aria-label="Viewpoint">
-          <button type="button" data-view="site" class="on">Site</button>
-          <button type="button" data-view="gate">Gate</button>
-          <button type="button" data-view="basin">Basin</button>
+          <button type="button" data-view="site" class="on" title="The dam in its valley">Site</button>
+          <button type="button" data-view="gate" title="Close up on the spillway gates">Gate</button>
+          <button type="button" data-view="basin" title="The whole reservoir">Basin</button>
         </div>
-        <button type="button" id="sim-toggle" class="tool-btn">Simulation</button>
+        <button type="button" id="sim-toggle" class="tool-btn tool-primary" title="Replay a storm hour by hour, and compare what the operators did with what AquaSync would have done">▶ Open simulation</button>
       </div>
-      <p id="scene-note" class="scene-note">Loading terrain…</p>
+      <p id="orbit-hint" class="orbit-hint">Drag to turn · scroll to zoom · right-drag to pan</p>
+      <div id="scene-note" class="scene-note">Loading terrain…</div>
     </div>
 
     <section id="sim-drawer" class="sim-drawer" hidden aria-label="Twin simulation">
       <header class="sim-head">
         <div class="sim-title">
-          <h2>Twin simulation <span id="simv-state" class="chip chip-off">…</span></h2>
-          <select id="simv-scenario" aria-label="Scenario"></select>
+          <h2 class="sim-h">Twin simulation</h2>
+          <span id="simv-state" class="chip chip-off">…</span>
+          <select id="simv-scenario" aria-label="Storm to replay"></select>
           <select id="simv-storm" aria-label="Storm size" title="Stress test: the recorded inflow scaled before either schedule sees it">
             <option value="1" selected>Storm as recorded</option>
             <option value="1.25">Storm × 1.25</option>
             <option value="1.5">Storm × 1.5</option>
             <option value="2">Storm × 2</option>
           </select>
-          <button type="button" id="simv-run" class="tool-btn">Run</button>
+          <button type="button" id="simv-run" class="tool-btn" hidden>Retry</button>
         </div>
         <div class="sim-transport">
-          <button type="button" id="simv-play" class="tool-btn" title="Space">Play</button>
+          <button type="button" id="simv-play" class="tool-btn tool-primary" title="Space">▶ Play</button>
           <select id="simv-speed" aria-label="Playback speed">
-            <option value="6">6 h per s</option>
-            <option value="24" selected>24 h per s</option>
-            <option value="96">96 h per s</option>
+            <option value="6">Slow</option>
+            <option value="24" selected>Normal</option>
+            <option value="96">Fast</option>
           </select>
-          <div class="seg" id="simv-trace" role="group" aria-label="Which schedule drives the twin">
-            <span class="seg-label">Twin follows</span>
-            <button type="button" data-trace="day" class="on">the day</button>
-            <button type="button" data-trace="opt">AquaSync</button>
+          <div class="seg" id="simv-trace" role="group" aria-label="Which schedule the 3D view shows">
+            <span class="seg-label">3D shows</span>
+            <button type="button" data-trace="day" class="on" title="The releases the operators actually made">the day</button>
+            <button type="button" data-trace="opt" title="The releases the optimiser would have made">AquaSync</button>
           </div>
-          <button type="button" id="simv-close" class="tool-btn">Close</button>
+          <button type="button" id="simv-link" class="tool-btn" title="Copy a link to this storm, schedule, hour and storm size">Copy link</button>
+          <button type="button" id="simv-close" class="tool-btn" title="Esc">Close</button>
         </div>
       </header>
 
-      <p class="headline" id="simv-headline">Pick a scenario and run it.</p>
+      <p class="headline" id="simv-headline">Pick a storm to replay.</p>
+      <p class="sim-lede">One storm, three lines: what was <b>recorded</b>, what <b>the day</b> did, and what <b>AquaSync</b> would have released. Drag the slider, or click the chart, to walk the storm hour by hour — the 3D view follows.</p>
 
       <div class="sim-body">
         <div class="sim-chart-wrap">
-          <div id="simv-chart" class="sim-chart"></div>
-          <input type="range" id="simv-scrub" min="0" max="0" value="0" step="1" aria-label="Hour">
+          <div id="simv-chart" class="sim-chart" title="Click to jump to that hour"></div>
+          <input type="range" id="simv-scrub" min="0" max="0" value="0" step="1" aria-label="Hour of the storm">
+          <div class="scrub-row">
+            <p class="scrub-label" id="simv-hourlab">—</p>
+            <div class="jumps" id="simv-jumps" role="group" aria-label="Jump to a moment"></div>
+          </div>
           <p class="sim-cursor" id="simv-cursor">—</p>
           <div class="legend">
             <span class="legend-item"><i class="sw sw-rec"></i>recorded (KSEB bulletin)</span>
@@ -242,26 +277,38 @@
             <span class="legend-item"><i class="sw sw-frl"></i>FRL</span>
             <span class="legend-item"><i class="sw sw-rule"></i>rule level</span>
           </div>
+          <p class="kbd-hint"><b>Space</b> play · <b>← →</b> an hour · <b>Shift ← →</b> a day · <b>Home / End</b> · <b>Esc</b> closes</p>
         </div>
-        <dl class="kv sim-results" id="simv-out">
-          <dt>Peak, the day</dt><dd id="simv-peak-obs">—</dd>
-          <dt>Peak, AquaSync</dt><dd id="simv-peak-opt">—</dd>
-          <dt>Cushion, the day</dt><dd id="simv-fb-obs">—</dd>
-          <dt>Cushion, AquaSync</dt><dd id="simv-fb-opt">—</dd>
-          <dt>Revenue vs the day</dt><dd id="simv-rev">—</dd>
-          <dt>Peak downstream, the day</dt><dd id="simv-ds-obs">—</dd>
-          <dt>Peak downstream, AquaSync</dt><dd id="simv-ds-opt">—</dd>
-          <dt>Replay error, MAE</dt><dd id="simv-mae">—</dd>
-          <dt>Replay error, max</dt><dd id="simv-maxerr">—</dd>
-          <dt>Hours simulated</dt><dd id="simv-hours">—</dd>
-          <dt>FRL reached at storm ×, the day</dt><dd id="simv-sw-day">—</dd>
-          <dt>FRL reached at storm ×, AquaSync</dt><dd id="simv-sw-opt">—</dd>
-        </dl>
-        <div class="sweep-chart" id="simv-sw-chart" title="Peak level against storm multiple: the day (amber), AquaSync (green), FRL (red)"></div>
+        <div class="sim-side">
+          <div class="sim-answer">
+            <p class="ans-head">Cushion below full reservoir level, at its lowest</p>
+            <div class="ans-row"><span>The day</span><b id="simv-fb-obs" class="ans-day">—</b></div>
+            <div class="ans-row"><span>AquaSync</span><b id="simv-fb-opt" class="ans-opt">—</b></div>
+            <div class="ans-row ans-rev"><span>Revenue vs the day</span><b id="simv-rev">—</b></div>
+          </div>
+          <details class="sim-details">
+            <summary>Every row, and how it was checked</summary>
+            <dl class="kv sim-results" id="simv-out">
+              <dt>Peak, the day</dt><dd id="simv-peak-obs">—</dd>
+              <dt>Peak, AquaSync</dt><dd id="simv-peak-opt">—</dd>
+              <dt>Peak downstream, the day</dt><dd id="simv-ds-obs">—</dd>
+              <dt>Peak downstream, AquaSync</dt><dd id="simv-ds-opt">—</dd>
+              <dt>Replay error, MAE</dt><dd id="simv-mae">—</dd>
+              <dt>Replay error, max</dt><dd id="simv-maxerr">—</dd>
+              <dt>Hours simulated</dt><dd id="simv-hours">—</dd>
+              <dt>FRL reached at storm ×, the day</dt><dd id="simv-sw-day">—</dd>
+              <dt>FRL reached at storm ×, AquaSync</dt><dd id="simv-sw-opt">—</dd>
+            </dl>
+            <p class="note" id="simv-ds-note"></p>
+            <div class="sweep-chart" id="simv-sw-chart" title="Peak level against storm multiple: the day (amber), AquaSync (green), FRL (red)"></div>
+            <p class="note" id="simv-sw-note"></p>
+          </details>
+        </div>
       </div>
-      <p class="note mono-note" id="simv-policy"></p>
-      <p class="note" id="simv-sw-note"></p>
-      <p class="note" id="simv-note"></p>
+      <div class="sim-foot">
+        <p class="note mono-note" id="simv-policy"></p>
+        <p class="note" id="simv-note"></p>
+      </div>
     </section>
   </main>
 
@@ -271,6 +318,46 @@
     <span id="source">source: replay</span>
   </footer>
 </div>
+
+<!-- ============================================ first-visit guide / help -->
+<dialog id="help" class="help" aria-labelledby="help-title">
+  <form method="dialog" class="help-close-form"><button class="help-x" aria-label="Close">×</button></form>
+  <h2 id="help-title">How to read this twin</h2>
+  <p class="help-lede">A 3D model of Idukki dam in Kerala, driven by the real record of the October 2021 storm. It advises; it never operates a real gate.</p>
+
+  <ol class="help-steps">
+    <li><b>Now</b> — the reservoir as the recording plays back. The badge top-right says <b>REPLAY</b>: this is 2021, not live.</li>
+    <li><b>Try it</b> — watch the storm hour by hour as the operators ran it and as AquaSync would have, or hold a release of your own for 72 hours.</li>
+    <li><b>Tide &amp; rig</b> — the sea at the river mouth, and the bench model with its real sensor and gate.</li>
+  </ol>
+
+  <div class="help-actions">
+    <button type="button" class="btn btn-primary" data-help="sim">▶ Watch the October 2021 storm</button>
+    <button type="button" class="btn" data-help="try">Try a release myself</button>
+    <button type="button" class="btn btn-quiet" data-help="close">Just look around</button>
+  </div>
+
+  <details class="help-more">
+    <summary>What the words and badges mean</summary>
+    <dl class="gloss">
+      <dt>FRL</dt><dd>Full reservoir level, 732.43 m at Idukki. The highest it is meant to hold in normal operation.</dd>
+      <dt>Cushion</dt><dd>How far the water is below FRL: room left for the next storm. Bigger is safer.</dd>
+      <dt>Rule level</dt><dd>Where the operating rules want the reservoir at this time of year.</dd>
+      <dt>m MSL</dt><dd>Metres above mean sea level.</dd>
+      <dt>cumecs</dt><dd>Cubic metres of water per second.</dd>
+      <dt>Mm³</dt><dd>Millions of cubic metres.</dd>
+      <dt><span class="chip chip-live">LIVE</span></dt><dd>Measured now, by the rig. The only green badge.</dd>
+      <dt><span class="chip chip-stale">REPLAY</span></dt><dd>A recorded episode being played back.</dd>
+      <dt><span class="chip chip-stale">SIMULATED</span></dt><dd>The simulation view is driving the 3D model.</dd>
+      <dt><span class="chip chip-model">HINDSIGHT</span></dt><dd>The optimiser was shown the rain that actually came. Best case, not a forecast.</dd>
+      <dt><span class="chip chip-model">BUNDLED</span></dt><dd>A saved result, used because the server is not reachable.</dd>
+      <dt><span class="chip chip-stale">STRESS TEST</span></dt><dd>The recorded storm scaled up. Not a forecast, not a return period.</dd>
+      <dt><span class="chip chip-model">PREDICTED</span></dt><dd>A model output, such as the tide.</dd>
+      <dt><span class="chip chip-off">OFFLINE</span></dt><dd>Needs the server, which is not running.</dd>
+    </dl>
+    <p class="help-small">In the simulation: <b>Space</b> plays, <b>← →</b> steps an hour, <b>Shift ← →</b> a day, <b>Esc</b> closes. Open <code>?sim=1&amp;demo=1</code> on an unattended screen and it plays on a loop.</p>
+  </details>
+</dialog>
 
 <script type="module" src="js/twin.js"></script>
 </body>

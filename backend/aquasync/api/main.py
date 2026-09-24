@@ -151,7 +151,7 @@ def _advice(level: float, spill: float) -> str:
     if level >= IDUKKI.red_level and spill == 0:
         return (
             f"Level {level:.2f} m is above the {IDUKKI.red_level} m red alert with "
-            f"gates shut and only {freeboard:.2f} m of freeboard. Open gates now."
+            f"gates shut and only {freeboard:.2f} m of cushion below FRL. Open gates now."
         )
     if level > IDUKKI.rule_level and spill == 0:
         return (
@@ -159,7 +159,7 @@ def _advice(level: float, spill: float) -> str:
             f"gates shut. Begin staged drawdown toward the rule level."
         )
     if level > IDUKKI.rule_level:
-        return f"Drawdown in progress. {freeboard:.2f} m freeboard remaining."
+        return f"Drawdown in progress. {freeboard:.2f} m of cushion below FRL remaining."
     return f"Within rule curve. {freeboard:.2f} m of flood cushion available."
 
 

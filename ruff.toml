@@ -24,5 +24,6 @@ select = ["E", "F", "I", "UP", "B"]
 # Report builders are mostly long prose strings laid out for readability.
 "scripts/build_dossier.py" = ["E501"]
 "scripts/build_research_report.py" = ["E501"]
+"scripts/build_showcase.py" = ["E501"]
 # Figure captions are prose, laid out to read naturally next to the plot code.
 "scripts/make_figures.py" = ["E501"]

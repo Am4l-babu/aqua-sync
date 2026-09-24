@@ -1229,7 +1229,9 @@ def section_pitch() -> list:
              ["4", "Flip the ‘sensor failure’ switch. The twin detects the disagreement, "
                    "falls back to mass-balance state estimation, and keeps controlling", "30 s"],
              ["5", "Hand over the tablet: “You are the operator. It is 8 October 2021.” "
-                   "Let them try to save Aluva, then show them the optimiser's answer", "40 s"],
+                   "Let them try to save Aluva, then show them the optimiser's answer - and "
+                   "scrub it hour by hour in the twin's simulation view, with the recorded "
+                   "level on the same axis so the replay error is theirs to see", "40 s"],
              ["6", "Pull the network cable. Everything keeps running on LoRa and the local Pi", "20 s"]],
             widths=[8 * mm, CONTENT_W - 30 * mm, 22 * mm]),
         Spacer(1, 8),
